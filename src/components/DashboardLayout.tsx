@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
+            className="mobile-backdrop fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
         )}

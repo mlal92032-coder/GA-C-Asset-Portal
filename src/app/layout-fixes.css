@@ -1,4 +1,25 @@
 /* ===== Essential Layout Fixes ===== */
+/*
+  Z-INDEX STACKING ORDER (Complete Layer Management)
+
+  z-index: 0       = Main content, components without explicit z-index
+  z-index: 1       = Sticky table headers
+  z-index: 10      = Sticky table headers (alternative)
+  z-index: 20      = Header/navbar (sticky top)
+  z-index: 40      = Mobile sidebar backdrop
+  z-index: 50      = Sidebar (sticky left)
+  z-index: 9997    = Search dropdown OVERLAY (invisible click shield)
+  z-index: 9998    = Modal overlay (dark backdrop with blur)
+  z-index: 9999    = Search dropdown (visible results list)
+  z-index: 10000   = Modal content (checkout, create, etc.)
+  z-index: 99999   = Toast notifications (success/error messages)
+
+  RULES:
+  - Search dropdown must be below modals
+  - Modal overlay must be above search but below modal content
+  - Toast always highest to catch user attention
+  - Never use z-index > 100000 unless absolutely critical
+*/
 
 /* Prevent horizontal scroll */
 html, body {
@@ -6,21 +27,55 @@ html, body {
   width: 100%;
 }
 
-/* Sidebar layer */
+/* Sidebar layer - z-50 */
 aside {
   z-index: 50;
 }
 
-/* Header layer */
+/* Header layer - z-20 (below sidebar on mobile) */
 header {
   z-index: 20;
 }
 
-/* Modal overlay - covers everything */
+/* Mobile sidebar backdrop - z-40 */
+.mobile-backdrop {
+  z-index: 40;
+}
+
+/* ===== SEARCH DROPDOWN STACKING ===== */
+/* Search dropdown overlay (transparent click shield) */
+.search-dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9997;
+  background: transparent;
+  pointer-events: auto;
+}
+
+/* Search dropdown (results list) */
+.search-dropdown {
+  position: absolute;
+  z-index: 9999;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ===== MODAL STACKING ===== */
+/* Modal overlay - dark backdrop with blur - z-9998 */
 .modal-overlay {
-  z-index: 99999 !important;
   position: fixed !important;
   inset: 0;
+  z-index: 9998 !important;
   background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(6px);
   display: flex;
@@ -30,15 +85,17 @@ header {
   transform: none !important;
 }
 
-/* Modal content */
+/* Modal content - white box with form - z-10000 */
 .modal {
-  z-index: 100000 !important;
   position: relative;
+  z-index: 10000 !important;
   background: #ffffff;
   border-radius: 1rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
   max-height: 90vh;
   overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  margin: auto;
 }
 
 /* Modal parts */
@@ -48,10 +105,14 @@ header {
   border-bottom: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 1rem 1rem 0 0;
+  position: relative;
+  z-index: 1;
 }
 
 .modal-body {
   padding: 1.25rem 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .modal-footer {
@@ -64,19 +125,17 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  position: relative;
+  z-index: 1;
 }
 
-/* Dropdowns */
-.search-dropdown {
-  position: absolute;
-  z-index: 200;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 0.5rem;
+/* ===== FORM ELEMENTS IN MODALS ===== */
+/* Ensure select dropdowns inside modals appear above modal */
+.modal select {
+  z-index: 10001;
 }
 
-/* Charts */
+/* ===== CHARTS ===== */
 .recharts-wrapper {
   width: 100% !important;
 }
@@ -85,7 +144,14 @@ header {
   overflow: visible !important;
 }
 
-/* Animate In */
+/* ===== TABLE STICKY HEADERS ===== */
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* ===== ANIMATIONS ===== */
 @keyframes animate-in {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
@@ -95,12 +161,22 @@ header {
   animation: animate-in 0.5s ease forwards;
 }
 
-/* Toast notifications */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease forwards;
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
+/* Toast - HIGHEST PRIORITY (z-99999) */
 .toast {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 999999;
+  z-index: 99999 !important;
   padding: 1rem 1.5rem;
   border-radius: 0.75rem;
   color: white;
@@ -109,10 +185,48 @@ header {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease;
 }
-.toast-success { background: #10b981; }
-.toast-error { background: #ef4444; }
+
+.toast-success {
+  background: #10b981;
+}
+
+.toast-error {
+  background: #ef4444;
+}
+
+.toast-warning {
+  background: #f59e0b;
+}
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* ===== DROPDOWN MENUS ===== */
+/* Generic dropdown for selects, profile menus, etc */
+.dropdown {
+  position: absolute;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  min-width: 150px;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+/* ===== FOCUS & ACCESSIBILITY ===== */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }

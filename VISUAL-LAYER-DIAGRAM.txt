@@ -1,0 +1,230 @@
+================================================================================
+                      Z-INDEX VISUAL LAYER DIAGRAM
+================================================================================
+
+BEFORE FIX (BROKEN - Overlaps Everywhere)
+================================================================================
+
+z-[100]  ┌─ Search Dropdown (WAY TOO LOW!)
+         │  Overlapping with everything below it
+
+z-[9999] ├─ CheckoutModal Overlay (Same as Modals)
+         │  CheckoutModal Content (Same as Overlay?!)
+         │  AMBIGUOUS - Can't tell which is on top
+
+z-[9999] ├─ CheckinModal Content
+         └─ Uncertain layering with search
+
+z-0      ├─ Main Content
+         │  Text, cards, tables
+         │  ABOVE search? BELOW? Unclear!
+
+┌─────────────────────────────────────────────────────────────────┐
+│ RESULT: Z-index conflicts, overlapping elements, user confusion │
+└─────────────────────────────────────────────────────────────────┘
+
+
+AFTER FIX (WORKING - Clear Layer Separation)
+================================================================================
+
+TOP LAYER:
+┌────────────────────────────────────────────────────────────────┐
+│ z-[99999]  TOAST NOTIFICATIONS                                 │
+│            ✓ Success/Error messages                             │
+│            ✓ Always on top                                      │
+│            ✓ Catches user attention                             │
+└────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+                              │
+
+MODAL LAYER:
+┌────────────────────────────────────────────────────────────────┐
+│ z-[10000]  MODAL CONTENT (White Box)                            │
+│            ✓ Checkout/Create/Edit forms                         │
+│            ✓ User interacts with this                           │
+│            ✓ Above overlay for 3D effect                        │
+├────────────────────────────────────────────────────────────────┤
+│ z-[9998]   MODAL OVERLAY (Dark Background)                      │
+│            ✓ Semi-transparent backdrop                          │
+│            ✓ Blur effect                                        │
+│            ✓ Dims content behind                                │
+└────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+                              │
+
+SEARCH LAYER:
+┌────────────────────────────────────────────────────────────────┐
+│ z-[9999]   SEARCH DROPDOWN (Results List)                       │
+│            ✓ Global search results                              │
+│            ✓ Below modals, above content                        │
+│            ✓ Closes when modal opens                            │
+└────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+                              │
+
+HEADER LAYER:
+┌────────────────────────────────────────────────────────────────┐
+│ z-[50]     SIDEBAR (Desktop/Mobile)                             │
+│            ✓ Navigation menu                                    │
+│            ✓ Sticky on left side                                │
+├────────────────────────────────────────────────────────────────┤
+│ z-[40]     MOBILE BACKDROP                                      │
+│            ✓ Dark overlay when sidebar opens                    │
+├────────────────────────────────────────────────────────────────┤
+│ z-[20]     HEADER/NAVBAR                                        │
+│            ✓ Top sticky bar                                     │
+│            ✓ Contains search, notifications, user menu          │
+└────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+                              │
+
+CONTENT LAYER:
+┌────────────────────────────────────────────────────────────────┐
+│ z-[0]      MAIN CONTENT & COMPONENTS                            │
+│            ✓ Pages, text, cards, tables                         │
+│            ✓ Form inputs, buttons                               │
+│            ✓ Default layer for everything                       │
+└────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ RESULT: Clear hierarchy, no overlaps, predictable behavior      │
+└─────────────────────────────────────────────────────────────────┘
+
+
+INTERACTION SCENARIOS
+================================================================================
+
+SCENARIO 1: SEARCH DROPDOWN ONLY
+────────────────────────────────
+
+        ┌─────────────────────────────────┐
+        │  NAVBAR (z-20)                  │
+        │  ├─ Search Input [___________]  │
+        │  └─▼ Results (z-9999) ◄─ VISIBLE
+        │     ├─ Asset 1                  │
+        │     ├─ Asset 2                  │
+        │     └─ Asset 3                  │
+        ├─────────────────────────────────┤
+        │  MAIN CONTENT                   │ ◄─ BEHIND search dropdown
+        │  Some page content here...      │
+        │  [More content below]           │
+        └─────────────────────────────────┘
+
+
+SCENARIO 2: MODAL OPENS (Modal Above Search)
+──────────────────────────────────────────────
+
+        ┌─────────────────────────────────┐
+        │ MODAL OVERLAY (z-9998)          │ ◄─ Dark background
+        │ ┌─────────────────────────────┐ │
+        │ │ MODAL (z-10000)             │ │ ◄─ White box on top
+        │ │ ┌─────────────────────────┐ │ │
+        │ │ │ Checkout Asset          │ │ │
+        │ │ │ [Select user...]        │ │ │
+        │ │ │ [Date input]            │ │ │
+        │ │ │ [Notes textarea]        │ │ │
+        │ │ │ [Cancel] [Checkout]     │ │ │
+        │ │ └─────────────────────────┘ │ │
+        │ └─────────────────────────────┘ │
+        │ (Search dropdown hidden behind) │ ◄─ Behind modal
+        │ (Main content dimmed)           │ ◄─ Dimmed by overlay
+        └─────────────────────────────────┘
+
+
+SCENARIO 3: TOAST APPEARS (Always On Top)
+───────────────────────────────────────────
+
+        ┌─────────────────────────────────┐
+        │ Navbar                          │
+        │ Modal or Search                 │
+        │ Main Content                    │
+        │                  ┌───────────┐  │
+        │                  │ ✓ Success!│  │ ◄─ TOAST (z-99999)
+        │                  │ Saved.    │  │    ABOVE EVERYTHING
+        │                  └───────────┘  │
+        └─────────────────────────────────┘
+
+
+MOBILE SCENARIO: Sidebar with modals
+──────────────────────────────────────
+
+        ┌──────────────────────────┐
+        │ MODAL (z-10000)          │ ◄─ On top
+        │ ┌────────────────────────┤
+        │ │ MODAL OVERLAY (z-9998) │
+        │ │ ┌──────────────────────┐
+        │ │ │ MOBILE BACKDROP      │ ◄─ z-40 behind modal
+        │ │ │ ┌──────────────────┐ │
+        │ │ │ │ SIDEBAR (z-50)   │ │ ◄─ Navigation menu
+        │ │ │ │                  │ │
+        │ │ │ │ Dashboard        │ │
+        │ │ │ │ Assets           │ │
+        │ │ │ │ Settings         │ │
+        │ │ │ └──────────────────┘ │
+        └──────────────────────────┘
+            Behind Modal
+
+
+KEY PRINCIPLES
+================================================================================
+
+1. CLEAR SEPARATION
+   Each component has a unique z-index range
+   No ambiguity about what's on top
+
+2. CONSISTENT STACKING
+   Same type of element → same z-index
+   All modals: z-[9998]/z-[10000]
+   All toasts: z-[99999]
+
+3. LOGICAL GROUPS
+   Related elements bundled together
+   Modal overlay + content = one unit
+   Search = one layer
+
+4. LARGE GAPS
+   Lots of space between layers
+   Room for future additions
+   No accidental conflicts
+
+5. DOCUMENTATION
+   Every z-index documented
+   Easy to understand
+   Easy to maintain
+
+
+FILES CHANGED
+================================================================================
+
+✓ src/app/layout-fixes.css
+  └─ Complete z-index layer system defined here
+
+✓ src/app/globals.css
+  └─ Modal classes with z-index values
+
+✓ src/components/GlobalSearch.tsx
+  └─ Search dropdown at z-[9999]
+
+✓ src/components/CheckoutModal.tsx
+  └─ Overlay at z-[9998], Content at z-[10000]
+
+✓ src/components/DashboardLayout.tsx
+  └─ Mobile backdrop class added
+
+
+RESULT
+================================================================================
+
+BEFORE: ✗ Overlapping elements, user confusion
+AFTER:  ✓ Clear visual hierarchy, predictable behavior
+
+The user now sees:
+  • Search dropdown at the right level
+  • Modals clearly above other elements
+  • No overlaps or visual confusion
+  • Everything in its proper place
+
