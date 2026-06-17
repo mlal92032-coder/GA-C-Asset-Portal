@@ -1,0 +1,174 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/api-auth';
+
+export async function GET() {
+  try {
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    // Get actual counts from database
+    const [furnitureCount, electronicCount, vehicleCount] = await Promise.all([
+      prisma.furnitureAsset.count(),
+      prisma.electronicAsset.count(),
+      prisma.vehicleAsset.count(),
+    ]);
+    const totalAssets = furnitureCount + electronicCount + vehicleCount;
+
+    // If database is empty, return empty stats instead of demo data
+    if (totalAssets === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          totalAssets: 0,
+          furnitureCount: 0,
+          electronicCount: 0,
+          vehicleCount: 0,
+          conditionBreakdown: { good: 0, repair: 0, damaged: 0 },
+          statusBreakdown: { inUse: 0, inStore: 0, disposed: 0 },
+          assetsByLocation: [],
+          assetsByCompany: [],
+          recentAssets: [],
+          sampleAssetTags: {
+            furniture: [],
+            electronic: [],
+            vehicle: [],
+          },
+        },
+      });
+    }
+
+    // Get real data from database
+    const [furnitureTags, electronicTags, vehicleTags] = await Promise.all([
+      prisma.furnitureAsset.findMany({ take: 5, orderBy: { createdAt: 'desc' }, select: { assetTag: true, assetName: true } }),
+      prisma.electronicAsset.findMany({ take: 5, orderBy: { createdAt: 'desc' }, select: { assetTag: true, assetName: true } }),
+      prisma.vehicleAsset.findMany({ take: 5, orderBy: { createdAt: 'desc' }, select: { assetTag: true, assetName: true } }),
+    ]);
+
+    // Get condition breakdown
+    const [furnitureCondition, electronicCondition, vehicleCondition] = await Promise.all([
+      prisma.furnitureAsset.groupBy({ by: ['condition'], _count: true }),
+      prisma.electronicAsset.groupBy({ by: ['condition'], _count: true }),
+      prisma.vehicleAsset.groupBy({ by: ['condition'], _count: true }),
+    ]);
+    const conditionBreakdown = { good: 0, repair: 0, damaged: 0 };
+    [...furnitureCondition, ...electronicCondition, ...vehicleCondition].forEach((item) => {
+      if (item.condition === 'GOOD') conditionBreakdown.good += item._count;
+      if (item.condition === 'REPAIR') conditionBreakdown.repair += item._count;
+      if (item.condition === 'DAMAGED') conditionBreakdown.damaged += item._count;
+    });
+
+    // Get status breakdown
+    const [furnitureStatus, electronicStatus, vehicleStatus] = await Promise.all([
+      prisma.furnitureAsset.groupBy({ by: ['status'], _count: true }),
+      prisma.electronicAsset.groupBy({ by: ['status'], _count: true }),
+      prisma.vehicleAsset.groupBy({ by: ['status'], _count: true }),
+    ]);
+    const statusBreakdown = { inUse: 0, inStore: 0, disposed: 0 };
+    [...furnitureStatus, ...electronicStatus, ...vehicleStatus].forEach((item) => {
+      if (item.status === 'IN_USE') statusBreakdown.inUse += item._count;
+      if (item.status === 'IN_STORE') statusBreakdown.inStore += item._count;
+      if (item.status === 'DISPOSED') statusBreakdown.disposed += item._count;
+    });
+
+    // Get assets by location
+    const allAssetsByLocation = (await Promise.all([
+      prisma.furnitureAsset.groupBy({ by: ['locationId'], _count: true }),
+      prisma.electronicAsset.groupBy({ by: ['locationId'], _count: true }),
+      prisma.vehicleAsset.groupBy({ by: ['locationId'], _count: true }),
+    ])).flat();
+    const locationMap = new Map<string, number>();
+    allAssetsByLocation.forEach((item) => {
+      if (item.locationId) locationMap.set(item.locationId, (locationMap.get(item.locationId) || 0) + item._count);
+    });
+    const locationIds = Array.from(locationMap.keys());
+    const locations = await prisma.location.findMany({ where: { id: { in: locationIds } }, select: { id: true, locationName: true } });
+    const assetsByLocation = locations.map((loc) => ({ locationName: loc.locationName, count: locationMap.get(loc.id) || 0 }));
+
+    // Get assets by company
+    const allAssetsByCompany = (await Promise.all([
+      prisma.furnitureAsset.groupBy({ by: ['companyId'], _count: true }),
+      prisma.electronicAsset.groupBy({ by: ['companyId'], _count: true }),
+      prisma.vehicleAsset.groupBy({ by: ['companyId'], _count: true }),
+    ])).flat();
+    const companyMap = new Map<string, number>();
+    allAssetsByCompany.forEach((item) => {
+      if (item.companyId) companyMap.set(item.companyId, (companyMap.get(item.companyId) || 0) + item._count);
+    });
+    const companyIds = Array.from(companyMap.keys());
+    const companies = await prisma.company.findMany({ where: { id: { in: companyIds } }, select: { id: true, companyName: true } });
+    const assetsByCompany = companies.map((comp) => ({ companyName: comp.companyName, count: companyMap.get(comp.id) || 0 }));
+
+    // Get recent assets
+    const [recentFurniture, recentElectronic, recentVehicle] = await Promise.all([
+      prisma.furnitureAsset.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true }
+      }),
+      prisma.electronicAsset.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true }
+      }),
+      prisma.vehicleAsset.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true }
+      }),
+    ]);
+    const recentAssets = [
+      ...recentFurniture.map((a) => ({
+        id: a.id,
+        name: a.assetName,
+        type: 'FURNITURE',
+        date: a.createdAt.toISOString(),
+        assetTag: a.assetTag,
+        condition: a.condition,
+        status: a.status
+      })),
+      ...recentElectronic.map((a) => ({
+        id: a.id,
+        name: a.assetName,
+        type: 'ELECTRONIC',
+        date: a.createdAt.toISOString(),
+        assetTag: a.assetTag,
+        condition: a.condition,
+        status: a.status
+      })),
+      ...recentVehicle.map((a) => ({
+        id: a.id,
+        name: a.assetName,
+        type: 'VEHICLE',
+        date: a.createdAt.toISOString(),
+        assetTag: a.assetTag,
+        condition: a.condition,
+        status: a.status
+      })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        totalAssets,
+        furnitureCount,
+        electronicCount,
+        vehicleCount,
+        conditionBreakdown,
+        statusBreakdown,
+        assetsByLocation,
+        assetsByCompany,
+        recentAssets,
+        sampleAssetTags: { furniture: furnitureTags, electronic: electronicTags, vehicle: vehicleTags },
+      },
+    });
+  } catch (error) {
+    console.error('Dashboard API Error:', error instanceof Error ? error.message : String(error));
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch dashboard statistics' },
+      { status: 500 }
+    );
+  }
+}

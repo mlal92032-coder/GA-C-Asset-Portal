@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Header Colors - Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f8fafc;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 2rem; color: #0f172a; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .gradient-header {
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            background: white;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.5rem;
+        }
+
+        .color-info {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        .color-sample {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 0.25rem;
+            border: 1px solid #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PageHeader Gradient Colors - Visual Test</h1>
+        <p style="margin-bottom: 2rem; color: #64748b;">These are the gradient backgrounds that should now be visible on all admin and asset pages.</p>
+
+        <div class="grid">
+            <!-- Manufacturers -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #fbcfe8, #fbcfe8);">
+                <div class="icon-box">🏭</div>
+                <div class="header-content">
+                    <div class="header-title">Manufacturers</div>
+                    <div class="header-subtitle">Manage manufacturer records</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #fbcfe8;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #fbcfe8;"></div></div>
+                </div>
+            </div>
+
+            <!-- Locations -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #dcfce7, #d1fae5);">
+                <div class="icon-box">📍</div>
+                <div class="header-content">
+                    <div class="header-title">Locations</div>
+                    <div class="header-subtitle">Manage location records</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #dcfce7;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #d1fae5;"></div></div>
+                </div>
+            </div>
+
+            <!-- Audit Logs -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #e0e7ff, #dbeafe);">
+                <div class="icon-box">📋</div>
+                <div class="header-content">
+                    <div class="header-title">Audit Logs</div>
+                    <div class="header-subtitle">View audit trail</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #e0e7ff;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #dbeafe;"></div></div>
+                </div>
+            </div>
+
+            <!-- Furniture -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #f3e8ff, #fbcfe8);">
+                <div class="icon-box">🪑</div>
+                <div class="header-content">
+                    <div class="header-title">Furniture</div>
+                    <div class="header-subtitle">Manage furniture assets</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #f3e8ff;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #fbcfe8;"></div></div>
+                </div>
+            </div>
+
+            <!-- Electronics -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #dbeafe, #cffafe);">
+                <div class="icon-box">💻</div>
+                <div class="header-content">
+                    <div class="header-title">Electronics</div>
+                    <div class="header-subtitle">Manage electronic assets</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #dbeafe;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #cffafe;"></div></div>
+                </div>
+            </div>
+
+            <!-- Vehicles -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #ffedd5, #fef3c7);">
+                <div class="icon-box">🚗</div>
+                <div class="header-content">
+                    <div class="header-title">Vehicles</div>
+                    <div class="header-subtitle">Manage vehicle assets</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #ffedd5;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #fef3c7;"></div></div>
+                </div>
+            </div>
+
+            <!-- All Assets -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #ccfbf1, #cffafe);">
+                <div class="icon-box">📦</div>
+                <div class="header-content">
+                    <div class="header-title">All Assets</div>
+                    <div class="header-subtitle">View all assets</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #ccfbf1;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #cffafe;"></div></div>
+                </div>
+            </div>
+
+            <!-- Users -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #e0e7ff, #dbeafe);">
+                <div class="icon-box">👥</div>
+                <div class="header-content">
+                    <div class="header-title">Users</div>
+                    <div class="header-subtitle">Manage user accounts</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #e0e7ff;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #dbeafe;"></div></div>
+                </div>
+            </div>
+
+            <!-- Offices -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #cffafe, #e0f2fe);">
+                <div class="icon-box">🏢</div>
+                <div class="header-content">
+                    <div class="header-title">Offices</div>
+                    <div class="header-subtitle">Manage office locations</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #cffafe;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #e0f2fe;"></div></div>
+                </div>
+            </div>
+
+            <!-- Delete Requests -->
+            <div class="gradient-header" style="background: linear-gradient(to right, #ffe4e6, #fee2e2);">
+                <div class="icon-box">🗑️</div>
+                <div class="header-content">
+                    <div class="header-title">Delete Requests</div>
+                    <div class="header-subtitle">Manage deletion requests</div>
+                </div>
+                <div class="color-info">
+                    <div class="color-sample">From: <div class="color-dot" style="background: #ffe4e6;"></div></div>
+                    <div class="color-sample">To: <div class="color-dot" style="background: #fee2e2;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; padding: 1.5rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 0.75rem;">
+            <h2 style="color: #065f46; margin-bottom: 0.5rem;">✓ Fix Applied</h2>
+            <p style="color: #047857; font-size: 0.9rem;">
+                The PageHeader component now uses inline CSS gradients instead of dynamic Tailwind classes.
+                All colorful gradient headers should be visible on their respective pages.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

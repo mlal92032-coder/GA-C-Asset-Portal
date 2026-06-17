@@ -67,8 +67,8 @@ export default function PageHeader({
   };
 
   return (
-    <div className="mb-8">
-      <div className="p-6 rounded-2xl shadow-sm border border-slate-200/60" style={gradientStyle}>
+    <div className="mb-6 sm:mb-8">
+      <div className="p-4 sm:p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-200/60" style={gradientStyle}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-start gap-4 mb-2">
