@@ -31,6 +31,7 @@ export default function ManufacturersPage() {
         gradientFrom="from-pink-100"
         gradientTo="to-rose-100"
         iconColor="text-pink-600"
+        modalHeaderGradient="from-pink-600 to-rose-600"
       />
       </div>
     </DashboardLayout>

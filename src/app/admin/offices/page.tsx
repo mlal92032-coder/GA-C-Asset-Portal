@@ -32,6 +32,7 @@ export default function OfficesPage() {
         gradientTo="to-sky-100"
         iconColor="text-cyan-600"
         badgeLabel="Administration"
+        modalHeaderGradient="from-cyan-600 to-sky-600"
       />
       </div>
     </DashboardLayout>

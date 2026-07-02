@@ -45,6 +45,7 @@ export default function FormSelect({
           aria-required={required}
           aria-invalid={!!error}
           aria-describedby={error ? `${name}-error` : undefined}
+          autoComplete="off"
           {...selectProps}
           {...rest}
         >

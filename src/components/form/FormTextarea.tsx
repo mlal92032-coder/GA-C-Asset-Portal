@@ -39,6 +39,7 @@ export default function FormTextarea({
         aria-required={required}
         aria-invalid={!!error}
         aria-describedby={error ? `${name}-error` : undefined}
+        autoComplete="off"
         {...textareaProps}
         {...rest}
       />

@@ -48,6 +48,7 @@ export default function LocationsPage() {
         gradientTo="to-emerald-100"
         iconColor="text-green-600"
         badgeLabel="Administration"
+        modalHeaderGradient="from-green-600 to-emerald-600"
       />
       </div>
     </DashboardLayout>

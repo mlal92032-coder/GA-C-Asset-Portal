@@ -152,8 +152,8 @@ export default function BulkImportExport({ assetType, onImportSuccess }: BulkImp
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal w-full max-w-2xl relative mx-auto">
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal w-full max-w-2xl relative mx-auto" onClick={(e) => e.stopPropagation()}>
             {/* Loading overlay */}
             {(importing || exporting) && (
               <div className="import-export-loading">

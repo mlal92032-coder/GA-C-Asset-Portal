@@ -47,6 +47,7 @@ export default function FormInput({
           aria-required={required}
           aria-invalid={!!error}
           aria-describedby={error ? `${name}-error` : undefined}
+          autoComplete={type === 'password' ? 'new-password' : 'off'}
           {...inputProps}
           {...rest}
         />

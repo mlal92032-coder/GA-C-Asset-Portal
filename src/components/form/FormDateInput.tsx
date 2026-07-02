@@ -44,6 +44,7 @@ export default function FormDateInput({
           aria-required={required}
           aria-invalid={!!error}
           aria-describedby={error ? `${name}-error` : undefined}
+          autoComplete="off"
           {...inputProps}
           {...rest}
         />

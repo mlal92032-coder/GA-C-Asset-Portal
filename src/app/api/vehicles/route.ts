@@ -12,6 +12,7 @@ const vehicleSchema = z.object({
   model: z.union([z.string(), z.null(), z.undefined()]).optional(),
   registrationNumber: z.string().min(1, 'Registration number is required'),
   engineNumber: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  chassisNumber: z.union([z.string(), z.null(), z.undefined()]).optional(),
   fuelType: z.union([z.string(), z.null(), z.undefined()]).optional(),
   purchaseDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   companyId: z.union([z.string(), z.null(), z.undefined()]).optional(),
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
     const where: {
       OR?: Array<{ assetName?: { contains: string } } | { brand?: { contains: string } } | { model?: { contains: string } } | { registrationNumber?: { contains: string } }>;
       condition?: 'GOOD' | 'REPAIR' | 'DAMAGED';
-      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
       locationId?: string;
       companyId?: string;
     } = {};

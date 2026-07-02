@@ -111,8 +111,10 @@ export interface VehicleAsset {
   model?: string | null;
   registrationNumber: string;
   engineNumber?: string | null;
+  chassisNumber?: string | null;
   fuelType?: string | null;
   purchaseDate?: string | null;
+  purchasePrice?: number | null;
   companyId?: string | null;
   manufacturerId?: string | null;
   locationId?: string | null;
@@ -122,6 +124,9 @@ export interface VehicleAsset {
   lastServiceDate?: string | null;
   insuranceExpiryDate?: string | null;
   remarks?: string | null;
+  usefulLifeYears?: number | null;
+  salvageValue?: number | null;
+  depreciationMethod?: string | null;
   createdAt: string;
   updatedAt: string;
   company?: Company | null;
@@ -268,6 +273,7 @@ export interface VehicleFormData {
   model?: string;
   registrationNumber: string;
   engineNumber?: string;
+  chassisNumber?: string;
   fuelType?: string;
   purchaseDate?: string;
   companyId?: string;
@@ -282,4 +288,30 @@ export interface VehicleFormData {
   salvageValue?: number;
   depreciationMethod?: string;
   remarks?: string;
+}
+
+export interface Maintenance {
+  id: string;
+  assetId: string;
+  assetType: 'FURNITURE' | 'ELECTRONIC' | 'VEHICLE';
+  maintenanceDate: string;
+  description: string;
+  cost?: number | null;
+  performedBy?: string | null;
+  nextDueDate?: string | null;
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  userId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MaintenanceFormData {
+  assetId: string;
+  assetType: 'FURNITURE' | 'ELECTRONIC' | 'VEHICLE';
+  maintenanceDate: string;
+  description: string;
+  cost?: number | null;
+  performedBy?: string | null;
+  nextDueDate?: string | null;
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 }

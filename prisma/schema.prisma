@@ -209,8 +209,10 @@ model VehicleAsset {
   model               String?
   registrationNumber  String      @unique @map("registration_number")
   engineNumber        String?     @map("engine_number")
+  chassisNumber       String?     @map("chassis_number")
   fuelType            String?     @map("fuel_type")
   purchaseDate        DateTime?   @map("purchase_date")
+  purchasePrice       Float?      @map("purchase_price")
   companyId           String?     @map("company_id")
   manufacturerId      String?     @map("manufacturer_id")
   locationId          String?     @map("location_id")
@@ -230,6 +232,7 @@ model VehicleAsset {
   manufacturer        Manufacturer? @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
   location            Location?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
   assignedUser        User?       @relation("AssignedUserVehicle", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  spareParts          SparePart[] @relation()
 
   @@index([companyId])
   @@index([manufacturerId])
@@ -346,6 +349,11 @@ model Maintenance {
   performedBy     String?  @map("performed_by")
   nextDueDate     DateTime? @map("next_due_date")
   status          MaintenanceStatus @default(SCHEDULED)
+  odometerReading Int?     @map("odometer_reading") // For vehicles
+  workType        String?  @map("work_type") // Oil Change, Repair, Service, Inspection, etc.
+  vendorName      String?  @map("vendor_name")
+  paymentMethod   String?  @map("payment_method") // Cash, Bank Transfer, Card
+  remarks         String?
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -357,6 +365,27 @@ model Maintenance {
   @@index([status])
   @@index([userId])
   @@map("maintenances")
+}
+
+model SparePart {
+  id              String   @id @default(cuid())
+  partDate        DateTime @default(now()) @map("part_date")
+  partName        String   @map("part_name")
+  quantity        Int
+  unitPrice       Float    @map("unit_price") // Price in PKR
+  totalCost       Float    @map("total_cost") // Auto-calculated: quantity × unitPrice
+  supplierName    String   @map("supplier_name")
+  vehicleId       String?  @map("vehicle_id") // Optional: linked to specific vehicle
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  vehicle         VehicleAsset? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@index([partDate])
+  @@index([vehicleId])
+  @@index([createdAt])
+  @@map("spare_parts")
 }
 
 enum MaintenanceStatus {

@@ -33,7 +33,6 @@ export default function ModernFurnitureModal({
     assetTag: '',
     furnitureType: '',
     material: '',
-    dimensions: '',
     purchaseDate: '',
     purchasePrice: '',
     companyId: '',
@@ -45,6 +44,7 @@ export default function ModernFurnitureModal({
     remarks: '',
     usefulLifeYears: '10',
     salvageValue: '',
+    depreciationMethod: '',
     imageUrl: '',
   });
 
@@ -60,7 +60,6 @@ export default function ModernFurnitureModal({
         assetTag: editingAsset.assetTag || '',
         furnitureType: editingAsset.furnitureType || '',
         material: editingAsset.material || '',
-        dimensions: editingAsset.dimensions || '',
         purchaseDate: editingAsset.purchaseDate?.split('T')[0] || '',
         purchasePrice: editingAsset.purchasePrice?.toString() || '',
         companyId: editingAsset.companyId || '',
@@ -72,6 +71,7 @@ export default function ModernFurnitureModal({
         remarks: editingAsset.remarks || '',
         usefulLifeYears: editingAsset.usefulLifeYears?.toString() || '10',
         salvageValue: editingAsset.salvageValue?.toString() || '',
+        depreciationMethod: editingAsset.depreciationMethod || '',
         imageUrl: editingAsset.imageUrl || '',
       });
       if (editingAsset.imageUrl) {
@@ -88,7 +88,6 @@ export default function ModernFurnitureModal({
       assetTag: '',
       furnitureType: '',
       material: '',
-      dimensions: '',
       purchaseDate: '',
       purchasePrice: '',
       companyId: '',
@@ -100,6 +99,7 @@ export default function ModernFurnitureModal({
       remarks: '',
       usefulLifeYears: '10',
       salvageValue: '',
+      depreciationMethod: '',
       imageUrl: '',
     });
     setImagePreview(null);
@@ -141,7 +141,7 @@ export default function ModernFurnitureModal({
     <div className="modal-overlay" onClick={onClose}>
       <div
         ref={modalRef}
-        className="modal w-full max-w-2xl mx-auto"
+        className="modal w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -173,9 +173,8 @@ export default function ModernFurnitureModal({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="modal-body space-y-5 overflow-y-auto">
           {/* Asset Tag */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -265,17 +264,6 @@ export default function ModernFurnitureModal({
                 onChange={(e) => handleChange('material', e.target.value)}
                 className="w-full"
                 placeholder="e.g., Wood, Metal, Plastic"
-                disabled={saving}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dimensions</label>
-              <input
-                type="text"
-                value={formData.dimensions}
-                onChange={(e) => handleChange('dimensions', e.target.value)}
-                className="w-full"
-                placeholder="e.g., 120cm x 60cm x 75cm"
                 disabled={saving}
               />
             </div>
@@ -428,6 +416,7 @@ export default function ModernFurnitureModal({
                 <option value="IN_STORE">In Store</option>
                 <option value="IN_USE">In Use</option>
                 <option value="DISPOSED">Disposed</option>
+                <option value="AUCTION">Auction</option>
               </select>
             </div>
           </div>
@@ -462,6 +451,21 @@ export default function ModernFurnitureModal({
                   className="text-sm w-full"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Depreciation Method</label>
+                <select
+                  value={formData.depreciationMethod}
+                  onChange={(e) => handleChange('depreciationMethod', e.target.value)}
+                  disabled={saving}
+                  className="text-sm w-full"
+                >
+                  <option value="">Select method</option>
+                  <option value="STRAIGHT_LINE">Straight Line</option>
+                  <option value="DECLINING_BALANCE">Declining Balance</option>
+                  <option value="UNITS_OF_PRODUCTION">Units of Production</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -477,36 +481,35 @@ export default function ModernFurnitureModal({
             />
           </div>
           </div>
-          </div>
 
-          <div className="modal-footer">
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={saving}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="btn btn-primary"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {editingAsset ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  <>
-                    {editingAsset ? 'Update Furniture' : 'Create Furniture'}
-                  </>
-                )}
-              </button>
-            </div>
+        <div className="modal-footer">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn btn-primary"
+            >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {editingAsset ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              <>
+                {editingAsset ? 'Update Furniture' : 'Create Furniture'}
+              </>
+            )}
+            </button>
           </div>
+        </div>
         </form>
       </div>
     </div>

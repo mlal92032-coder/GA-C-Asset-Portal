@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Plus, Edit, Trash2, Eye, Loader2, LucideIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Loader2, LucideIcon, X } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 
 export interface FormField {
@@ -32,6 +32,7 @@ interface CrudPageProps {
   gradientTo?: string;
   iconColor?: string;
   badgeLabel?: string;
+  modalHeaderGradient?: string;
 }
 
 export default function CrudPage({
@@ -46,6 +47,7 @@ export default function CrudPage({
   gradientTo = 'to-indigo-100',
   iconColor = 'text-blue-600',
   badgeLabel = 'Administration',
+  modalHeaderGradient = 'from-blue-600 to-indigo-600',
 }: CrudPageProps) {
   const { data: session } = useSession();
   const canAddEditDelete = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'USER';
@@ -259,56 +261,68 @@ export default function CrudPage({
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={resetForm}>
-          <div className="modal w-full max-w-2xl mx-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {editingItem ? `Edit ${title.slice(0, -1)}` : `Create ${title.slice(0, -1)}`}
-              </h2>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {formFields.map((field) => (
-                <div key={field.key} className={field.colSpan === 2 ? '' : ''}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {field.label} {field.required && '*'}
-                  </label>
-                  {field.type === 'textarea' ? (
-                    <textarea
-                      value={formData[field.key] || ''}
-                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                      required={field.required}
-                      placeholder={field.placeholder}
-                      rows={3}
-                    />
-                  ) : field.type === 'select' ? (
-                    <select
-                      value={formData[field.key] || ''}
-                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                      required={field.required}
-                    >
-                      {field.options?.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={field.type}
-                      value={formData[field.key] || ''}
-                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                      required={field.required}
-                      placeholder={field.placeholder}
-                    />
-                  )}
+          <div className="modal w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className={`sticky top-0 z-10 bg-gradient-to-r ${modalHeaderGradient} text-white px-6 py-4 rounded-t-lg`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">
+                    {editingItem ? `Edit ${title.slice(0, -1)}` : `Create ${title.slice(0, -1)}`}
+                  </h2>
                 </div>
-              ))}
-              <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={resetForm} className="btn btn-secondary">
-                  Cancel
+                <button onClick={resetForm} disabled={saving} className="text-white/70 hover:text-white transition-colors p-1">
+                  <X className="w-5 h-5" />
                 </button>
-                <button type="submit" disabled={saving} className="btn btn-primary">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingItem ? 'Update' : 'Create'}
-                </button>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="modal-body space-y-5 overflow-y-auto">
+                {formFields.map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {field.label} {field.required && <span className="text-red-600">*</span>}
+                    </label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        value={formData[field.key] || ''}
+                        onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                        required={field.required}
+                        placeholder={field.placeholder}
+                        rows={3}
+                      />
+                    ) : field.type === 'select' ? (
+                      <select
+                        value={formData[field.key] || ''}
+                        onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                        required={field.required}
+                      >
+                        <option value="">Select {field.label.toLowerCase()}</option>
+                        {field.options?.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        value={formData[field.key] || ''}
+                        onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                        required={field.required}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="modal-footer">
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={resetForm} className="btn btn-secondary">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={saving} className="btn btn-primary">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingItem ? 'Update' : 'Create'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -318,16 +332,16 @@ export default function CrudPage({
       {/* View Modal */}
       {viewingItem && (
         <div className="modal-overlay" onClick={() => setViewingItem(null)}>
-          <div className="modal w-full max-w-2xl mx-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {title.slice(0, -1)} Details
-              </h2>
-              <button onClick={() => setViewingItem(null)} className="text-gray-400 hover:text-gray-600 text-2xl">
-                &times;
-              </button>
+          <div className="modal w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className={`sticky top-0 z-10 bg-gradient-to-r ${modalHeaderGradient} text-white px-6 py-4 rounded-t-lg`}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">{title.slice(0, -1)} Details</h2>
+                <button onClick={() => setViewingItem(null)} className="text-white/70 hover:text-white transition-colors p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="modal-body space-y-4">
               {formFields.map((field) => (
                 <div key={field.key}>
                   <p className="text-sm text-gray-500">{field.label}</p>

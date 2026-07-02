@@ -11,6 +11,7 @@ const vehicleSchema = z.object({
   model: z.union([z.string(), z.null(), z.undefined()]).optional(),
   registrationNumber: z.union([z.string().min(1, 'Registration number is required'), z.undefined()]).optional(),
   engineNumber: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  chassisNumber: z.union([z.string(), z.null(), z.undefined()]).optional(),
   fuelType: z.union([z.string(), z.null(), z.undefined()]).optional(),
   purchaseDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   companyId: z.union([z.string(), z.null(), z.undefined()]).optional(),
@@ -95,6 +96,7 @@ export async function PUT(
       model?: string | null;
       registrationNumber?: string;
       engineNumber?: string | null;
+      chassisNumber?: string | null;
       fuelType?: string | null;
       purchaseDate?: Date | null;
       companyId?: string | null;
@@ -114,6 +116,7 @@ export async function PUT(
     if (validatedData.model !== undefined) updateData.model = validatedData.model;
     if (validatedData.registrationNumber !== undefined) updateData.registrationNumber = validatedData.registrationNumber;
     if (validatedData.engineNumber !== undefined) updateData.engineNumber = validatedData.engineNumber;
+    if (validatedData.chassisNumber !== undefined) updateData.chassisNumber = validatedData.chassisNumber;
     if (validatedData.fuelType !== undefined) updateData.fuelType = validatedData.fuelType;
     if (validatedData.purchaseDate !== undefined) updateData.purchaseDate = validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null;
     if (validatedData.companyId !== undefined) updateData.companyId = validatedData.companyId;

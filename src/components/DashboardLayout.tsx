@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import GlobalSearch from '@/components/GlobalSearch';
-import NotificationBell from '@/components/NotificationBell';
 import Sidebar from '@/components/Sidebar';
-import { Menu, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -32,7 +30,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex flex-col relative overflow-hidden">
+      {/* Background layers for professional look */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-blue-500/8 to-indigo-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-to-tl from-indigo-500/5 to-blue-500/8 rounded-full blur-3xl" />
+      </div>
+
+      {/* Main Layout with Sidebar and Content */}
+      <div className="flex flex-1 overflow-hidden relative">
       {/* Mobile backdrop */}
       <AnimatePresence>
         {mobileOpen && (
@@ -44,10 +50,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block h-screen sticky top-0 flex-shrink-0">
-        <Sidebar onClose={() => {}} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
-      </div>
+      {/* Desktop sidebar - LEFT SIDE, FIXED */}
+      <motion.div
+        animate={{ width: collapsed ? 72 : 260 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="hidden lg:flex lg:flex-shrink-0 lg:z-30"
+      >
+        <Sidebar onClose={() => {}} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} setMobileOpen={setMobileOpen} />
+      </motion.div>
 
       {/* Mobile sidebar */}
       <AnimatePresence>
@@ -57,45 +67,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="fixed top-0 left-0 h-full z-50 lg:hidden"
           >
-            <Sidebar onClose={() => setMobileOpen(false)} collapsed={false} onToggleCollapse={() => {}} />
+            <Sidebar onClose={() => setMobileOpen(false)} collapsed={false} onToggleCollapse={() => {}} setMobileOpen={setMobileOpen} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 flex items-center px-4 sm:px-6 gap-3 overflow-visible">
+      {/* RIGHT SIDE - Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+        {/* Mobile Header Bar */}
+        <header className="sticky top-0 z-20 h-16 bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/40 border-b border-slate-200/60 flex items-center px-4 sm:px-6 gap-3 overflow-visible shadow-md backdrop-blur-sm relative lg:hidden">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button onClick={() => setMobileOpen(true)} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors rounded-lg lg:hidden" aria-label="Open navigation menu">
+            <button onClick={() => setMobileOpen(true)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg" aria-label="Open navigation menu">
               <Menu className="w-5 h-5" />
-            </button>
-            <button onClick={() => setCollapsed(!collapsed)} className="hidden lg:flex p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors rounded-lg" title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-              {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
-            </button>
-            <div className="flex-1 min-w-0 max-w-md lg:max-w-xl">
-              <GlobalSearch />
-            </div>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <NotificationBell />
-            <div className="hidden sm:block w-px h-5 bg-slate-200 mx-2" />
-            <div className="hidden sm:flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-xs font-bold text-white rounded-lg">
-                {getInitials(session?.user?.name)}
-              </div>
-              <div className="min-w-0 hidden md:block">
-                <p className="text-sm font-medium text-slate-700 truncate max-w-[120px]">{session?.user?.name || 'User'}</p>
-                <p className="text-[11px] text-slate-400 truncate max-w-[120px]">{session?.user?.role || ''}</p>
-              </div>
-            </div>
-            <button onClick={() => signOut({ callbackUrl: '/' })} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-lg" title="Sign Out">
-              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">{children}</main>
+      </div>
       </div>
     </div>
   );

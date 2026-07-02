@@ -145,7 +145,7 @@ export default function ModernElectronicsModal({
     <div className="modal-overlay" onClick={onClose}>
       <div
         ref={modalRef}
-        className="modal w-full max-w-2xl mx-auto"
+        className="modal w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -178,7 +178,8 @@ export default function ModernElectronicsModal({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="modal-body space-y-5 overflow-y-auto">
           {/* Asset Details Section */}
           <div className="mb-6">
             <h3 className="form-section-heading text-lg font-semibold text-slate-700">
@@ -505,6 +506,7 @@ export default function ModernElectronicsModal({
                   <option value="IN_STORE">In Store</option>
                   <option value="IN_USE">In Use</option>
                   <option value="DISPOSED">Disposed</option>
+                  <option value="AUCTION">Auction</option>
                 </select>
               </div>
 
@@ -534,23 +536,24 @@ export default function ModernElectronicsModal({
               </div>
             </div>
           </div>
-        </form>
+          </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 z-10 bg-slate-50 px-6 py-4 border-t border-slate-200 rounded-b-lg flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="btn btn-secondary"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="btn btn-primary"
-          >
+        <div className="modal-footer">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn btn-primary"
+            >
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -562,8 +565,10 @@ export default function ModernElectronicsModal({
                 {editingAsset ? 'Update Asset' : 'Create Asset'}
               </>
             )}
-          </button>
+            </button>
+          </div>
         </div>
+        </form>
       </div>
     </div>
   );

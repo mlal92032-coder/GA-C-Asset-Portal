@@ -263,6 +263,8 @@ export default function GlobalSearch() {
           placeholder="Search assets, offices, locations..."
           className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all hover:border-slate-300"
           onKeyDown={handleKeyDown}
+          autoComplete="off"
+          spellCheck="false"
         />
         {loading && (
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400 animate-spin z-10" />

@@ -17,8 +17,9 @@ import { uploadImage, resolveImageUrl, buildImageUrl } from '@/lib/image-upload'
 import type { VehicleAsset, Company, Manufacturer, Location, User, VehicleFormData } from '@/types';
 import {
   Plus, Edit, Trash2, Eye, Loader2, Filter, X, AlertTriangle,
-  QrCode, Download, ArrowUpCircle, ArrowDownCircle, Car, Paperclip, DollarSign,
+  QrCode, Download, ArrowUpCircle, ArrowDownCircle, Car, Paperclip, DollarSign, Wrench,
 } from 'lucide-react';
+import Link from 'next/link';
 import { isBefore } from 'date-fns';
 
 export default function VehiclesPage() {
@@ -54,7 +55,7 @@ export default function VehiclesPage() {
 
   const [formData, setFormData] = useState<VehicleFormData>({
     assetName: '', assetTag: '', vehicleType: '', brand: '', model: '', registrationNumber: '',
-    engineNumber: '', fuelType: '', purchaseDate: '', companyId: '', manufacturerId: '',
+    engineNumber: '', chassisNumber: '', fuelType: '', purchaseDate: '', companyId: '', manufacturerId: '',
     locationId: '', assignedUserId: '', condition: 'GOOD', status: 'IN_STORE',
     lastServiceDate: '', insuranceExpiryDate: '', remarks: '',
   });
@@ -317,6 +318,7 @@ export default function VehiclesPage() {
         model: formData.model || null,
         registrationNumber: formData.registrationNumber || null,
         engineNumber: formData.engineNumber || null,
+        chassisNumber: formData.chassisNumber || null,
         fuelType: formData.fuelType || null,
         purchaseDate: formData.purchaseDate || null,
         companyId: formData.companyId || null,
@@ -400,6 +402,7 @@ export default function VehiclesPage() {
       model: asset.model || '',
       registrationNumber: asset.registrationNumber,
       engineNumber: asset.engineNumber || '',
+      chassisNumber: asset.chassisNumber || '',
       fuelType: asset.fuelType || '',
       purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
       companyId: asset.companyId || '',
@@ -426,6 +429,7 @@ export default function VehiclesPage() {
       model: '',
       registrationNumber: '',
       engineNumber: '',
+      chassisNumber: '',
       fuelType: '',
       purchaseDate: '',
       companyId: '',
@@ -523,7 +527,7 @@ export default function VehiclesPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {toast && (<div className={`toast toast-${toast.type}`}>{toast.message}</div>)}
 
       <PageHeader
@@ -537,6 +541,15 @@ export default function VehiclesPage() {
         actions={
           <>
             {canAddEditDelete && <BulkImportExport assetType="VEHICLE" onImportSuccess={fetchAll} />}
+            <Link href="/assets/vehicles/maintenance">
+              <Button
+                variant="secondary"
+                icon={<Wrench className="w-4 h-4" />}
+              >
+                <span className="hidden sm:inline">Maintenance Hub</span>
+                <span className="sm:hidden">Hub</span>
+              </Button>
+            </Link>
             <Button
               onClick={openCreate}
               disabled={!canAddEditDelete}
@@ -709,6 +722,7 @@ export default function VehiclesPage() {
         />
       </div>
 
+
       {/* Create/Edit Modal */}
       <ModernVehiclesModal
         isOpen={showModal}
@@ -771,6 +785,7 @@ export default function VehiclesPage() {
                 <div><p className="text-sm text-gray-500">Model</p><p className="font-medium">{viewingAsset.model || '-'}</p></div>
                 <div><p className="text-sm text-gray-500">Registration</p><p className="font-medium">{viewingAsset.registrationNumber}</p></div>
                 <div><p className="text-sm text-gray-500">Engine Number</p><p className="font-medium">{viewingAsset.engineNumber || '-'}</p></div>
+                <div><p className="text-sm text-gray-500">Chassis Number</p><p className="font-medium">{viewingAsset.chassisNumber || '-'}</p></div>
                 <div><p className="text-sm text-gray-500">Fuel Type</p><p className="font-medium">{viewingAsset.fuelType || '-'}</p></div>
                 <div><p className="text-sm text-gray-500">Insurance Expiry</p><p className="font-medium">
                   {viewingAsset.insuranceExpiryDate

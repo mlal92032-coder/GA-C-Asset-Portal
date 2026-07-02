@@ -1,42 +1,25 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
-import { Button } from '@/components/Button';
+import NotificationBell from '@/components/NotificationBell';
 import {
-  Package,
-  Armchair,
-  Monitor,
-  Car,
-  MapPin,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Plus,
-  BarChart3,
-  ArrowUpRight,
-  Clock,
+  Package, Armchair, Monitor, Car, AlertTriangle, CheckCircle, XCircle,
+  Plus, BarChart3, ArrowUpRight, X, MapPin, TrendingUp, Clock
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 
-// Simple stat bar component (no external chart lib needed)
-function StatBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div className="flex items-center justify-between p-3">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <span className="text-sm font-medium text-slate-600 truncate">{label}</span>
-        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
-          <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-      <span className="text-lg font-bold text-slate-800 ml-3">{value}</span>
-    </div>
-  );
+interface Asset {
+  id: string;
+  name: string;
+  type: 'FURNITURE' | 'ELECTRONIC' | 'VEHICLE';
+  date: string;
+  assetTag?: string;
+  condition?: string;
+  status?: string;
 }
 
 interface DashboardData {
@@ -45,782 +28,530 @@ interface DashboardData {
   electronicCount: number;
   vehicleCount: number;
   conditionBreakdown: { good: number; repair: number; damaged: number };
-  statusBreakdown: { inUse: number; inStore: number; disposed: number };
+  statusBreakdown: { inUse: number; inStore: number; disposed: number; auction?: number };
   assetsByLocation: { locationName: string; count: number }[];
   assetsByCompany: { companyName: string; count: number }[];
-  recentAssets: { id: string; name: string; type: string; date: string; assetTag?: string; condition?: string; status?: string }[];
-  sampleAssetTags: {
-    furniture: { assetTag: string; assetName: string }[];
-    electronic: { assetTag: string; assetName: string }[];
-    vehicle: { assetTag: string; assetName: string }[];
-  };
+  recentAssets: Asset[];
+  sampleAssetTags: { furniture: Array<{ assetTag: string; assetName: string }>; electronic: Array<{ assetTag: string; assetName: string }>; vehicle: Array<{ assetTag: string; assetName: string }> };
 }
 
-const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
-const STATUS_COLORS = ['#3b82f6', '#10b981', '#64748b'];
-
-// Animated counter component
-function AnimatedCounter({ target, duration = 800 }: { target: number; duration?: number }) {
-  const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (hasAnimated) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-          let startTime: number;
-          const startValue = 0;
-
-          const animate = (currentTime: number) => {
-            if (!startTime) startTime = currentTime;
-            const progress = Math.min((currentTime - startTime) / duration, 1);
-            // Ease out cubic
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(easedProgress * (target - startValue) + startValue));
-
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            }
-          };
-
-          requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, [target, duration, hasAnimated]);
-
-  return <span ref={ref} className="stat-number">{count.toLocaleString()}</span>;
-}
-
-// Custom Donut Chart component (bypasses Recharts 3.x Cell deprecation)
-function DonutChart({ data, colors }: { data: { name: string; value: number; fill?: string }[]; colors: string[] }) {
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const radius = 80;
+// Beautiful Donut Chart with Left Legend
+function DonutChart({
+  data,
+  onSegmentClick,
+  selectedSegment,
+  title,
+  colors
+}: {
+  data: Array<{ name: string; value: number; fill?: string }>;
+  onSegmentClick?: (name: string) => void;
+  selectedSegment?: string | null;
+  title: string;
+  colors: string[];
+}) {
+  const total = data.reduce((sum, item) => sum + item.value, 0) || 0;
+  const radius = 70;
   const circumference = 2 * Math.PI * radius;
-  const size = 220;
+  const size = 280;
   const center = size / 2;
 
   let offset = 0;
 
-  return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {data.map((item, i) => {
-          if (item.value <= 0) return null;
-          const pct = item.value / total;
-          const dash = circumference * pct;
-          const gap = circumference - dash;
-          const color = item.fill || colors[i] || '#64748b';
-          const startOffset = -offset;
-          offset += dash;
+  if (total === 0) {
+    return (
+      <motion.div
+        className="card p-8 bg-gradient-to-br from-slate-50 to-slate-100"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h3 className="font-bold text-lg text-slate-700 mb-6">{title}</h3>
+        <div className="flex items-center justify-center h-40">
+          <p className="text-slate-400">No data available</p>
+        </div>
+      </motion.div>
+    );
+  }
 
-          return (
-            <circle
-              key={i}
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={color}
-              strokeWidth="36"
-              strokeDasharray={`${dash} ${gap}`}
-              strokeDashoffset={startOffset}
-              style={{ transition: 'stroke-dasharray 0.5s ease' }}
-            />
-          );
-        })}
-        {/* Center text */}
-        <text x={center} y={center - 6} textAnchor="middle" className="text-2xl font-bold" fill="#1e293b">
-          {total}
-        </text>
-        <text x={center} y={center + 16} textAnchor="middle" className="text-xs" fill="#64748b">
-          Total
-        </text>
-      </svg>
-      {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-3 mt-3">
-        {data.map((item, i) => {
-          const color = item.fill || colors[i] || '#64748b';
-          return (
-            <div key={i} className="flex items-center gap-1.5 text-xs text-slate-600">
-              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              <span>{item.name}</span>
-              <span className="font-semibold text-slate-800">{item.value}</span>
-            </div>
-          );
-        })}
+  return (
+    <motion.div
+      className="card p-8 bg-gradient-to-br from-slate-50 to-slate-100 shadow-lg hover:shadow-xl transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h3 className="font-bold text-lg text-slate-800 mb-6">{title}</h3>
+      <div className="flex gap-8 items-center">
+        {/* Left Legend */}
+        <div className="w-40 flex flex-col gap-3">
+          {data.map((item, idx) => (
+            <motion.div
+              key={item.name}
+              onClick={() => onSegmentClick?.(item.name)}
+              whileHover={{ scale: 1.05 }}
+              className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                selectedSegment === item.name
+                  ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
+              }`}
+            >
+              <div
+                className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
+                style={{ backgroundColor: item.fill || colors[idx] || '#64748b' }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium truncate`}>{item.name}</p>
+                <p className={`text-xs ${selectedSegment === item.name ? 'text-blue-100' : 'text-slate-500'}`}>
+                  {item.value}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Center Donut Chart */}
+        <div className="flex-1 flex flex-col items-center">
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="w-48 h-48">
+            <defs>
+              <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2" />
+              </filter>
+            </defs>
+            {data.map((item, i) => {
+              if (item.value <= 0) return null;
+              const pct = item.value / total;
+              const dash = circumference * pct;
+              const gap = circumference - dash;
+              const color = item.fill || colors[i] || '#64748b';
+              const startOffset = -offset;
+              offset += dash;
+              const isSelected = selectedSegment === item.name;
+
+              return (
+                <motion.circle
+                  key={`${item.name}-${i}`}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={isSelected ? 28 : 20}
+                  strokeDasharray={`${dash} ${gap}`}
+                  strokeDashoffset={startOffset}
+                  filter="url(#shadow)"
+                  style={{
+                    cursor: 'pointer',
+                    transition: 'stroke-width 0.2s ease'
+                  }}
+                  animate={{ strokeWidth: isSelected ? 28 : 20 }}
+                  onClick={() => onSegmentClick?.(item.name)}
+                  whileHover={{ opacity: 1 }}
+                />
+              );
+            })}
+            {/* Center Circle */}
+            <circle cx={center} cy={center} r={45} fill="white" filter="url(#shadow)" />
+            <text
+              x={center}
+              y={center - 8}
+              textAnchor="middle"
+              className="text-3xl font-bold"
+              fill="#1e293b"
+            >
+              {total}
+            </text>
+            <text
+              x={center}
+              y={center + 16}
+              textAnchor="middle"
+              className="text-xs"
+              fill="#64748b"
+            >
+              Total
+            </text>
+          </svg>
+        </div>
       </div>
-    </div>
-  );
-}
-
-// Condition badge component
-function ConditionBadge({ condition }: { condition: string }) {
-  const config: Record<string, { className: string; icon: any }> = {
-    GOOD: { className: 'badge-success', icon: CheckCircle },
-    REPAIR: { className: 'badge-warning', icon: AlertTriangle },
-    DAMAGED: { className: 'badge-danger', icon: XCircle },
-  };
-
-  const { className, icon: Icon } = config[condition] || { className: 'badge-secondary', icon: Package };
-
-  return (
-    <span className={`badge ${className}`}>
-      <Icon className="w-3 h-3" />
-      {condition.charAt(0) + condition.slice(1).toLowerCase()}
-    </span>
-  );
-}
-
-// Status badge component
-function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { className: string; icon: any }> = {
-    IN_USE: { className: 'badge-blue', icon: TrendingUp },
-    IN_STORE: { className: 'badge-success', icon: Package },
-    DISPOSED: { className: 'badge-secondary', icon: XCircle },
-  };
-
-  const { className, icon: Icon } = config[status] || { className: 'badge-secondary', icon: Package };
-
-  return (
-    <span className={`badge ${className}`}>
-      <Icon className="w-3 h-3" />
-      {status.replace('_', ' ').charAt(0) + status.slice(1).toLowerCase().replace('_', ' ')}
-    </span>
+    </motion.div>
   );
 }
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const userRole = (session?.user?.role as string) || '';
-  const userPermissionsJson = (session?.user?.permissions as string) || null;
-  const hasPermission = (module: string) => {
-    if (userRole === 'SUPER_ADMIN') return true;
-    if (userRole === 'VIEW_USER') return true; // can view dashboard
-    if (!userPermissionsJson) return false;
-    try {
-      const perms = JSON.parse(userPermissionsJson);
-      if (Array.isArray(perms)) {
-        // Legacy format: string[]
-        return perms.includes(module);
-      }
-      // New format: { [module]: string[] }
-      const moduleActions = perms[module];
-      return Array.isArray(moduleActions) && moduleActions.includes('view');
-    } catch {
-      return false;
-    }
-  };
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchStats() {
-      setLoading(true);
-      setError(null);
+    async function fetchData() {
       try {
-        const res = await fetch('/api/dashboard/stats', {
-          credentials: 'include',
-        });
+        setLoading(true);
+        const res = await fetch('/api/dashboard/stats', { credentials: 'include' });
         const json = await res.json();
 
-        if (!res.ok || !json.success) {
-          const errorMsg = json.error || `HTTP ${res.status}: ${res.statusText}`;
-          setError(errorMsg);
-          return;
-        }
-
-        setData(json.data);
+        if (!json.success) throw new Error(json.error);
+        setDashboardData(json.data);
+        setError(null);
       } catch (err: any) {
-        setError('Failed to load dashboard. Please refresh the page or log in again.');
+        setError(err.message || 'Failed to load dashboard');
       } finally {
         setLoading(false);
       }
     }
 
-    fetchStats();
+    fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <div className="w-24 h-4 skeleton mb-2" />
-              <div className="w-40 h-8 skeleton mb-2" />
-              <div className="w-56 h-4 skeleton" />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-32 h-10 skeleton rounded-lg" />
-              <div className="w-28 h-10 skeleton rounded-lg" />
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="card p-5 h-40 skeleton" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="card p-6">
-              <div className="w-28 h-4 skeleton mb-2" />
-              <div className="w-40 h-3 skeleton mb-6" />
-              <div className="w-44 h-44 skeleton mx-auto rounded-full" />
-            </div>
-          ))}
-        </div>
-      </DashboardLayout>
-    );
-  }
+  if (loading) return <DashboardLayout><div className="p-8 text-center">Loading...</div></DashboardLayout>;
+  if (error) return <DashboardLayout><div className="p-8 text-center text-red-500">Error: {error}</div></DashboardLayout>;
+  if (!dashboardData) return <DashboardLayout><div className="p-8 text-center">No data</div></DashboardLayout>;
 
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center py-24">
-          <div className="card border-red-500/20 p-10 max-w-md text-center">
-            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
-              <AlertTriangle className="w-8 h-8 text-red-400" />
-            </div>
-            <p className="font-semibold text-xl mb-2 text-slate-800">Unable to load dashboard</p>
-            <p className="text-sm text-slate-600 mb-6">{error}</p>
-            <Button onClick={() => window.location.reload()} variant="primary">
-              Retry
-            </Button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Single filteredAssets array - all charts derive from this
+  const filteredAssets = useMemo(() => {
+    return dashboardData.recentAssets.filter(asset => {
+      // Apply Type filter
+      if (selectedType) {
+        const typeMap: Record<string, string> = { 'Furniture': 'FURNITURE', 'Electronics': 'ELECTRONIC', 'Vehicles': 'VEHICLE' };
+        if (asset.type !== typeMap[selectedType]) return false;
+      }
+      // Apply Condition filter
+      if (selectedCondition && asset.condition !== selectedCondition.toUpperCase()) return false;
+      // Apply Status filter
+      if (selectedStatus) {
+        const statusMap: Record<string, string> = { 'In Use': 'IN_USE', 'In Store': 'IN_STORE', 'Disposed': 'DISPOSED', 'Auction': 'AUCTION' };
+        if (asset.status !== statusMap[selectedStatus]) return false;
+      }
+      return true;
+    });
+  }, [dashboardData.recentAssets, selectedType, selectedCondition, selectedStatus]);
 
-  if (!data) return null;
+  // Calculate counts from filtered assets
+  const typeCount = useMemo(() => {
+    const counts = { FURNITURE: 0, ELECTRONIC: 0, VEHICLE: 0 };
+    filteredAssets.forEach(asset => {
+      if (asset.type === 'FURNITURE') counts.FURNITURE++;
+      else if (asset.type === 'ELECTRONIC') counts.ELECTRONIC++;
+      else if (asset.type === 'VEHICLE') counts.VEHICLE++;
+    });
+    return counts;
+  }, [filteredAssets]);
 
-  // Ensure sampleAssetTags exists (fallback to empty arrays)
-  const sampleAssetTags = data.sampleAssetTags || {
-    furniture: [],
-    electronic: [],
-    vehicle: [],
+  const conditionCount = useMemo(() => {
+    const counts = { good: 0, repair: 0, damaged: 0 };
+    filteredAssets.forEach(asset => {
+      if (asset.condition === 'GOOD') counts.good++;
+      else if (asset.condition === 'REPAIR') counts.repair++;
+      else if (asset.condition === 'DAMAGED') counts.damaged++;
+    });
+    return counts;
+  }, [filteredAssets]);
+
+  const statusCount = useMemo(() => {
+    const counts = { inUse: 0, inStore: 0, disposed: 0, auction: 0 };
+    filteredAssets.forEach(asset => {
+      if (asset.status === 'IN_USE') counts.inUse++;
+      else if (asset.status === 'IN_STORE') counts.inStore++;
+      else if (asset.status === 'DISPOSED') counts.disposed++;
+      else if (asset.status === 'AUCTION') counts.auction++;
+    });
+    return counts;
+  }, [filteredAssets]);
+
+  // Donut chart data - always calculated from filtered assets
+  const typeData = useMemo(() => [
+    { name: 'Furniture', value: typeCount.FURNITURE, fill: '#8b5cf6' },
+    { name: 'Electronics', value: typeCount.ELECTRONIC, fill: '#10b981' },
+    { name: 'Vehicles', value: typeCount.VEHICLE, fill: '#f97316' },
+  ].filter(d => d.value > 0), [typeCount]);
+
+  const conditionData = useMemo(() => [
+    { name: 'Good', value: conditionCount.good, fill: '#10b981' },
+    { name: 'Repair', value: conditionCount.repair, fill: '#f59e0b' },
+    { name: 'Damaged', value: conditionCount.damaged, fill: '#ef4444' },
+  ].filter(d => d.value > 0), [conditionCount]);
+
+  const statusData = useMemo(() => [
+    { name: 'In Use', value: statusCount.inUse, fill: '#3b82f6' },
+    { name: 'In Store', value: statusCount.inStore, fill: '#10b981' },
+    { name: 'Disposed', value: statusCount.disposed, fill: '#64748b' },
+    ...(statusCount.auction > 0 ? [{ name: 'Auction', value: statusCount.auction, fill: '#f97316' }] : []),
+  ].filter(d => d.value > 0), [statusCount]);
+
+  const clearFilters = () => {
+    setSelectedType(null);
+    setSelectedCondition(null);
+    setSelectedStatus(null);
   };
 
-  const conditionData = [
-    { name: 'Good', value: data.conditionBreakdown.good, fill: '#10b981' },
-    { name: 'Repair', value: data.conditionBreakdown.repair, fill: '#f59e0b' },
-    { name: 'Damaged', value: data.conditionBreakdown.damaged, fill: '#ef4444' },
-  ];
-
-  const statusData = [
-    { name: 'In Use', value: data.statusBreakdown.inUse, fill: '#3b82f6' },
-    { name: 'In Store', value: data.statusBreakdown.inStore, fill: '#10b981' },
-    { name: 'Disposed', value: data.statusBreakdown.disposed, fill: '#64748b' },
-  ];
-
-  const typeChartData = [
-    { name: 'Furniture', value: data.furnitureCount, fill: '#8b5cf6' },
-    { name: 'Electronics', value: data.electronicCount, fill: '#10b981' },
-    { name: 'Vehicles', value: data.vehicleCount, fill: '#f97316' },
-  ];
-
-  const locationChartData = data.assetsByLocation.map((loc) => ({
-    name: loc.locationName.length > 20 ? loc.locationName.slice(0, 20) + '...' : loc.locationName,
-    count: loc.count,
-  }));
-
-  // Build stat cards based on permissions
-  const allStatCards = [
-    {
-      title: 'Total Assets',
-      value: data.totalAssets,
-      icon: Package,
-      gradient: 'from-blue-500/10 to-indigo-500/10',
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600',
-      badgeBg: 'bg-blue-100',
-      badgeColor: 'text-blue-700',
-      hoverBorder: 'hover:border-blue-300',
-      percentage: '+12',
-      href: '/assets/all',
-      permission: 'assets_all',
-      sampleTags: [
-        ...sampleAssetTags.furniture.slice(0, 3),
-        ...sampleAssetTags.electronic.slice(0, 2),
-      ],
-    },
-    {
-      title: 'Furniture',
-      value: data.furnitureCount,
-      icon: Armchair,
-      gradient: 'from-purple-500/10 to-pink-500/10',
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600',
-      badgeBg: 'bg-purple-100',
-      badgeColor: 'text-purple-700',
-      hoverBorder: 'hover:border-purple-300',
-      percentage: '+8',
-      href: '/assets/furniture',
-      permission: 'furniture',
-      sampleTags: sampleAssetTags.furniture,
-    },
-    {
-      title: 'Electronics',
-      value: data.electronicCount,
-      icon: Monitor,
-      gradient: 'from-emerald-500/10 to-teal-500/10',
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600',
-      badgeBg: 'bg-emerald-100',
-      badgeColor: 'text-emerald-700',
-      hoverBorder: 'hover:border-emerald-300',
-      percentage: '+15',
-      href: '/assets/electronics',
-      permission: 'electronics',
-      sampleTags: sampleAssetTags.electronic,
-    },
-    {
-      title: 'Vehicles',
-      value: data.vehicleCount,
-      icon: Car,
-      gradient: 'from-orange-500/10 to-amber-500/10',
-      iconBg: 'bg-orange-100',
-      iconColor: 'text-orange-600',
-      badgeBg: 'bg-orange-100',
-      badgeColor: 'text-orange-700',
-      hoverBorder: 'hover:border-orange-300',
-      percentage: '+5',
-      href: '/assets/vehicles',
-      permission: 'vehicles',
-      sampleTags: sampleAssetTags.vehicle,
-    },
-  ];
-
-  // Filter stat cards based on user permissions
-  const statCards = allStatCards.filter(card => hasPermission(card.permission));
-
-  // Type icon mapping for recent assets table
-  const typeIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    FURNITURE: Armchair,
-    ELECTRONIC: Monitor,
-    VEHICLE: Car,
-  };
-
-  const typeBadgeMap: Record<string, string> = {
-    FURNITURE: 'badge-purple',
-    ELECTRONIC: 'badge-blue',
-    VEHICLE: 'badge-orange',
-  };
-
-  // Filter recent assets based on user permissions
-  const filteredRecentAssets = data.recentAssets.filter(asset => {
-    if (userRole === 'SUPER_ADMIN') return true;
-
-    const assetTypePermissionMap: Record<string, string> = {
-      FURNITURE: 'furniture',
-      ELECTRONIC: 'electronics',
-      VEHICLE: 'vehicles',
-    };
-
-    const requiredPermission = assetTypePermissionMap[asset.type];
-    return requiredPermission && hasPermission(requiredPermission);
-  });
-
-  // Determine grid layout based on number of visible cards
-  const gridColsClass = statCards.length === 1
-    ? 'grid-cols-1 max-w-md mx-auto'
-    : statCards.length === 2
-    ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto'
-    : statCards.length === 3
-    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+  const hasFilters = selectedType || selectedCondition || selectedStatus;
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
       <PageHeader
-        title="Dashboard"
-        subtitle="Overview of all assets and their status"
+        title="Asset Management Dashboard"
+        subtitle="View your assets across all categories"
         icon={Package}
-        badge="Asset Management"
-        gradientFrom="from-cyan-100"
-        gradientTo="to-sky-100"
-        iconColor="text-sky-600"
+        badge="Dashboard"
+        gradientFrom="from-blue-600"
+        gradientTo="to-blue-800"
+        iconColor="text-white"
         actions={
-          <div className="flex items-center gap-3">
-            <Link href="/reports" className="btn btn-secondary btn-sm">
-              <BarChart3 className="w-4 h-4" /> View Reports
-            </Link>
-            <Link href="/assets/furniture" className="btn btn-primary btn-sm">
-              <Plus className="w-4 h-4" /> Add Asset
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <Link href="/admin/users" className="btn btn-primary btn-sm">
+              <Plus className="w-4 h-4" /> Manage
             </Link>
           </div>
         }
       />
 
-      {/* Stat Cards */}
-      <div className={`grid ${gridColsClass} gap-4 mb-8`}>
-        {statCards.map((stat, index) => (
-          <Link key={stat.title} href={stat.href} className="no-underline block h-full">
-            <div className={`card p-5 relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${stat.hoverBorder} group h-full flex flex-col bg-gradient-to-br ${stat.gradient}`}>
-              <div className="absolute top-0 right-0 w-20 h-20 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                <stat.icon className="w-full h-full" />
-              </div>
-              <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 ${stat.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                    <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
-                  </div>
-                  <div className={`flex items-center gap-1 ${stat.badgeBg} px-2 py-0.5 rounded-md flex-shrink-0`}>
-                    <ArrowUpRight className={`w-3 h-3 ${stat.badgeColor}`} />
-                    <span className={`text-[10px] font-semibold ${stat.badgeColor}`}>{stat.percentage}%</span>
-                  </div>
-                </div>
-                <p className="text-xs font-medium text-slate-600 mb-1 truncate">{stat.title}</p>
-                <p className="text-2xl font-bold text-slate-700 tracking-tight mb-2">
-                  <AnimatedCounter target={stat.value} />
-                </p>
-                {stat.sampleTags && stat.sampleTags.length > 0 && (
-                  <div className="mt-auto pt-2 border-t border-slate-100">
-                    <div className="flex flex-wrap gap-1">
-                      {stat.sampleTags.slice(0, 2).map((tag: any, idx: number) => (
-                        <span key={idx} className="inline-flex items-center px-1.5 py-0.5 bg-slate-100 text-[9px] font-mono font-semibold text-slate-600 rounded border border-slate-700 truncate max-w-[100px]">
-                          {tag.assetTag}
-                        </span>
-                      ))}
-                      {stat.sampleTags.length > 2 && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 bg-slate-100 rounded text-[10px] text-slate-500">+{stat.sampleTags.length - 2}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-auto pt-2 flex items-center gap-1 text-[10px] text-slate-700/70 group-hover:text-slate-700/90 transition-colors">
-                  <span>View details</span>
-                  <ArrowUpRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </div>
+      <div className="w-full max-w-7xl mx-auto px-4 py-6">
+        {/* 3D Stat Cards with Gradients and Tags */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Total Assets Card */}
+          <motion.div
+            className={`card p-6 cursor-default bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 ${hasFilters ? 'ring-2 ring-blue-500' : ''}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Package className="w-10 h-10 text-blue-600 drop-shadow-lg" />
+              <span className="text-sm font-bold text-blue-700 bg-white px-3 py-1 rounded-full shadow-md">Total</span>
             </div>
-          </Link>
-        ))}
-      </div>
+            <p className="text-4xl font-bold text-blue-900 mb-1">{filteredAssets.length}</p>
+            <p className="text-sm text-blue-700 font-medium">Total Assets</p>
+          </motion.div>
 
-      {/* Charts Row - Donut Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Asset Types Distribution */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-purple-50 flex items-center justify-center rounded">
-              <Package className="w-4 h-4 text-purple-600" />
+          {/* Furniture Card */}
+          <motion.div
+            className={`card p-6 cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 ${selectedType === 'Furniture' ? 'ring-2 ring-purple-500' : ''}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4 }}
+            onClick={() => setSelectedType(selectedType === 'Furniture' ? null : 'Furniture')}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Armchair className="w-10 h-10 text-purple-600 drop-shadow-lg" />
+              <span className="text-sm font-bold text-purple-700 bg-white px-3 py-1 rounded-full shadow-md">{typeCount.FURNITURE}</span>
             </div>
-            <h3 className="text-base font-semibold text-slate-800">Asset Types</h3>
-          </div>
-          <p className="text-xs text-slate-500 mb-4">Distribution by category</p>
-          {data.totalAssets === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-12">No assets yet</p>
-          ) : (
-            <DonutChart data={typeChartData} colors={['#8b5cf6', '#10b981', '#f97316']} />
-          )}
-        </div>
-
-        {/* Condition Breakdown */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-emerald-50 flex items-center justify-center rounded">
-              <CheckCircle className="w-4 h-4 text-emerald-600" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-800">Condition</h3>
-          </div>
-          <p className="text-xs text-slate-500 mb-4">Asset health overview</p>
-          {data.conditionBreakdown.good === 0 && data.conditionBreakdown.repair === 0 && data.conditionBreakdown.damaged === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-12">No condition data yet</p>
-          ) : (
-            <DonutChart data={conditionData} colors={['#10b981', '#f59e0b', '#ef4444']} />
-          )}
-        </div>
-
-        {/* Status Breakdown */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-blue-50 flex items-center justify-center rounded">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-800">Status</h3>
-          </div>
-          <p className="text-xs text-slate-500 mb-4">Current usage status</p>
-          {data.statusBreakdown.inUse === 0 && data.statusBreakdown.inStore === 0 && data.statusBreakdown.disposed === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-12">No status data yet</p>
-          ) : (
-            <DonutChart data={statusData} colors={['#3b82f6', '#10b981', '#64748b']} />
-          )}
-        </div>
-      </div>
-
-      {/* Location Chart - full width */}
-      <div className="mb-8">
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 bg-violet-50 flex items-center justify-center rounded">
-              <MapPin className="w-4 h-4 text-violet-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-800">Assets by Location</h3>
-          </div>
-          {data.assetsByLocation.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">No location data available</p>
-          ) : (
-            <div className="space-y-1">
-              {data.assetsByLocation.map((loc, i) => (
-                <StatBar
-                  key={i}
-                  label={loc.locationName}
-                  value={loc.count}
-                  max={data.totalAssets}
-                  color={['bg-violet-500', 'bg-purple-500', 'bg-indigo-500', 'bg-blue-500', 'bg-sky-500'][i % 5]}
-                />
+            <p className="text-4xl font-bold text-purple-900 mb-1">{typeCount.FURNITURE}</p>
+            <p className="text-sm text-purple-700 font-medium mb-3">Furniture</p>
+            <div className="flex flex-wrap gap-2">
+              {dashboardData.sampleAssetTags.furniture.slice(0, 3).map((tag, i) => (
+                <span key={i} className="text-[11px] bg-white text-purple-700 px-2 py-1 rounded-full font-semibold shadow-sm">
+                  {tag.assetTag || `#${i + 1}`}
+                </span>
               ))}
+              {dashboardData.sampleAssetTags.furniture.length > 3 && (
+                <span className="text-[11px] bg-purple-200 text-purple-900 px-2 py-1 rounded-full font-semibold">
+                  +{dashboardData.sampleAssetTags.furniture.length - 3} more
+                </span>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </motion.div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Condition Summary */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 bg-amber-50 flex items-center justify-center rounded">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
+          {/* Electronics Card */}
+          <motion.div
+            className={`card p-6 cursor-pointer bg-gradient-to-br from-emerald-50 to-emerald-100 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 ${selectedType === 'Electronics' ? 'ring-2 ring-emerald-500' : ''}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4 }}
+            onClick={() => setSelectedType(selectedType === 'Electronics' ? null : 'Electronics')}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Monitor className="w-10 h-10 text-emerald-600 drop-shadow-lg" />
+              <span className="text-sm font-bold text-emerald-700 bg-white px-3 py-1 rounded-full shadow-md">{typeCount.ELECTRONIC}</span>
             </div>
-            <h3 className="text-base font-semibold text-slate-800">Condition Summary</h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-emerald-50/50 hover:bg-emerald-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-100 flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
-                </div>
-                <span className="text-sm font-medium text-slate-600">Good Condition</span>
-              </div>
-              <span className="text-lg font-bold text-emerald-700">{data.conditionBreakdown.good}</span>
+            <p className="text-4xl font-bold text-emerald-900 mb-1">{typeCount.ELECTRONIC}</p>
+            <p className="text-sm text-emerald-700 font-medium mb-3">Electronics</p>
+            <div className="flex flex-wrap gap-2">
+              {dashboardData.sampleAssetTags.electronic.slice(0, 3).map((tag, i) => (
+                <span key={i} className="text-[11px] bg-white text-emerald-700 px-2 py-1 rounded-full font-semibold shadow-sm">
+                  {tag.assetTag || `#${i + 1}`}
+                </span>
+              ))}
+              {dashboardData.sampleAssetTags.electronic.length > 3 && (
+                <span className="text-[11px] bg-emerald-200 text-emerald-900 px-2 py-1 rounded-full font-semibold">
+                  +{dashboardData.sampleAssetTags.electronic.length - 3} more
+                </span>
+              )}
             </div>
-            <div className="flex items-center justify-between p-3 bg-amber-50/50 hover:bg-amber-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-amber-100 flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                </div>
-                <span className="text-sm font-medium text-slate-600">Needs Repair</span>
-              </div>
-              <span className="text-lg font-bold text-amber-700">{data.conditionBreakdown.repair}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-red-50/50 hover:bg-red-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-red-100 flex items-center justify-center">
-                  <XCircle className="w-4 h-4 text-red-600" />
-                </div>
-                <span className="text-sm font-medium text-slate-600">Damaged</span>
-              </div>
-              <span className="text-lg font-bold text-red-700">{data.conditionBreakdown.damaged}</span>
-            </div>
-          </div>
-        </div>
+          </motion.div>
 
-        {/* Status Summary */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 bg-blue-50 flex items-center justify-center rounded">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
+          {/* Vehicles Card */}
+          <motion.div
+            className={`card p-6 cursor-pointer bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 ${selectedType === 'Vehicles' ? 'ring-2 ring-orange-500' : ''}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4 }}
+            onClick={() => setSelectedType(selectedType === 'Vehicles' ? null : 'Vehicles')}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Car className="w-10 h-10 text-orange-600 drop-shadow-lg" />
+              <span className="text-sm font-bold text-orange-700 bg-white px-3 py-1 rounded-full shadow-md">{typeCount.VEHICLE}</span>
             </div>
-            <h3 className="text-base font-semibold text-slate-800">Status Summary</h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-blue-50/50 hover:bg-blue-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                </div>
-                <span className="text-sm font-medium text-slate-600">In Use</span>
-              </div>
-              <span className="text-lg font-bold text-blue-700">{data.statusBreakdown.inUse}</span>
+            <p className="text-4xl font-bold text-orange-900 mb-1">{typeCount.VEHICLE}</p>
+            <p className="text-sm text-orange-700 font-medium mb-3">Vehicles</p>
+            <div className="flex flex-wrap gap-2">
+              {dashboardData.sampleAssetTags.vehicle.slice(0, 3).map((tag, i) => (
+                <span key={i} className="text-[11px] bg-white text-orange-700 px-2 py-1 rounded-full font-semibold shadow-sm">
+                  {tag.assetTag || `#${i + 1}`}
+                </span>
+              ))}
+              {dashboardData.sampleAssetTags.vehicle.length > 3 && (
+                <span className="text-[11px] bg-orange-200 text-orange-900 px-2 py-1 rounded-full font-semibold">
+                  +{dashboardData.sampleAssetTags.vehicle.length - 3} more
+                </span>
+              )}
             </div>
-            <div className="flex items-center justify-between p-3 bg-green-50/50 hover:bg-green-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-100 flex items-center justify-center">
-                  <Package className="w-4 h-4 text-green-600" />
-                </div>
-                <span className="text-sm font-medium text-slate-600">In Store</span>
-              </div>
-              <span className="text-lg font-bold text-green-700">{data.statusBreakdown.inStore}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-100/30 hover:bg-slate-100/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-slate-100 flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-slate-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-600">Disposed</span>
-              </div>
-              <span className="text-lg font-bold text-slate-600">{data.statusBreakdown.disposed}</span>
-            </div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Office Distribution */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 bg-violet-50 flex items-center justify-center rounded">
-              <Package className="w-4 h-4 text-violet-600" />
+        {/* Filter Indicator with Clear Button */}
+        {hasFilters && (
+          <motion.div
+            className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg flex items-center justify-between shadow-md"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-blue-900 font-semibold">
+                Filtered:
+              </span>
+              <span className="text-sm text-blue-700">
+                {filteredAssets.length} of {dashboardData.totalAssets} assets
+              </span>
+              {selectedType && (
+                <span className="inline-block bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                  {selectedType}
+                </span>
+              )}
+              {selectedCondition && (
+                <span className="inline-block bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                  {selectedCondition}
+                </span>
+              )}
+              {selectedStatus && (
+                <span className="inline-block bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                  {selectedStatus}
+                </span>
+              )}
             </div>
-            <h3 className="text-base font-semibold text-slate-800">Assets by Office</h3>
-          </div>
-          <div className="space-y-3">
-            {data.assetsByCompany.map((comp, index) => (
-              <div
-                key={comp.companyName}
-                className="flex items-center justify-between p-3 hover:bg-slate-100/50 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className={`w-8 h-8 flex items-center justify-center text-xs font-bold text-slate-700 flex-shrink-0 ${
-                    ['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500'][index % 5]
-                  }`}>
-                    {comp.companyName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm font-medium text-slate-600 truncate">{comp.companyName}</span>
-                </div>
-                <span className="text-base font-bold text-slate-800 ml-3">{comp.count}</span>
-              </div>
-            ))}
-            {data.assetsByCompany.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-8 text-slate-600">
-                <Package className="w-8 h-8 mb-2 text-slate-600" />
-                <p className="text-sm">No company data available</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Assets Table */}
-      <div className="card">
-        <div className="px-6 py-5 border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 flex items-center justify-center rounded">
-                <Clock className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-800">Recently Added Assets</h3>
-                <p className="text-sm text-slate-500">{filteredRecentAssets.length} latest additions</p>
-              </div>
-            </div>
-            <Link
-              href="/assets/all"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+            <button
+              onClick={clearFilters}
+              className="text-sm text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 bg-white px-3 py-1 rounded-full shadow-md hover:shadow-lg transition-all"
             >
-              View All
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
-          </div>
+              <X className="w-4 h-4" /> Clear
+            </button>
+          </motion.div>
+        )}
+
+        {/* Donut Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <DonutChart
+            data={typeData}
+            onSegmentClick={(name) => setSelectedType(selectedType === name ? null : name)}
+            selectedSegment={selectedType}
+            title="Asset Types"
+            colors={['#8b5cf6', '#10b981', '#f97316']}
+          />
+          <DonutChart
+            data={conditionData}
+            onSegmentClick={(name) => setSelectedCondition(selectedCondition === name ? null : name)}
+            selectedSegment={selectedCondition}
+            title="Condition"
+            colors={['#10b981', '#f59e0b', '#ef4444']}
+          />
+          <DonutChart
+            data={statusData}
+            onSegmentClick={(name) => setSelectedStatus(selectedStatus === name ? null : name)}
+            selectedSegment={selectedStatus}
+            title="Status"
+            colors={['#3b82f6', '#10b981', '#64748b', '#f97316']}
+          />
         </div>
 
-        {filteredRecentAssets.length > 0 ? (
+        {/* Recent Assets Table */}
+        <motion.div
+          className="card shadow-lg hover:shadow-xl transition-shadow"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="px-6 py-5 border-b-2 border-slate-100 bg-gradient-to-r from-slate-50 to-slate-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg text-slate-800">Recently Added Assets</h3>
+                <p className="text-sm text-slate-600 font-medium">{filteredAssets.length} assets</p>
+              </div>
+              <Clock className="w-6 h-6 text-slate-400" />
+            </div>
+          </div>
           <div className="overflow-x-auto">
-            <table className="modern-table w-full">
-              <thead>
+            <table className="w-full text-sm">
+              <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b-2 border-slate-200">
                 <tr>
-                  <th>Asset Name</th>
-                  <th>Type</th>
-                  <th>Asset Tag</th>
-                  <th>Condition</th>
-                  <th>Status</th>
-                  <th>Date Added</th>
+                  <th className="px-6 py-4 text-left font-bold text-slate-700">Asset Name</th>
+                  <th className="px-6 py-4 text-left font-bold text-slate-700">Tag</th>
+                  <th className="px-6 py-4 text-left font-bold text-slate-700">Type</th>
+                  <th className="px-6 py-4 text-left font-bold text-slate-700">Condition</th>
+                  <th className="px-6 py-4 text-left font-bold text-slate-700">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredRecentAssets.map((asset, index) => {
-                  const IconComponent = typeIconMap[asset.type] || Package;
-                  return (
-                    <tr
-                      key={asset.id}
-                      className="animate-in hover:bg-slate-100/30 transition-colors"
-                      style={{ animationDelay: `${700 + index * 50}ms`, opacity: 0 }}
-                    >
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-slate-100 flex items-center justify-center flex-shrink-0">
-                            <IconComponent className="w-4 h-4 text-slate-600" />
-                          </div>
-                          <span className="font-semibold text-slate-800">{asset.name}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`badge ${typeBadgeMap[asset.type] || 'badge-secondary'}`}>
-                          {asset.type.charAt(0) + asset.type.slice(1).toLowerCase()}
-                        </span>
-                      </td>
-                      <td>
-                        {asset.assetTag ? (
-                          <span className="inline-flex items-center px-2.5 py-1 bg-slate-100 text-xs font-mono font-medium text-slate-600">
-                            {asset.assetTag}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600 text-sm">—</span>
-                        )}
-                      </td>
-                      <td>
-                        {asset.condition ? (
-                          <ConditionBadge condition={asset.condition} />
-                        ) : (
-                          <span className="text-slate-600 text-sm">—</span>
-                        )}
-                      </td>
-                      <td>
-                        {asset.status ? (
-                          <StatusBadge status={asset.status} />
-                        ) : (
-                          <span className="text-slate-600 text-sm">—</span>
-                        )}
-                      </td>
-                      <td className="text-slate-500 text-sm">
-                        {asset.date
-                          ? formatDistanceToNow(new Date(asset.date), { addSuffix: true })
-                          : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredAssets.slice(0, 10).map((asset, idx) => (
+                  <motion.tr
+                    key={asset.id}
+                    className="border-b border-slate-100 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 transition-colors"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                  >
+                    <td className="px-6 py-4 text-slate-800 font-medium">{asset.name}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-600 bg-slate-50 rounded px-2 py-1">{asset.assetTag || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className="inline-block px-3 py-1 rounded-full text-xs font-bold shadow-sm"
+                        style={{
+                          backgroundColor: asset.type === 'FURNITURE' ? '#ede9fe' : asset.type === 'ELECTRONIC' ? '#d1fae5' : '#fed7aa',
+                          color: asset.type === 'FURNITURE' ? '#7e22ce' : asset.type === 'ELECTRONIC' ? '#059669' : '#ea580c',
+                        }}
+                      >
+                        {asset.type === 'FURNITURE' ? 'Furniture' : asset.type === 'ELECTRONIC' ? 'Electronics' : 'Vehicle'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className="inline-block px-3 py-1 rounded-full text-xs font-bold shadow-sm"
+                        style={{
+                          backgroundColor: asset.condition === 'GOOD' ? '#d1fae5' : asset.condition === 'REPAIR' ? '#fef08a' : '#fee2e2',
+                          color: asset.condition === 'GOOD' ? '#059669' : asset.condition === 'REPAIR' ? '#b45309' : '#dc2626',
+                        }}
+                      >
+                        {asset.condition || '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className="inline-block px-3 py-1 rounded-full text-xs font-bold shadow-sm"
+                        style={{
+                          backgroundColor: asset.status === 'IN_USE' ? '#dbeafe' : asset.status === 'IN_STORE' ? '#d1fae5' : '#e2e8f0',
+                          color: asset.status === 'IN_USE' ? '#0369a1' : asset.status === 'IN_STORE' ? '#059669' : '#475569',
+                        }}
+                      >
+                        {asset.status?.replace('_', ' ') || '-'}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
               </tbody>
             </table>
           </div>
-        ) : (
-          <div className="empty-state py-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center mb-4">
-              <Package className="w-10 h-10 text-slate-600" />
-            </div>
-            <p className="empty-state-title text-lg font-semibold text-slate-600">No recent assets</p>
-            <p className="empty-state-text mt-1">Newly added assets will appear here</p>
-            {hasPermission('furniture') && (
-              <Link
-                href="/assets/furniture"
-                className="btn btn-primary"
-              >
-                <Plus className="w-4 h-4" />
-                Add Your First Asset
-              </Link>
-            )}
-          </div>
-        )}
-      </div>
+        </motion.div>
       </div>
     </DashboardLayout>
   );
 }
-

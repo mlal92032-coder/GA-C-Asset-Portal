@@ -42,7 +42,8 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
     if (!isOpen) return;
     // Always reset first, then populate if editing
     resetForm();
-    if (editingUser) {
+    // Only populate if explicitly editing a user
+    if (editingUser && editingUser.id) {
       setFullName((editingUser.fullName as string) || '');
       setEmail((editingUser.email as string) || '');
       setPassword('');
@@ -61,7 +62,7 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
 
   const resetForm = () => { setFullName(''); setEmail(''); setPassword(''); setRole('USER'); setStatus('ACTIVE'); setDepartment(''); setDesignation(''); setPhone(''); setModulePermissions({}); setExpandedModules([]); setShowPassword(false); setErrors({}); };
 
-  const handleNameChange = (name: string) => { setFullName(name); if (!editingUser) setEmail(name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '.') + '@sef.com'); };
+  const handleNameChange = (name: string) => { setFullName(name); };
   const toggleExpand = (m: string) => setExpandedModules(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
   const toggleAction = (m: string, a: string) => setModulePermissions(p => { const c = [...(p[m] || [])]; if (c.includes(a)) { const f = c.filter(x => x !== a); if (!f.length) { const n = { ...p }; delete n[m]; return n; } return { ...p, [m]: f }; } return { ...p, [m]: [...c, a] }; });
   const selectAllForModule = (m: Module) => setModulePermissions(p => ({ ...p, [m]: [...getAvailableActions(m)] }));
@@ -120,7 +121,7 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Email <span className="text-red-500">*</span></label>
-                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={errors.email ? 'border-red-400' : ''} placeholder="john@sef.com" disabled={saving || !!editingUser} />
+                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" className={errors.email ? 'border-red-400' : ''} placeholder="john@sef.com" disabled={saving || !!editingUser} />
                       {errors.email && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.email}</p>}
                     </div>
                   </div>
@@ -130,7 +131,7 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{editingUser ? 'New Password' : 'Password'} {!editingUser && <span className="text-red-500">*</span>}</label>
                       <div className="relative">
-                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} className={`pr-10 ${errors.password ? 'border-red-400' : ''}`} placeholder={editingUser ? 'Leave blank' : 'Min 6 chars'} disabled={saving} />
+                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" className={`pr-10 ${errors.password ? 'border-red-400' : ''}`} placeholder={editingUser ? 'Leave blank' : 'Min 6 chars'} disabled={saving} />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-slate-400 hover:text-slate-600"><Lock className="w-3.5 h-3.5" /></button>
                       </div>
                       {errors.password && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.password}</p>}

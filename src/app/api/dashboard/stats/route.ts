@@ -4,10 +4,14 @@ import { requireAuth } from '@/lib/api-auth';
 
 export async function GET() {
   try {
+    console.log('[DASHBOARD] Fetching stats...');
     const authResult = await requireAuth();
+    console.log('[DASHBOARD] Auth result type:', authResult instanceof NextResponse ? 'NextResponse' : 'user');
     if (authResult instanceof NextResponse) {
+      console.log('[DASHBOARD] Auth failed, returning error response');
       return authResult;
     }
+    console.log('[DASHBOARD] Auth successful for user:', authResult.user.email);
 
     // Get actual counts from database
     const [furnitureCount, electronicCount, vehicleCount] = await Promise.all([
@@ -66,11 +70,12 @@ export async function GET() {
       prisma.electronicAsset.groupBy({ by: ['status'], _count: true }),
       prisma.vehicleAsset.groupBy({ by: ['status'], _count: true }),
     ]);
-    const statusBreakdown = { inUse: 0, inStore: 0, disposed: 0 };
+    const statusBreakdown = { inUse: 0, inStore: 0, disposed: 0, auction: 0 };
     [...furnitureStatus, ...electronicStatus, ...vehicleStatus].forEach((item) => {
       if (item.status === 'IN_USE') statusBreakdown.inUse += item._count;
-      if (item.status === 'IN_STORE') statusBreakdown.inStore += item._count;
-      if (item.status === 'DISPOSED') statusBreakdown.disposed += item._count;
+      else if (item.status === 'IN_STORE') statusBreakdown.inStore += item._count;
+      else if (item.status === 'DISPOSED') statusBreakdown.disposed += item._count;
+      else if (item.status === 'AUCTION') statusBreakdown.auction += item._count;
     });
 
     // Get assets by location
@@ -149,7 +154,7 @@ export async function GET() {
       })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         totalAssets,
@@ -163,7 +168,17 @@ export async function GET() {
         recentAssets,
         sampleAssetTags: { furniture: furnitureTags, electronic: electronicTags, vehicle: vehicleTags },
       },
+    };
+    console.log('[DASHBOARD API] Returning:', {
+      totalAssets,
+      furnitureCount,
+      electronicCount,
+      vehicleCount,
+      recentAssetsCount: recentAssets.length,
+      locationCount: assetsByLocation.length,
+      conditionBreakdown
     });
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Dashboard API Error:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

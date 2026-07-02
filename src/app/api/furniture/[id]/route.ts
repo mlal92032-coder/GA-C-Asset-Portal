@@ -15,7 +15,7 @@ const furnitureSchema = z.object({
   locationId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   assignedUserId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).optional(),
-  status: z.enum(['IN_USE', 'IN_STORE', 'DISPOSED']).optional(),
+  status: z.enum(['IN_USE', 'IN_STORE', 'DISPOSED', 'AUCTION']).optional(),
   remarks: z.union([z.string(), z.null(), z.undefined()]).optional(),
   usefulLifeYears: z.union([z.number(), z.string(), z.null(), z.undefined()]).optional(),
   salvageValue: z.union([z.number(), z.string(), z.null(), z.undefined()]).optional(),
@@ -85,7 +85,7 @@ export async function PUT(
       locationId?: string | null;
       assignedUserId?: string | null;
       condition?: 'GOOD' | 'REPAIR' | 'DAMAGED';
-      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
       remarks?: string | null;
       usefulLifeYears?: number | null;
       salvageValue?: number | null;

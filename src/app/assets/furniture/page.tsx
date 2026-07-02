@@ -197,7 +197,6 @@ export default function FurniturePage() {
         imageUrl: furnitureData.imageUrl || null,
         furnitureType: furnitureData.furnitureType || null,
         material: furnitureData.material || null,
-        dimensions: furnitureData.dimensions || null,
         purchaseDate: furnitureData.purchaseDate || null,
         purchasePrice: furnitureData.purchasePrice ? parseFloat(furnitureData.purchasePrice) : null,
         companyId: furnitureData.companyId || null,
@@ -209,6 +208,7 @@ export default function FurniturePage() {
         remarks: furnitureData.remarks || null,
         usefulLifeYears: furnitureData.usefulLifeYears ? parseInt(furnitureData.usefulLifeYears) : null,
         salvageValue: furnitureData.salvageValue ? parseFloat(furnitureData.salvageValue) : null,
+        depreciationMethod: furnitureData.depreciationMethod || null,
       };
 
       const res = await fetch(url, {
@@ -434,7 +434,7 @@ export default function FurniturePage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {toast && (
         <div className={`toast toast-${toast.type}`}>
           {toast.message}

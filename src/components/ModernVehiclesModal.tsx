@@ -36,6 +36,7 @@ export default function ModernVehiclesModal({
     model: '',
     registrationNumber: '',
     engineNumber: '',
+    chassisNumber: '',
     fuelType: '',
     purchaseDate: '',
     purchasePrice: '',
@@ -67,6 +68,7 @@ export default function ModernVehiclesModal({
         model: editingAsset.model || '',
         registrationNumber: editingAsset.registrationNumber || '',
         engineNumber: editingAsset.engineNumber || '',
+        chassisNumber: editingAsset.chassisNumber || '',
         fuelType: editingAsset.fuelType || '',
         purchaseDate: editingAsset.purchaseDate?.split('T')[0] || '',
         purchasePrice: editingAsset.purchasePrice?.toString() || '',
@@ -97,6 +99,7 @@ export default function ModernVehiclesModal({
       model: '',
       registrationNumber: '',
       engineNumber: '',
+      chassisNumber: '',
       fuelType: '',
       purchaseDate: '',
       purchasePrice: '',
@@ -151,7 +154,7 @@ export default function ModernVehiclesModal({
     <div className="modal-overlay" onClick={onClose}>
       <div
         ref={modalRef}
-        className="modal w-full max-w-2xl mx-auto"
+        className="modal w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -184,7 +187,8 @@ export default function ModernVehiclesModal({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="modal-body space-y-5 overflow-y-auto">
           {/* Asset Details Section */}
           <div className="mb-6">
             <h3 className="form-section-heading text-lg font-semibold text-slate-700">
@@ -204,8 +208,8 @@ export default function ModernVehiclesModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="form-label required">Asset Name</label>
-                <div className="relative">
-                  <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <Car className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="text"
                     value={formData.assetName}
@@ -213,6 +217,7 @@ export default function ModernVehiclesModal({
                     className={`pl-10 ${errors.assetName ? 'error' : ''}`}
                     placeholder="e.g., Company Car"
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
                 {errors.assetName && (
@@ -225,8 +230,8 @@ export default function ModernVehiclesModal({
 
               <div>
                 <label className="form-label required">Asset Tag</label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <FileText className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="text"
                     value={formData.assetTag}
@@ -234,6 +239,7 @@ export default function ModernVehiclesModal({
                     className={`pl-10 ${errors.assetTag ? 'error' : ''}`}
                     placeholder="e.g., VEH-001"
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
                 {errors.assetTag && (
@@ -251,6 +257,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('vehicleType', e.target.value)}
                   className={errors.vehicleType ? 'error' : ''}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="">Select type</option>
                   <option value="Sedan">Sedan</option>
@@ -270,8 +277,8 @@ export default function ModernVehiclesModal({
 
               <div>
                 <label className="form-label required">Registration Number</label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <FileText className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="text"
                     value={formData.registrationNumber}
@@ -279,6 +286,7 @@ export default function ModernVehiclesModal({
                     className={`pl-10 ${errors.registrationNumber ? 'error' : ''}`}
                     placeholder="e.g., ABC-1234"
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
                 {errors.registrationNumber && (
@@ -297,6 +305,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('brand', e.target.value)}
                   placeholder="e.g., Toyota, Honda"
                   disabled={saving}
+                  autoComplete="off"
                 />
               </div>
 
@@ -308,6 +317,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('model', e.target.value)}
                   placeholder="e.g., Corolla, Civic"
                   disabled={saving}
+                  autoComplete="off"
                 />
               </div>
 
@@ -319,6 +329,19 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('engineNumber', e.target.value)}
                   placeholder="e.g., ENG123456"
                   disabled={saving}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Chassis Number</label>
+                <input
+                  type="text"
+                  value={formData.chassisNumber}
+                  onChange={(e) => handleChange('chassisNumber', e.target.value)}
+                  placeholder="e.g., CHAS123456"
+                  disabled={saving}
+                  autoComplete="off"
                 />
               </div>
 
@@ -328,6 +351,7 @@ export default function ModernVehiclesModal({
                   value={formData.fuelType}
                   onChange={(e) => handleChange('fuelType', e.target.value)}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="">Select fuel type</option>
                   <option value="Petrol">Petrol</option>
@@ -349,14 +373,15 @@ export default function ModernVehiclesModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="form-label required">Purchase Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <Calendar className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="date"
                     value={formData.purchaseDate}
                     onChange={(e) => handleChange('purchaseDate', e.target.value)}
                     className={`pl-10 ${errors.purchaseDate ? 'error' : ''}`}
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
                 {errors.purchaseDate && (
@@ -369,8 +394,8 @@ export default function ModernVehiclesModal({
 
               <div>
                 <label className="form-label">Purchase Price (PKR)</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <DollarSign className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="number"
                     value={formData.purchasePrice}
@@ -378,6 +403,7 @@ export default function ModernVehiclesModal({
                     className="pl-10"
                     placeholder="0.00"
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -388,6 +414,7 @@ export default function ModernVehiclesModal({
                   value={formData.manufacturerId}
                   onChange={(e) => handleChange('manufacturerId', e.target.value)}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="">Select manufacturer</option>
                   {manufacturers.map((m) => (
@@ -406,6 +433,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('usefulLifeYears', e.target.value)}
                   placeholder="10"
                   disabled={saving}
+                  autoComplete="off"
                 />
               </div>
 
@@ -417,6 +445,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('salvageValue', e.target.value)}
                   placeholder="0.00"
                   disabled={saving}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -436,6 +465,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('companyId', e.target.value)}
                   className={errors.companyId ? 'error' : ''}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="">Select office</option>
                   {companies.map((c) => (
@@ -459,6 +489,7 @@ export default function ModernVehiclesModal({
                   onChange={(e) => handleChange('locationId', e.target.value)}
                   className={errors.locationId ? 'error' : ''}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="">Select location</option>
                   {locations.map((l) => (
@@ -481,6 +512,7 @@ export default function ModernVehiclesModal({
                   value={formData.assignedUserId}
                   onChange={(e) => handleChange('assignedUserId', e.target.value)}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="">Not assigned</option>
                   {users.map((u) => (
@@ -506,6 +538,7 @@ export default function ModernVehiclesModal({
                   value={formData.condition}
                   onChange={(e) => handleChange('condition', e.target.value)}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="GOOD">Good</option>
                   <option value="REPAIR">Needs Repair</option>
@@ -519,37 +552,41 @@ export default function ModernVehiclesModal({
                   value={formData.status}
                   onChange={(e) => handleChange('status', e.target.value)}
                   disabled={saving}
+                  autoComplete="off"
                 >
                   <option value="IN_STORE">In Store</option>
                   <option value="IN_USE">In Use</option>
                   <option value="DISPOSED">Disposed</option>
+                  <option value="AUCTION">Auction</option>
                 </select>
               </div>
 
               <div>
                 <label className="form-label">Last Service Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <Calendar className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="date"
                     value={formData.lastServiceDate}
                     onChange={(e) => handleChange('lastServiceDate', e.target.value)}
                     className="pl-10"
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="form-label">Insurance Expiry Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="form-input-wrapper">
+                  <Calendar className="form-input-icon w-4 h-4 text-slate-400" />
                   <input
                     type="date"
                     value={formData.insuranceExpiryDate}
                     onChange={(e) => handleChange('insuranceExpiryDate', e.target.value)}
                     className="pl-10"
                     disabled={saving}
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -562,27 +599,29 @@ export default function ModernVehiclesModal({
                   rows={3}
                   placeholder="Additional notes or comments..."
                   disabled={saving}
+                  autoComplete="off"
                 />
               </div>
             </div>
           </div>
-        </form>
+          </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 z-10 bg-slate-50 px-6 py-4 border-t border-slate-200 rounded-b-lg flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="btn btn-secondary"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="btn btn-primary"
-          >
+        <div className="modal-footer">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn btn-primary flex items-center justify-center gap-2"
+            >
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -594,8 +633,10 @@ export default function ModernVehiclesModal({
                 {editingAsset ? 'Update Asset' : 'Create Asset'}
               </>
             )}
-          </button>
+            </button>
+          </div>
         </div>
+        </form>
       </div>
     </div>
   );

@@ -14,8 +14,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
+          console.error('[AUTH] Missing email or password');
           throw new Error('Email and password are required');
         }
+
+        console.log('[AUTH] Login attempt for:', credentials.email);
 
         // Rate limit based on email
         const rateLimitResult = rateLimit(credentials.email, {
@@ -24,6 +27,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!rateLimitResult.success) {
+          console.error('[AUTH] Rate limit exceeded for:', credentials.email);
           throw new Error('Too many login attempts. Please try again later.');
         }
 
@@ -32,18 +36,25 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          console.error('[AUTH] User not found:', credentials.email);
           throw new Error('No user found with this email');
         }
 
+        console.log('[AUTH] User found:', user.email, 'Status:', user.status);
+
         if (user.status === 'INACTIVE') {
+          console.error('[AUTH] User inactive:', credentials.email);
           throw new Error('Your account has been deactivated. Please contact an administrator.');
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isValid) {
+          console.error('[AUTH] Invalid password for:', credentials.email);
           throw new Error('Invalid password');
         }
+
+        console.log('[AUTH] Login successful for:', user.email);
 
         return {
           id: user.id,
@@ -66,21 +77,28 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('[JWT] Token callback - user:', user ? JSON.stringify({ email: user.email, id: user.id, role: user.role }) : 'null');
+      console.log('[JWT] Token.sub:', token.sub);
       if (user) {
+        console.log('[JWT] Setting token data');
         token.id = user.id;
         token.role = user.role as string;
         token.status = user.status as string;
         token.permissions = user.permissions as string | null;
       }
+      console.log('[JWT] Returning token:', JSON.stringify({ sub: token.sub, id: token.id, role: token.role }));
       return token;
     },
     async session({ session, token }) {
+      console.log('[SESSION] Session callback - token:', JSON.stringify({ sub: token.sub, id: token.id, role: token.role }));
+      console.log('[SESSION] Session user before:', session.user ? JSON.stringify({ name: session.user.name, email: session.user.email }) : 'null');
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.status = token.status as string;
         session.user.permissions = token.permissions as string | null;
       }
+      console.log('[SESSION] Session user after:', session.user ? JSON.stringify({ id: session.user.id, role: session.user.role }) : 'null');
       return session;
     },
   },

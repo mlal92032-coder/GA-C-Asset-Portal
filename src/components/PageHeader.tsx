@@ -16,9 +16,14 @@ interface PageHeaderProps {
 }
 
 // Map gradient names to actual CSS colors (Tailwind v3+ color palette)
-// These are the exact hex values for Tailwind 100-level colors
 const gradientColorMap: Record<string, { from: string; to: string }> = {
-  // From colors (using lighter shades for "from" start)
+  // Dark gradients (default)
+  'from-blue-600': { from: '#2563eb', to: '' },
+  'from-blue-700': { from: '#1d4ed8', to: '' },
+  'to-blue-800': { from: '', to: '#1e40af' },
+  'to-indigo-900': { from: '', to: '#312e81' },
+
+  // Light gradients (fallback)
   'from-blue-100': { from: '#dbeafe', to: '' },
   'from-indigo-100': { from: '#e0e7ff', to: '' },
   'from-pink-100': { from: '#fbcfe8', to: '' },
@@ -33,7 +38,6 @@ const gradientColorMap: Record<string, { from: string; to: string }> = {
   'from-teal-100': { from: '#ccfbf1', to: '' },
   'from-sky-100': { from: '#e0f2fe', to: '' },
 
-  // To colors (using complementary lighter shades)
   'to-indigo-100': { from: '', to: '#e0e7ff' },
   'to-rose-100': { from: '', to: '#ffe4e6' },
   'to-emerald-100': { from: '', to: '#d1fae5' },
@@ -52,40 +56,52 @@ export default function PageHeader({
   subtitle,
   icon: Icon,
   badge,
-  gradientFrom = 'from-blue-100',
-  gradientTo = 'to-indigo-100',
-  iconColor = 'text-blue-600',
+  gradientFrom = 'from-blue-600',
+  gradientTo = 'to-blue-800',
+  iconColor = 'text-white',
   actions,
   stats,
 }: PageHeaderProps) {
   // Get gradient colors - fallback to defaults if not found
-  const fromColor = gradientColorMap[gradientFrom]?.from || '#eff6ff';
-  const toColor = gradientColorMap[gradientTo]?.to || '#e0e7ff';
+  const fromColor = gradientColorMap[gradientFrom]?.from || '#2563eb';
+  const toColor = gradientColorMap[gradientTo]?.to || '#1e40af';
 
   const gradientStyle = {
     backgroundImage: `linear-gradient(to right, ${fromColor}, ${toColor})`,
   };
 
   return (
-    <div className="mb-6 sm:mb-8">
-      <div className="p-4 sm:p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-200/60" style={gradientStyle}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="mb-4 sm:mb-6 p-4 sm:p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/50 relative overflow-hidden backdrop-blur-xl" style={gradientStyle}>
+        {/* Premium background blur layers */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/8 to-white/15 backdrop-blur-lg" />
+
+        {/* Sophisticated depth layers - blue theme */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-400/12 to-transparent rounded-full blur-3xl -translate-x-32 -translate-y-32" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-indigo-400/12 to-transparent rounded-full blur-3xl translate-x-32 translate-y-32" />
+        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-br from-blue-500/8 via-indigo-500/5 to-transparent rounded-full blur-3xl" />
+
+        {/* Premium accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-start gap-4 mb-2">
-              <div className="w-12 h-12 bg-white shadow-sm flex items-center justify-center rounded-xl flex-shrink-0 border border-slate-200/60">
-                <Icon className={`w-6 h-6 ${iconColor}`} />
+              <div className="w-14 h-14 bg-white/20 shadow-lg flex items-center justify-center rounded-xl flex-shrink-0 border border-white/30 backdrop-blur-md">
+                <Icon className={`w-7 h-7 ${iconColor}`} />
               </div>
               <div className="flex-1 min-w-0">
                 {badge && (
-                  <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold bg-white/70 ${iconColor} rounded-full mb-1.5 tracking-wide`}>
+                  <span className={`inline-block px-3 py-1 text-xs font-bold bg-white/25 text-white rounded-full mb-2 tracking-wider shadow-md backdrop-blur-sm`}>
                     {badge}
                   </span>
                 )}
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
+                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-lg">
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className="text-slate-500 text-sm mt-1">
+                  <p className="text-blue-50 text-sm mt-2 font-semibold">
                     {subtitle}
                   </p>
                 )}
