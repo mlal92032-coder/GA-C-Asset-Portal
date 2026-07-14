@@ -37,7 +37,7 @@ export default function Modal({
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/40 z-50"
             variants={modalBackdrop}
             initial="initial"
             animate="animate"
@@ -47,7 +47,7 @@ export default function Modal({
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          <div className="fixed inset-0 z-[51] flex items-center justify-center p-4 pointer-events-none">
             <motion.div
               className={`${sizes[size]} w-full bg-white rounded-2xl shadow-2xl pointer-events-auto max-h-[90vh] overflow-hidden flex flex-col`}
               variants={modalContent}

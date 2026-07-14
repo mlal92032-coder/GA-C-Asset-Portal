@@ -110,6 +110,7 @@ export function NotificationCenter({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              aria-hidden="true"
             />
 
             {/* Panel */}
@@ -118,6 +119,8 @@ export function NotificationCenter({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
+              role="region"
+              aria-label="Notifications"
             >
               {/* Header */}
               <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-white flex items-center justify-between">

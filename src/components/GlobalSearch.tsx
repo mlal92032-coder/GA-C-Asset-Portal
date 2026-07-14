@@ -293,7 +293,7 @@ export default function GlobalSearch() {
       {/* Dropdown */}
       {showDropdown && (
         <div
-          className="search-dropdown absolute left-0 right-0 mt-2 bg-white rounded-lg border border-slate-200 shadow-2xl max-h-[70vh] overflow-y-auto z-[9999]"
+          className="search-dropdown absolute left-0 right-0 mt-2 bg-white rounded-lg border border-slate-200 shadow-2xl max-h-[70vh] overflow-y-auto z-40"
         >
           {loading && results.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-8 text-slate-500">

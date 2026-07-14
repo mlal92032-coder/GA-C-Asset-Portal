@@ -500,11 +500,12 @@ tbody td {
 tbody tr:last-child td { border-bottom: none; }
 
 /* ===== Modals ===== */
-/* Modal overlay: z-index 9998 (dark backdrop, below modal content) */
+/* Modal overlay: z-index 50 (dark backdrop, below modal content) */
+/* Per Z_INDEX_GUIDE.md: z-50 for backdrops, z-51 for content */
 .modal-overlay {
   position: fixed !important;
   inset: 0;
-  z-index: 9998 !important;
+  z-index: 50 !important;
   background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(6px);
   display: flex;
@@ -513,7 +514,8 @@ tbody tr:last-child td { border-bottom: none; }
   padding: 1rem;
 }
 
-/* Modal content: z-index 10000 (above overlay) */
+/* Modal content: z-index 51 (above overlay) */
+/* Per Z_INDEX_GUIDE.md: z-51 sits directly above z-50 backdrop */
 .modal {
   background: #ffffff;
   border-radius: 1.25rem;
@@ -523,7 +525,7 @@ tbody tr:last-child td { border-bottom: none; }
   flex-direction: column;
   border: 1px solid #f1f5f9;
   position: relative;
-  z-index: 10000 !important;
+  z-index: 51 !important;
   margin: auto;
   backdrop-filter: blur(20px);
 }

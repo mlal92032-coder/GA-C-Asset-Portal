@@ -125,7 +125,7 @@ export default function FormCombobox({
 
       {isOpen && (
         <motion.div
-          className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+          className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-40"
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -5 }}

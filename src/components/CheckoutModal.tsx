@@ -79,10 +79,10 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="modal-overlay fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[9998] p-4" onClick={onClose}>
+    <div className="modal-overlay fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
         ref={modalRef}
-        className="modal bg-white shadow-2xl max-w-md w-full animate-scale-in z-[10000]"
+        className="modal bg-white shadow-2xl max-w-md w-full animate-scale-in z-[51]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="checkout-modal-title"
@@ -245,8 +245,8 @@ export function CheckinModal({
   };
 
   return (
-    <div className="modal-overlay fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[9998] p-4">
-      <div className="modal bg-white shadow-2xl max-w-md w-full animate-scale-in z-[10000]">
+    <div className="modal-overlay fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal bg-white shadow-2xl max-w-md w-full animate-scale-in z-[51]">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div className="flex items-center gap-3">

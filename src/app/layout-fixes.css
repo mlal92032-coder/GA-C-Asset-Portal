@@ -71,11 +71,12 @@ header {
 }
 
 /* ===== MODAL STACKING ===== */
-/* Modal overlay - dark backdrop with blur - z-9998 */
+/* Modal overlay - dark backdrop with blur - z-50 */
+/* Per Z_INDEX_GUIDE.md: z-50 for backdrops, z-51 for content */
 .modal-overlay {
   position: fixed !important;
   inset: 0;
-  z-index: 9998 !important;
+  z-index: 50 !important;
   background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(6px);
   display: flex;
@@ -85,10 +86,11 @@ header {
   transform: none !important;
 }
 
-/* Modal content - white box with form - z-10000 */
+/* Modal content - white box with form - z-51 */
+/* Per Z_INDEX_GUIDE.md: z-51 sits directly above z-50 backdrop */
 .modal {
   position: relative;
-  z-index: 10000 !important;
+  z-index: 51 !important;
   background: #ffffff;
   border-radius: 1rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
