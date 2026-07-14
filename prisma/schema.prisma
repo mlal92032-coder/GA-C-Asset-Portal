@@ -19,6 +19,8 @@ model User {
   designation   String?
   phone         String?
   role          Role      @default(VIEW_USER)
+  customRoleId  String?   @map("custom_role_id")
+  customRole    CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
   status        Status    @default(ACTIVE)
   permissions   String?   @map("permissions") // JSON array of allowed modules
   createdAt     DateTime  @default(now()) @map("created_at")
@@ -45,7 +47,9 @@ model User {
   permissionsApplied UserPermissionOverride[] @relation("PermissionAppliedBy")
   profileSettings UserProfileSettings? @relation("ProfileSettings")
   systemLogs SystemLog[] @relation("SystemLogs")
+  createdRoles  CustomRole[] @relation("RoleCreator")
 
+  @@index([customRoleId])
   @@map("users")
 }
 
@@ -53,6 +57,27 @@ enum Role {
   SUPER_ADMIN
   USER
   VIEW_USER
+  CUSTOM
+}
+
+model CustomRole {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  companyId     String?   // Multi-tenant support
+  permissions   String    // JSON array of permission strings
+  isActive      Boolean   @default(true)
+  createdById   String    @map("created_by_id")
+  createdBy     User      @relation("RoleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  users         User[]
+
+  @@unique([name, companyId])
+  @@index([companyId])
+  @@index([createdById])
+  @@map("custom_roles")
 }
 
 enum Status {
