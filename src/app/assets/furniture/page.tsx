@@ -13,6 +13,7 @@ import CheckoutModal, { CheckinModal } from '@/components/CheckoutModal';
 import BulkImportExport from '@/components/BulkImportExport';
 import ModernFurnitureModal from '@/components/ModernFurnitureModal';
 import { BulkActionBar } from '@/components/BulkActionBar';
+import BulkStatusUpdateModal, { type BulkStatusUpdateData } from '@/components/BulkStatusUpdateModal';
 import { Button, IconButton } from '@/components/Button';
 import { uploadImage, resolveImageUrl, buildImageUrl } from '@/lib/image-upload';
 import { formatCurrency } from '@/lib/depreciation';
@@ -60,6 +61,8 @@ export default function FurniturePage() {
   const [sort, setSort] = useState('createdAt');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const { data: session } = useSession();
   const { success, error } = useToast();
@@ -430,6 +433,65 @@ export default function FurniturePage() {
     }
   };
 
+  const handleBulkStatusUpdate = async (data: BulkStatusUpdateData) => {
+    if (selectedAssets.length === 0) return;
+
+    setBulkUpdating(true);
+    try {
+      const res = await fetch('/api/assets/bulk-update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'FURNITURE',
+          ...data,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        success(`${json.updated} asset(s) updated successfully`);
+        setSelectedAssets([]);
+        fetchAll();
+      } else {
+        error(json.error || 'Failed to update assets');
+      }
+    } catch {
+      error('An error occurred');
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const handleBulkPrint = async () => {
+    if (selectedAssets.length === 0) return;
+
+    try {
+      const res = await fetch('/api/assets/bulk-print', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'FURNITURE',
+        }),
+      });
+
+      if (!res.ok) throw new Error('Print generation failed');
+
+      const html = await res.text();
+      const printWindow = window.open('', '', 'width=800,height=600');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+
+      success('Labels sent to printer');
+    } catch {
+      error('Failed to generate labels');
+    }
+  };
+
   const conditionBadge = (condition: string) => {
     switch (condition) {
       case 'GOOD':
@@ -597,9 +659,11 @@ export default function FurniturePage() {
       <BulkActionBar
         selectedCount={selectedAssets.length}
         onClose={() => setSelectedAssets([])}
+        onEdit={() => setShowBulkStatusUpdate(true)}
         onDelete={handleBulkDelete}
         onExport={handleBulkExport}
-        isLoading={saving}
+        onPrint={handleBulkPrint}
+        isLoading={saving || bulkUpdating}
       />
 
       {/* DataTable */}
@@ -959,14 +1023,16 @@ export default function FurniturePage() {
         </div>
       )}
 
-      {/* Bulk Barcode Export Modal */}
-      {showBulkBarcode && (
-        <BulkBarcodeModal
-          onClose={() => setShowBulkBarcode(false)}
-          fetchAssets={fetchAllAssetsForBarcode}
-          assetType="Furniture"
-        />
-      )}
+      {/* Bulk Status Update Modal */}
+      <BulkStatusUpdateModal
+        isOpen={showBulkStatusUpdate}
+        onClose={() => setShowBulkStatusUpdate(false)}
+        onUpdate={handleBulkStatusUpdate}
+        locations={locations}
+        users={users}
+        isLoading={bulkUpdating}
+      />
+
 
       {/* Checkout Modal */}
       {showCheckout && checkoutAsset && (
