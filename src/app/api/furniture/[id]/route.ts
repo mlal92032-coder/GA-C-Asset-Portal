@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { autoCreateMaintenanceTask } from '@/lib/maintenance-automation';
+import { authOptions } from '@/lib/auth-options';
 
 const furnitureSchema = z.object({
   assetName: z.union([z.string().min(1, 'Asset name is required'), z.undefined()]).optional(),
@@ -131,6 +134,19 @@ export async function PUT(
       entityId: asset.id,
       details: { old: oldAsset, new: validatedData },
     });
+
+    // Auto-create maintenance task if condition changed to REPAIR
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      await autoCreateMaintenanceTask(
+        asset.id,
+        'FURNITURE',
+        asset.assetName,
+        oldAsset?.condition,
+        validatedData.condition,
+        session.user.id
+      );
+    }
 
     return NextResponse.json({ success: true, data: asset, message: 'Furniture asset updated successfully' });
   } catch (error) {
