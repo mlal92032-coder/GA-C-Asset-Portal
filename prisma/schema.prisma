@@ -6,14 +6,142 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
 }
+
+// ============= MULTI-TENANCY FOUNDATION =============
+
+model Tenant {
+  id                    String    @id @default(cuid())
+  name                  String    // "Acme Inc", "TechCo"
+  slug                  String    @unique // "acme-inc", "techco" - used in subdomains
+  domain                String?   @unique // Optional: custom domain like "assets.acmeinc.com"
+  status                String    @default("ACTIVE") // ACTIVE, SUSPENDED, DELETED
+  tier                  String    @default("STANDARD") // FREE, STARTER, PROFESSIONAL, ENTERPRISE
+
+  // Billing
+  billingEmail          String
+  billingPhone          String?
+  billingAddress        String?
+  taxId                 String?   @map("tax_id")
+
+  // Usage Tracking (updated monthly)
+  monthlyUsageStorage   BigInt    @default(0) @map("monthly_usage_storage") // bytes
+  monthlyAPICallsCount  Int       @default(0) @map("monthly_api_calls_count")
+  monthlyUserCount      Int       @default(0) @map("monthly_user_count")
+
+  // Limits & Quotas
+  storageQuotaGB        Int       @default(10) @map("storage_quota_gb") // GB
+  maxAPICallsPerMonth   Int       @default(100000) @map("max_api_calls_per_month")
+  maxUsers              Int       @default(50) @map("max_users")
+  maxAssets             Int       @default(5000) @map("max_assets")
+
+  // Features
+  enabledFeatures       String    @default("[]") @map("enabled_features") // JSON array of enabled features
+  customBranding       Boolean   @default(false) @map("custom_branding")
+
+  // Timestamps
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at") // Soft delete
+
+  // Relations
+  users                 User[]
+  companies             Company[]
+  manufacturers         Manufacturer[]
+  locations             Location[]
+  furnitureAssets       FurnitureAsset[]
+  electronicAssets      ElectronicAsset[]
+  vehicleAssets         VehicleAsset[]
+  customRoles           CustomRole[]
+  checkouts             AssetCheckout[]
+  audits                AuditLog[]
+  notifications         Notification[]
+  settings              SystemSetting[]
+  settingCategories     SettingCategory[]
+  securityPolicies      SecurityPolicy[]
+  notificationPrefs     NotificationPreference[]
+  userPermissions       UserPermissionOverride[]
+  reportConfigs         ReportConfiguration[]
+  assetDefaults         AssetDefaults[]
+  organizationInfos     OrganizationInfo[]
+  usageMetrics          UsageMetric[]
+  billingRecords        BillingRecord[]
+  reviews               Review[]
+  maintenances          Maintenance[]
+  spareParts            SparePart[]
+  deleteRequests        DeleteRequest[]
+  userCreationRequests  UserCreationRequest[]
+  userDeleteRequests    UserDeleteRequest[]
+  assetAddRequests      AssetAddRequest[]
+  systemLogs            SystemLog[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([tier])
+  @@index([createdAt])
+  @@map("tenants")
+}
+
+// ============= USAGE METRICS & BILLING =============
+
+model UsageMetric {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  date        DateTime
+  metricType  String    // API_CALLS, STORAGE, USERS, ASSETS
+  count       Int       @default(0)
+  metadata    String?   // JSON for additional context
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([tenantId, date, metricType])
+  @@index([tenantId])
+  @@index([date])
+  @@index([metricType])
+  @@map("usage_metrics")
+}
+
+model BillingRecord {
+  id                  String    @id @default(cuid())
+  tenantId            String    @map("tenant_id")
+  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  billingPeriodStart  DateTime  @map("billing_period_start")
+  billingPeriodEnd    DateTime  @map("billing_period_end")
+
+  totalAmount         Float
+
+  basePrice           Float     @default(0)
+  apiCallsCharge      Float     @default(0) @map("api_calls_charge")
+  storageCharge       Float     @default(0) @map("storage_charge")
+  userCharge          Float     @default(0) @map("user_charge")
+
+  status              String    @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED
+  invoiceUrl          String?   @map("invoice_url")
+  paidAt              DateTime? @map("paid_at")
+
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, billingPeriodStart])
+  @@index([tenantId])
+  @@index([billingPeriodStart])
+  @@index([status])
+  @@map("billing_records")
+}
+
+// ============= END MULTI-TENANCY =============
 
 model User {
   id            String    @id @default(cuid())
+  tenantId      String    @map("tenant_id")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   fullName      String    @map("full_name")
-  email         String    @unique
+  email         String
   password      String    // Hashed with bcrypt
   department    String?
   designation   String?
@@ -49,7 +177,10 @@ model User {
   systemLogs SystemLog[] @relation("SystemLogs")
   createdRoles  CustomRole[] @relation("RoleCreator")
 
+  @@unique([tenantId, email])
+  @@index([tenantId])
   @@index([customRoleId])
+  @@index([status])
   @@map("users")
 }
 
@@ -62,9 +193,11 @@ enum Role {
 
 model CustomRole {
   id            String    @id @default(cuid())
+  tenantId      String    @map("tenant_id")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   name          String
   description   String?
-  companyId     String?   // Multi-tenant support
   permissions   String    // JSON array of permission strings
   isActive      Boolean   @default(true)
   createdById   String    @map("created_by_id")
@@ -74,8 +207,8 @@ model CustomRole {
 
   users         User[]
 
-  @@unique([name, companyId])
-  @@index([companyId])
+  @@unique([tenantId, name])
+  @@index([tenantId])
   @@index([createdById])
   @@map("custom_roles")
 }
@@ -117,39 +250,51 @@ enum AssetStatus {
 }
 
 model Company {
-  id          String   @id @default(cuid())
-  companyName String   @map("company_name")
-  address     String?
-  phone       String?
-  email       String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  furniture   FurnitureAsset[]
-  electronic  ElectronicAsset[]
-  vehicles    VehicleAsset[]
+  id            String   @id @default(cuid())
+  tenantId      String?  @map("tenant_id")
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  companyName   String   @map("company_name")
+  address       String?
+  phone         String?
+  email         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  furniture     FurnitureAsset[]
+  electronic    ElectronicAsset[]
+  vehicles      VehicleAsset[]
+
+  @@index([tenantId])
   @@map("companies")
 }
 
 model Manufacturer {
-  id             String   @id @default(cuid())
-  manufacturerName String @map("manufacturer_name")
-  country        String?
-  supportEmail   String?  @map("support_email")
-  supportPhone   String?  @map("support_phone")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  
-  furniture      FurnitureAsset[]
-  electronic     ElectronicAsset[]
-  vehicles       VehicleAsset[]
+  id               String   @id @default(cuid())
+  tenantId         String   @map("tenant_id")
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  manufacturerName String   @map("manufacturer_name")
+  country          String?
+  supportEmail     String?  @map("support_email")
+  supportPhone     String?  @map("support_phone")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  furniture        FurnitureAsset[]
+  electronic       ElectronicAsset[]
+  vehicles         VehicleAsset[]
+
+  @@unique([tenantId, manufacturerName])
+  @@index([tenantId])
   @@map("manufacturers")
 }
 
 model Location {
   id            String   @id @default(cuid())
+  tenantId      String?  @map("tenant_id")
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   locationName  String   @map("location_name")
   building      String?
   floor         String?
@@ -163,12 +308,17 @@ model Location {
   electronic    ElectronicAsset[]
   vehicles      VehicleAsset[]
 
+  @@unique([tenantId, locationName])
+  @@index([tenantId])
   @@map("locations")
 }
 
 model FurnitureAsset {
   id            String      @id @default(cuid())
-  assetTag      String?     @unique @map("asset_tag")
+  tenantId      String      @map("tenant_id")
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  assetTag      String?     @map("asset_tag")
   assetName     String      @map("asset_name")
   serialNumber  String?     @map("serial_number")
   imageUrl      String?     @map("image_url")
@@ -195,6 +345,8 @@ model FurnitureAsset {
   location      Location?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
   assignedUser  User?       @relation("AssignedUserFurniture", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
+  @@unique([tenantId, assetTag])
+  @@index([tenantId])
   @@index([companyId])
   @@index([manufacturerId])
   @@index([locationId])
@@ -202,22 +354,25 @@ model FurnitureAsset {
   @@index([condition])
   @@index([status])
   @@index([createdAt])
-  @@index([status, condition])
-  @@index([companyId, status])
-  @@index([locationId, status])
+  @@index([tenantId, status, condition])
+  @@index([tenantId, companyId, status])
+  @@index([tenantId, locationId, status])
   @@map("furniture_assets")
 }
 
 model ElectronicAsset {
   id                  String      @id @default(cuid())
-  assetTag            String?     @unique @map("asset_tag")
+  tenantId            String      @map("tenant_id")
+  tenant              Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  assetTag            String?     @map("asset_tag")
   assetName           String      @map("asset_name")
   imageUrl            String?     @map("image_url")
   qrPassword          String?     @map("qr_password")
   deviceType          String?     @map("device_type")
   brand               String?
   model               String?
-  serialNumber        String?     @unique @map("serial_number")
+  serialNumber        String?     @map("serial_number")
   purchaseDate        DateTime?   @map("purchase_date")
   warrantyEndDate     DateTime?   @map("warranty_end_date")
   companyId           String?     @map("company_id")
@@ -239,6 +394,9 @@ model ElectronicAsset {
   location            Location?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
   assignedUser        User?       @relation("AssignedUserElectronic", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
+  @@unique([tenantId, assetTag])
+  @@unique([tenantId, serialNumber])
+  @@index([tenantId])
   @@index([companyId])
   @@index([manufacturerId])
   @@index([locationId])
@@ -246,15 +404,18 @@ model ElectronicAsset {
   @@index([condition])
   @@index([status])
   @@index([createdAt])
-  @@index([status, condition])
-  @@index([companyId, status])
-  @@index([locationId, status])
+  @@index([tenantId, status, condition])
+  @@index([tenantId, companyId, status])
+  @@index([tenantId, locationId, status])
   @@map("electronic_assets")
 }
 
 model VehicleAsset {
   id                  String      @id @default(cuid())
-  assetTag            String?     @unique @map("asset_tag")
+  tenantId            String      @map("tenant_id")
+  tenant              Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  assetTag            String?     @map("asset_tag")
   assetName           String      @map("asset_name")
   serialNumber        String?     @map("serial_number")
   imageUrl            String?     @map("image_url")
@@ -262,7 +423,7 @@ model VehicleAsset {
   vehicleType         String?     @map("vehicle_type")
   brand               String?
   model               String?
-  registrationNumber  String      @unique @map("registration_number")
+  registrationNumber  String      @map("registration_number")
   engineNumber        String?     @map("engine_number")
   chassisNumber       String?     @map("chassis_number")
   fuelType            String?     @map("fuel_type")
@@ -289,6 +450,9 @@ model VehicleAsset {
   assignedUser        User?       @relation("AssignedUserVehicle", fields: [assignedUserId], references: [id], onDelete: SetNull)
   spareParts          SparePart[] @relation()
 
+  @@unique([tenantId, assetTag])
+  @@unique([tenantId, registrationNumber])
+  @@index([tenantId])
   @@index([companyId])
   @@index([manufacturerId])
   @@index([locationId])
@@ -296,14 +460,17 @@ model VehicleAsset {
   @@index([condition])
   @@index([status])
   @@index([createdAt])
-  @@index([status, condition])
-  @@index([companyId, status])
-  @@index([locationId, status])
+  @@index([tenantId, status, condition])
+  @@index([tenantId, companyId, status])
+  @@index([tenantId, locationId, status])
   @@map("vehicle_assets")
 }
 
 model AssetCheckout {
   id                  String   @id @default(cuid())
+  tenantId            String?  @map("tenant_id")
+  tenant              Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   assetId             String   @map("asset_id")
   assetType           String   @map("asset_type") // FURNITURE, ELECTRONIC, VEHICLE
   userId              String   @map("user_id") // Who the asset is checked out to
@@ -320,18 +487,22 @@ model AssetCheckout {
 
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([assetId])
   @@index([userId])
   @@index([checkedOutBy])
   @@index([assetType])
   @@index([checkedOutAt])
   @@index([checkInDate])
-  @@index([expectedReturnDate, checkInDate])
+  @@index([tenantId, expectedReturnDate, checkInDate])
   @@map("asset_checkouts")
 }
 
 model AuditLog {
   id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   userId      String   @map("user_id")
   action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
   entity      String   // USER, COMPANY, FURNITURE, ELECTRONIC, VEHICLE, LOCATION, MANUFACTURER
@@ -341,11 +512,18 @@ model AuditLog {
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
 model Notification {
   id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   userId    String   @map("user_id")
   title     String
   message   String
@@ -357,6 +535,7 @@ model Notification {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
@@ -380,6 +559,9 @@ model Attachment {
 
 model Review {
   id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   assetId   String   @map("asset_id")
   assetType String   @map("asset_type") // FURNITURE, ELECTRONIC, VEHICLE
   userId    String   @map("user_id")
@@ -390,6 +572,7 @@ model Review {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([assetId])
   @@index([assetType])
   @@index([userId])
@@ -400,6 +583,9 @@ model Review {
 
 model Maintenance {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   assetId         String   @map("asset_id")
   assetType       String   @map("asset_type") // FURNITURE, ELECTRONIC, VEHICLE
   userId          String?  @map("user_id")
@@ -419,6 +605,7 @@ model Maintenance {
 
   user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId])
   @@index([assetId])
   @@index([assetType])
   @@index([maintenanceDate])
@@ -429,6 +616,9 @@ model Maintenance {
 
 model SparePart {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   partDate        DateTime @default(now()) @map("part_date")
   partName        String   @map("part_name")
   quantity        Int
@@ -442,6 +632,7 @@ model SparePart {
 
   vehicle         VehicleAsset? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId])
   @@index([partDate])
   @@index([vehicleId])
   @@index([createdAt])
@@ -457,6 +648,9 @@ enum MaintenanceStatus {
 
 model DeleteRequest {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   assetId         String   @map("asset_id")
   assetType       String   @map("asset_type") // FURNITURE, ELECTRONIC, VEHICLE
   assetName       String   @map("asset_name")
@@ -470,6 +664,7 @@ model DeleteRequest {
 
   requestedBy     User     @relation("DeleteRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([assetId])
   @@index([assetType])
   @@index([status])
@@ -480,8 +675,11 @@ model DeleteRequest {
 
 model UserCreationRequest {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   fullName        String   @map("full_name")
-  email           String   @unique
+  email           String
   role            Role     @default(VIEW_USER)
   department      String?
   designation     String?
@@ -496,7 +694,8 @@ model UserCreationRequest {
 
   requestedBy     User     @relation("UserCreationRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
 
-  @@index([email])
+  @@unique([tenantId, email])
+  @@index([tenantId])
   @@index([status])
   @@index([requestedById])
   @@index([createdAt])
@@ -505,6 +704,9 @@ model UserCreationRequest {
 
 model UserDeleteRequest {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   userId          String   @map("user_id")
   userName        String   @map("user_name")
   userEmail       String   @map("user_email")
@@ -518,6 +720,7 @@ model UserDeleteRequest {
 
   requestedBy     User     @relation("UserDeleteRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([userId])
   @@index([status])
   @@index([requestedById])
@@ -527,6 +730,9 @@ model UserDeleteRequest {
 
 model AssetAddRequest {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   assetType       String   @map("asset_type")
   assetData       String   // JSON string of asset data
   requestedById   String   @map("requested_by_id")
@@ -538,6 +744,7 @@ model AssetAddRequest {
 
   requestedBy     User     @relation("AssetAddRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([assetType])
   @@index([status])
   @@index([requestedById])
@@ -549,8 +756,11 @@ model AssetAddRequest {
 
 model SettingCategory {
   id            String   @id @default(cuid())
-  name          String   @unique
-  slug          String   @unique
+  tenantId      String?  @map("tenant_id")
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name          String
+  slug          String
   description   String?
   icon          String   // Icon name from lucide-react
   color         String   // text color class
@@ -564,11 +774,17 @@ model SettingCategory {
 
   settings      SystemSetting[]
 
+  @@unique([tenantId, name])
+  @@unique([tenantId, slug])
+  @@index([tenantId])
   @@map("setting_categories")
 }
 
 model SystemSetting {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   categoryId      String   @map("category_id")
   category        SettingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
@@ -593,7 +809,9 @@ model SystemSetting {
 
   auditLogs       SettingAuditLog[]
 
-  @@unique([categoryId, key])
+  @@unique([tenantId, categoryId, key])
+  @@index([tenantId])
+  @@index([categoryId])
   @@map("system_settings")
 }
 
@@ -623,6 +841,8 @@ model SettingAuditLog {
 
 model SecurityPolicy {
   id                      String   @id @default(cuid())
+  tenantId                String   @unique @map("tenant_id")
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Authentication
   sessionTimeoutMinutes   Int      @default(30)
@@ -665,6 +885,9 @@ model SecurityPolicy {
 
 model NotificationPreference {
   id                      String   @id @default(cuid())
+  tenantId                String   @map("tenant_id")
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   userId                  String?  @unique @map("user_id")
   user                    User?    @relation("NotificationPref", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -675,7 +898,7 @@ model NotificationPreference {
 
   // In-App Settings
   inAppNotificationsEnabled  Boolean @default(true)
-  soundEnabled            Boolean @default(true) // Bell sound ✓
+  soundEnabled            Boolean @default(true) // Bell sound
   soundVolume             Int     @default(50) // 0-100
   desktopNotificationsEnabled Boolean @default(true)
 
@@ -701,6 +924,9 @@ model NotificationPreference {
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
   @@map("notification_preferences")
 }
 
@@ -720,6 +946,9 @@ model RolePermission {
 
 model UserPermissionOverride {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   userId          String   @map("user_id")
   user            User     @relation("PermissionOverrides", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -736,7 +965,8 @@ model UserPermissionOverride {
 
   createdAt       DateTime @default(now()) @map("created_at")
 
-  @@unique([userId, module, action])
+  @@unique([tenantId, userId, module, action])
+  @@index([tenantId])
   @@index([userId])
   @@index([validFrom, validUntil])
   @@map("user_permission_overrides")
@@ -744,6 +974,8 @@ model UserPermissionOverride {
 
 model OrganizationInfo {
   id              String   @id @default(cuid())
+  tenantId        String   @unique @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   organizationName String
   organizationLogo String?
@@ -780,6 +1012,8 @@ model OrganizationInfo {
 
 model AssetDefaults {
   id              String   @id @default(cuid())
+  tenantId        String   @unique @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   assetTagPrefix  String  @default("SEF-")
   autoGenerateTags Boolean @default(true)
@@ -805,6 +1039,8 @@ model AssetDefaults {
 
 model ReportConfiguration {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   reportName      String
   reportType      String   // inventory, depreciation, activity, checkout, maintenance, budget, condition, location, department
@@ -827,11 +1063,15 @@ model ReportConfiguration {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
+  @@index([reportType])
   @@map("report_configurations")
 }
 
 model SystemLog {
   id              String   @id @default(cuid())
+  tenantId        String?  @map("tenant_id")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   userId          String?  @map("user_id")
   user            User?    @relation("SystemLogs", fields: [userId], references: [id], onDelete: SetNull)
@@ -850,6 +1090,7 @@ model SystemLog {
 
   createdAt       DateTime @default(now()) @map("created_at")
 
+  @@index([tenantId])
   @@index([userId])
   @@index([actionType])
   @@index([createdAt])
