@@ -63,6 +63,36 @@ export type { AvatarProps, AvatarGroupProps } from './Avatar';
 export { Progress, CircularProgress } from './Progress';
 export type { ProgressProps, CircularProgressProps } from './Progress';
 
+// Checkbox Component & Group
+export { Checkbox, CheckboxGroup } from './Checkbox';
+export type { CheckboxProps, CheckboxGroupProps } from './Checkbox';
+
+// Radio Component & Group
+export { Radio, RadioGroup } from './Radio';
+export type { RadioProps, RadioGroupProps } from './Radio';
+
+// Select Component
+export { Select } from './Select';
+export type { SelectProps, SelectOption } from './Select';
+
+// Tabs Components
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+export type { TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps } from './Tabs';
+
+// Dropdown Components
+export {
+  Dropdown,
+  DropdownItem,
+  DropdownDivider,
+  DropdownLabel,
+  DropdownCheckboxItem,
+} from './Dropdown';
+export type {
+  DropdownProps,
+  DropdownItemProps,
+  DropdownCheckboxItemProps,
+} from './Dropdown';
+
 // ============================================================================
 // UTILITY EXPORTS
 // ============================================================================
