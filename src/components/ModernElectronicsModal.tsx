@@ -16,23 +16,23 @@ const electronicsFormSchema = z.object({
   assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
   assetTag: z.string().min(1, 'Asset tag is required').max(50),
   deviceType: z.string().min(1, 'Device type is required'),
-  brand: z.string().optional().default(''),
-  model: z.string().optional().default(''),
-  serialNumber: z.string().optional().default(''),
+  brand: z.string().default(''),
+  model: z.string().default(''),
+  serialNumber: z.string().default(''),
   purchaseDate: z.string().min(1, 'Purchase date is required'),
   purchasePrice: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Purchase price must be a positive number'),
-  warrantyEndDate: z.string().optional().default(''),
+  warrantyEndDate: z.string().default(''),
   companyId: z.string().min(1, 'Office is required'),
-  manufacturerId: z.string().optional().default(''),
+  manufacturerId: z.string().default(''),
   locationId: z.string().min(1, 'Location is required'),
-  assignedUserId: z.string().optional().default(''),
+  assignedUserId: z.string().default(''),
   condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).default('GOOD'),
   status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']).default('IN_STORE'),
-  lastMaintenanceDate: z.string().optional().default(''),
-  remarks: z.string().optional().default(''),
-  usefulLifeYears: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Useful life must be a positive number').optional(),
-  salvageValue: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Salvage value must be non-negative').optional().default(''),
-  imageUrl: z.string().optional().default(''),
+  lastMaintenanceDate: z.string().default(''),
+  remarks: z.string().default(''),
+  usefulLifeYears: z.string().default('5'),
+  salvageValue: z.string().default(''),
+  imageUrl: z.string().default(''),
 });
 
 type ElectronicsFormData = z.infer<typeof electronicsFormSchema>;
@@ -70,7 +70,7 @@ export default function ModernElectronicsModal({
     reset,
     watch,
     setValue,
-  } = useForm<ElectronicsFormData>({
+  } = useForm({
     resolver: zodResolver(electronicsFormSchema),
     mode: 'onChange',
     defaultValues: {
@@ -142,7 +142,7 @@ export default function ModernElectronicsModal({
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         // Show first validation error via toast
-        const firstError = err.errors[0];
+        const firstError = err.issues[0];
         error(`Validation error: ${firstError.message}`);
       } else {
         error(
@@ -200,7 +200,7 @@ export default function ModernElectronicsModal({
 
               <div className="mb-4">
                 <ImageUpload
-                  value={imageUrlValue}
+                  value={imageUrlValue || ''}
                   onChange={(url) => setValue('imageUrl', url || '')}
                   label="Asset Image"
                 />

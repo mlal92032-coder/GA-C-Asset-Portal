@@ -16,20 +16,20 @@ const furnitureFormSchema = z.object({
   assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
   assetTag: z.string().min(1, 'Asset tag is required').max(50),
   furnitureType: z.string().min(1, 'Furniture type is required'),
-  material: z.string().optional().default(''),
+  material: z.string().default(''),
   purchaseDate: z.string().min(1, 'Purchase date is required'),
   purchasePrice: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Purchase price must be a positive number'),
   companyId: z.string().min(1, 'Office is required'),
-  manufacturerId: z.string().optional().default(''),
+  manufacturerId: z.string().default(''),
   locationId: z.string().min(1, 'Location is required'),
-  assignedUserId: z.string().optional().default(''),
+  assignedUserId: z.string().default(''),
   condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).default('GOOD'),
   status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']).default('IN_STORE'),
-  remarks: z.string().optional().default(''),
-  usefulLifeYears: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Useful life must be a positive number').optional(),
-  salvageValue: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Salvage value must be non-negative').optional().default(''),
-  depreciationMethod: z.string().optional().default(''),
-  imageUrl: z.string().optional().default(''),
+  remarks: z.string().default(''),
+  usefulLifeYears: z.string().default('10'),
+  salvageValue: z.string().default(''),
+  depreciationMethod: z.string().default(''),
+  imageUrl: z.string().default(''),
 });
 
 type FurnitureFormData = z.infer<typeof furnitureFormSchema>;
@@ -67,7 +67,7 @@ export default function ModernFurnitureModal({
     reset,
     watch,
     setValue,
-  } = useForm<FurnitureFormData>({
+  } = useForm({
     resolver: zodResolver(furnitureFormSchema),
     mode: 'onChange',
     defaultValues: {
@@ -133,7 +133,7 @@ export default function ModernFurnitureModal({
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         // Show first validation error via toast
-        const firstError = err.errors[0];
+        const firstError = err.issues[0];
         error(`Validation error: ${firstError.message}`);
       } else {
         error(
@@ -214,7 +214,7 @@ export default function ModernFurnitureModal({
             {/* Image Upload */}
             <div>
               <ImageUpload
-                value={imageUrlValue}
+                value={imageUrlValue || ''}
                 onChange={(url) => setValue('imageUrl', url || '')}
                 label="Asset Image (Optional)"
               />

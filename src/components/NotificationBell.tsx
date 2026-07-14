@@ -85,6 +85,8 @@ export default function NotificationBell() {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+
+    return undefined;
   }, [isOpen, setIsOpen]);
 
   const markAsRead = async (id: string) => {

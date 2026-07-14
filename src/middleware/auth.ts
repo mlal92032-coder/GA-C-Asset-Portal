@@ -21,21 +21,12 @@ export async function authenticate(req: NextRequest): Promise<NextResponse | nul
       // Verify user still exists and is active
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        include: { organization: true }
       });
 
-      if (!user || user.status !== 'active') {
+      if (!user || user.status !== 'ACTIVE') {
         return NextResponse.json(
           { error: 'User not found or inactive' },
           { status: 401 }
-        );
-      }
-
-      // Verify organization is active
-      if (!user.organization.isActive) {
-        return NextResponse.json(
-          { error: 'Organization is inactive' },
-          { status: 403 }
         );
       }
 

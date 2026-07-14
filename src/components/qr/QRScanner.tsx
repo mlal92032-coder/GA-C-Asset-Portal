@@ -141,7 +141,7 @@ export const QRScanner = ({ onScan, onClose }: Props) => {
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, linear: true }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
               className="w-12 h-12 border-2 border-green-500 rounded-full"
             />
             <div className="absolute inset-0 flex items-center justify-center">

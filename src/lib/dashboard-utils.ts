@@ -71,17 +71,16 @@ export async function getConditionTrends() {
 export async function getDepreciationForecast() {
   const [furniture, electronics, vehicles] = await Promise.all([
     prisma.furnitureAsset.aggregate({
-      _sum: { estimatedValue: true },
+      _sum: { purchasePrice: true },
       _count: true,
       where: { status: { not: 'DISPOSED' } },
     }),
     prisma.electronicAsset.aggregate({
-      _sum: { estimatedValue: true },
       _count: true,
       where: { status: { not: 'DISPOSED' } },
     }),
     prisma.vehicleAsset.aggregate({
-      _sum: { estimatedValue: true },
+      _sum: { purchasePrice: true },
       _count: true,
       where: { status: { not: 'DISPOSED' } },
     }),
@@ -103,24 +102,24 @@ export async function getDepreciationForecast() {
   const forecasts: DepreciationForecast[] = [
     {
       assetType: 'Furniture',
-      currentValue: furniture._sum.estimatedValue || 0,
-      projectedValue30Days: (furniture._sum.estimatedValue || 0) * (1 - monthlyRate.FURNITURE),
-      projectedValue90Days: (furniture._sum.estimatedValue || 0) * Math.pow(1 - monthlyRate.FURNITURE, 3),
-      totalDepreciation: (furniture._sum.estimatedValue || 0) * depreciationRates.FURNITURE,
+      currentValue: furniture._sum.purchasePrice || 0,
+      projectedValue30Days: (furniture._sum.purchasePrice || 0) * (1 - monthlyRate.FURNITURE),
+      projectedValue90Days: (furniture._sum.purchasePrice || 0) * Math.pow(1 - monthlyRate.FURNITURE, 3),
+      totalDepreciation: (furniture._sum.purchasePrice || 0) * depreciationRates.FURNITURE,
     },
     {
       assetType: 'Electronics',
-      currentValue: electronics._sum.estimatedValue || 0,
-      projectedValue30Days: (electronics._sum.estimatedValue || 0) * (1 - monthlyRate.ELECTRONIC),
-      projectedValue90Days: (electronics._sum.estimatedValue || 0) * Math.pow(1 - monthlyRate.ELECTRONIC, 3),
-      totalDepreciation: (electronics._sum.estimatedValue || 0) * depreciationRates.ELECTRONIC,
+      currentValue: 0, // Electronics don't have purchase price in schema
+      projectedValue30Days: 0,
+      projectedValue90Days: 0,
+      totalDepreciation: 0,
     },
     {
       assetType: 'Vehicles',
-      currentValue: vehicles._sum.estimatedValue || 0,
-      projectedValue30Days: (vehicles._sum.estimatedValue || 0) * (1 - monthlyRate.VEHICLE),
-      projectedValue90Days: (vehicles._sum.estimatedValue || 0) * Math.pow(1 - monthlyRate.VEHICLE, 3),
-      totalDepreciation: (vehicles._sum.estimatedValue || 0) * depreciationRates.VEHICLE,
+      currentValue: vehicles._sum.purchasePrice || 0,
+      projectedValue30Days: (vehicles._sum.purchasePrice || 0) * (1 - monthlyRate.VEHICLE),
+      projectedValue90Days: (vehicles._sum.purchasePrice || 0) * Math.pow(1 - monthlyRate.VEHICLE, 3),
+      totalDepreciation: (vehicles._sum.purchasePrice || 0) * depreciationRates.VEHICLE,
     },
   ];
 
@@ -151,7 +150,7 @@ export async function getHealthAlerts(): Promise<HealthAlert[]> {
   // Alert 2: Assets needing maintenance
   const maintenanceNeeded = await prisma.maintenance.count({
     where: {
-      nextMaintenanceDate: {
+      nextDueDate: {
         lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Within 7 days
       },
     },
@@ -170,7 +169,7 @@ export async function getHealthAlerts(): Promise<HealthAlert[]> {
   // Alert 3: Warranty expiring soon
   const warrantyExpiring = await prisma.electronicAsset.count({
     where: {
-      warrantyExpireDate: {
+      warrantyEndDate: {
         lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Within 30 days
       },
     },
@@ -258,33 +257,28 @@ export async function getLocationDistributionWithMetrics() {
  * Get cost analysis data
  */
 export async function getCostAnalysis() {
-  const [furnitureValue, electronicsValue, vehiclesValue] = await Promise.all([
+  const [furnitureValue, vehiclesValue] = await Promise.all([
     prisma.furnitureAsset.aggregate({
-      _sum: { estimatedValue: true },
-      where: { status: { not: 'DISPOSED' } },
-    }),
-    prisma.electronicAsset.aggregate({
-      _sum: { estimatedValue: true },
+      _sum: { purchasePrice: true },
       where: { status: { not: 'DISPOSED' } },
     }),
     prisma.vehicleAsset.aggregate({
-      _sum: { estimatedValue: true },
+      _sum: { purchasePrice: true },
       where: { status: { not: 'DISPOSED' } },
     }),
   ]);
 
   const totalValue =
-    (furnitureValue._sum.estimatedValue || 0) +
-    (electronicsValue._sum.estimatedValue || 0) +
-    (vehiclesValue._sum.estimatedValue || 0);
+    (furnitureValue._sum.purchasePrice || 0) +
+    (vehiclesValue._sum.purchasePrice || 0);
 
   return {
-    furnitureValue: furnitureValue._sum.estimatedValue || 0,
-    electronicsValue: electronicsValue._sum.estimatedValue || 0,
-    vehiclesValue: vehiclesValue._sum.estimatedValue || 0,
+    furnitureValue: furnitureValue._sum.purchasePrice || 0,
+    electronicsValue: 0, // Electronics don't have purchase price in schema
+    vehiclesValue: vehiclesValue._sum.purchasePrice || 0,
     totalValue,
-    furniturePercentage: totalValue > 0 ? ((furnitureValue._sum.estimatedValue || 0) / totalValue) * 100 : 0,
-    electronicsPercentage: totalValue > 0 ? ((electronicsValue._sum.estimatedValue || 0) / totalValue) * 100 : 0,
-    vehiclesPercentage: totalValue > 0 ? ((vehiclesValue._sum.estimatedValue || 0) / totalValue) * 100 : 0,
+    furniturePercentage: totalValue > 0 ? ((furnitureValue._sum.purchasePrice || 0) / totalValue) * 100 : 0,
+    electronicsPercentage: 0,
+    vehiclesPercentage: totalValue > 0 ? ((vehiclesValue._sum.purchasePrice || 0) / totalValue) * 100 : 0,
   };
 }

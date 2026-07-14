@@ -180,7 +180,7 @@ export function NotificationCenter({
                   ) : (
                     <motion.div
                       className="divide-y divide-gray-200"
-                      variants={staggerContainer.container}
+                      variants={staggerContainer}
                       initial="hidden"
                       animate="show"
                     >

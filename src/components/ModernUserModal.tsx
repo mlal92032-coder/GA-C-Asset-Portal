@@ -55,7 +55,7 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
     reset,
     watch,
     setValue,
-  } = useForm<UserFormData>({
+  } = useForm({
     resolver: zodResolver(userFormSchema),
     mode: 'onChange',
     defaultValues: {
@@ -131,7 +131,7 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         // Show first validation error via toast
-        const firstError = err.errors[0];
+        const firstError = err.issues[0];
         error(`Validation error: ${firstError.message}`);
       } else {
         error(err?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'));

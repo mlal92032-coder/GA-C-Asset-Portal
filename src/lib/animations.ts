@@ -233,10 +233,10 @@ export const modalContent = {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { ...transitions.base, ease: easings.easeOut },
+    transition: { duration: transitions.base.duration, ease: 'easeOut' as const },
   },
   exit: { opacity: 0, scale: 0.95, y: 20, transition: transitions.fast },
-};
+} as const;
 
 // ========================================
 // LOADING & PROGRESS ANIMATIONS
