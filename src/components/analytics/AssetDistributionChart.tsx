@@ -59,9 +59,9 @@ export const AssetDistributionChart = ({ data }: Props) => {
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, value, percent }) => (
+            label={({ name, value, percent }: any) => (
               <text fontSize={12} fill="#666">
-                {name}: {value} ({(percent * 100).toFixed(0)}%)
+                {name}: {value} ({percent ? (percent * 100).toFixed(0) : 0}%)
               </text>
             )}
             outerRadius={100}

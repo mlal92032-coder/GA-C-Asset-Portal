@@ -32,7 +32,7 @@ export const DepreciationChart = ({
   const [chartData, setChartData] = useState<any[]>([])
 
   useEffect(() => {
-    const data = []
+    const data: any[] = []
     for (let year = 0; year <= usefulLife; year++) {
       let value: number
 

@@ -213,7 +213,7 @@ function VehicleMaintenanceContent() {
           setMaintenances(filtered);
         }
       } else {
-        toastError(result.error || 'Failed to save maintenance record', 'error');
+        toastError(result.error || 'Failed to save maintenance record');
       }
     } catch (err) {
       toastError('Failed to save maintenance record');
@@ -244,12 +244,12 @@ function VehicleMaintenanceContent() {
       if (result.success) {
         setSparePartsModal(false);
         setEditingSparePart(null);
-        toastSuccess(editingSparePart ? 'Spare part record updated successfully!' : 'Spare part record added successfully!', 'success');
+        toastSuccess(editingSparePart ? 'Spare part record updated successfully!' : 'Spare part record added successfully!');
         const res = await fetch(`/api/spare-parts?vehicleId=${selectedVehicle}&page=1&limit=${itemsPerPage}`);
         const updated = await res.json();
         if (updated.success) setSpareParts(updated.data);
       } else {
-        toastError(result.error || 'Failed to save spare part', 'error');
+        toastError(result.error || 'Failed to save spare part');
       }
     } catch (err) {
       toastError('Failed to save spare part');
@@ -302,7 +302,7 @@ function VehicleMaintenanceContent() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    toastSuccess(`Exported ${maintenances.length} maintenance records`, 'success');
+    toastSuccess(`Exported ${maintenances.length} maintenance records`);
   };
 
   const handleImportMaintenance = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,7 +320,7 @@ function VehicleMaintenanceContent() {
         }
 
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        const records = [];
+        const records: any[] = [];
 
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
@@ -361,7 +361,7 @@ function VehicleMaintenanceContent() {
         const updated = await res.json();
         if (updated.success) setMaintenances(updated.data);
 
-        toastSuccess(`Imported ${successCount} maintenance records successfully!`, 'success');
+        toastSuccess(`Imported ${successCount} maintenance records successfully!`);
       } catch (err) {
         toastError('Error importing CSV file');
       }
@@ -401,7 +401,7 @@ function VehicleMaintenanceContent() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    toastSuccess(`Exported ${spareParts.length} spare parts records`, 'success');
+    toastSuccess(`Exported ${spareParts.length} spare parts records`);
   };
 
   const handleImportSpareParts = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -418,7 +418,7 @@ function VehicleMaintenanceContent() {
           return;
         }
 
-        const records = [];
+        const records: any[] = [];
 
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
@@ -457,7 +457,7 @@ function VehicleMaintenanceContent() {
         const updated = await res.json();
         if (updated.success) setSpareParts(updated.data);
 
-        toastSuccess(`Imported ${successCount} spare parts records successfully!`, 'success');
+        toastSuccess(`Imported ${successCount} spare parts records successfully!`);
       } catch (err) {
         toastError('Error importing CSV file');
       }
@@ -598,12 +598,6 @@ function VehicleMaintenanceContent() {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {toast && (
-          <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${toast.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
-            <AlertCircle className="w-5 h-5" />
-            {toast.message}
-          </div>
-        )}
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />

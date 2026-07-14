@@ -39,7 +39,7 @@ export default function AppFooter({
 
   // Generate page numbers to display (max 7 pages)
   const getPageNumbers = () => {
-    const pages = [];
+    const pages: (number | undefined)[] = [];
     const maxVisible = 7;
 
     if (totalPages <= maxVisible) {
@@ -129,7 +129,7 @@ export default function AppFooter({
                     return (
                       <button
                         key={page}
-                        onClick={() => handlePageJump(page)}
+                        onClick={() => page !== undefined && handlePageJump(page)}
                         className={`w-9 h-9 rounded-lg font-semibold text-sm transition-all ${
                           currentPage === page
                             ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md hover:shadow-lg'
