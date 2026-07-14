@@ -257,8 +257,28 @@ export default function DashboardPage() {
         setAnalyticsLoading(false);
       }
     }
+
+    // Trigger workflow automation checks (expiry notifications, low stock alerts, etc)
+    async function runAutomationChecks() {
+      try {
+        await fetch('/api/automation/check-workflows', {
+          method: 'GET',
+          credentials: 'include',
+        });
+      } catch (error) {
+        console.error('Workflow automation check failed:', error);
+        // Silent failure - don't break dashboard
+      }
+    }
+
     fetchData();
-    const interval = setInterval(fetchData, 10000);
+    runAutomationChecks();
+
+    const interval = setInterval(() => {
+      fetchData();
+      runAutomationChecks();
+    }, 10000);
+
     return () => clearInterval(interval);
   }, [timeRange]);
 
