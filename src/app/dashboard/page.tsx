@@ -9,10 +9,11 @@ import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import { NotificationCenter, type Notification } from '@/components/NotificationCenter';
 import { SkeletonCard, SkeletonStats, SkeletonTable } from '@/components/Skeleton';
+import { AdvancedAnalytics } from '@/components/AdvancedAnalytics';
 import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animations';
 import {
   Package, Armchair, Monitor, Car, AlertTriangle, CheckCircle, XCircle,
-  Plus, BarChart3, ArrowUpRight, X, MapPin, TrendingUp, Clock, Building2, Users
+  Plus, BarChart3, ArrowUpRight, X, MapPin, TrendingUp, Clock, Building2, Users, Download, Calendar
 } from 'lucide-react';
 
 interface Asset {
@@ -38,6 +39,17 @@ interface EmployeeAsset {
   status: 'ACTIVE' | 'INACTIVE';
 }
 
+interface AnalyticsReport {
+  timeRange: string;
+  generatedAt: string;
+  assetDistribution: Array<{ type: string; count: number; fill: string }>;
+  checkoutTrends: Array<{ date: string; checkouts: number; checkins: number }>;
+  maintenanceTrends: Array<{ date: string; cost: number; count: number }>;
+  conditionDistribution: Array<{ condition: string; count: number; fill: string }>;
+  locationDistribution: Array<{ location: string; count: number }>;
+  utilizationRate: { total: number; inUse: number; percentage: number };
+}
+
 interface DashboardData {
   totalAssets: number;
   furnitureCount: number;
@@ -50,6 +62,7 @@ interface DashboardData {
   recentAssets: Asset[];
   employeeAssets: EmployeeAsset[];
   sampleAssetTags: { furniture: Array<{ assetTag: string; assetName: string }>; electronic: Array<{ assetTag: string; assetName: string }>; vehicle: Array<{ assetTag: string; assetName: string }> };
+  analytics?: AnalyticsReport;
 }
 
 // Professional Donut Chart Component
@@ -222,13 +235,17 @@ export default function DashboardPage() {
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  // Fetch dashboard data
+  // Fetch dashboard data with time range
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        const res = await fetch('/api/dashboard/stats', { credentials: 'include' });
+        setAnalyticsLoading(true);
+        const res = await fetch(`/api/dashboard/stats?timeRange=${timeRange}`, { credentials: 'include' });
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
         setDashboardData(json.data);
@@ -237,12 +254,13 @@ export default function DashboardPage() {
         setError(err.message || 'Failed to load dashboard');
       } finally {
         setLoading(false);
+        setAnalyticsLoading(false);
       }
     }
     fetchData();
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [timeRange]);
 
   // Fetch notifications
   useEffect(() => {
@@ -397,6 +415,59 @@ export default function DashboardPage() {
 
   const hasFilters = selectedType || selectedCondition || selectedStatus;
 
+  const exportToCSV = () => {
+    if (!dashboardData?.analytics) return;
+
+    setExporting(true);
+    try {
+      const { analytics } = dashboardData;
+
+      // Prepare CSV data
+      const csvContent = [
+        ['Analytics Report', `Time Range: ${timeRange}`, `Generated: ${new Date().toISOString()}`],
+        [],
+        ['Asset Distribution'],
+        ['Type', 'Count'],
+        ...analytics.assetDistribution.map(d => [d.type, d.count.toString()]),
+        [],
+        ['Utilization Rate'],
+        ['Total Assets', 'In Use', 'Percentage'],
+        [analytics.utilizationRate.total.toString(), analytics.utilizationRate.inUse.toString(), `${analytics.utilizationRate.percentage}%`],
+        [],
+        ['Checkout Trends'],
+        ['Date', 'Checkouts', 'Checkins'],
+        ...analytics.checkoutTrends.map(d => [d.date, d.checkouts.toString(), d.checkins.toString()]),
+        [],
+        ['Maintenance Trends'],
+        ['Date', 'Cost', 'Count'],
+        ...analytics.maintenanceTrends.map(d => [d.date, d.cost.toString(), d.count.toString()]),
+        [],
+        ['Condition Distribution'],
+        ['Condition', 'Count'],
+        ...analytics.conditionDistribution.map(d => [d.condition, d.count.toString()]),
+        [],
+        ['Location Distribution'],
+        ['Location', 'Count'],
+        ...analytics.locationDistribution.map(d => [d.location, d.count.toString()])
+      ];
+
+      const csvString = csvContent.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -466,7 +537,7 @@ export default function DashboardPage() {
         {/* Stat Cards with Stagger Animation - Compact & Professional */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8"
-          variants={staggerContainer.container}
+          variants={staggerContainer}
           initial="hidden"
           animate="show"
         >
@@ -559,6 +630,38 @@ export default function DashboardPage() {
           </motion.div>
         </motion.div>
 
+        {/* Time Range & Export Section */}
+        <motion.div
+          className="mb-8 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg flex items-center justify-between flex-wrap gap-4 shadow-sm"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              <label className="text-xs text-indigo-900 font-semibold">Time Range:</label>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d' | '1y')}
+                className="px-3 py-2 text-xs font-semibold bg-white border-2 border-indigo-300 rounded-lg text-indigo-900 hover:border-indigo-400 transition-colors cursor-pointer"
+              >
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="90d">Last 90 Days</option>
+                <option value="1y">Last Year</option>
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={exportToCSV}
+            disabled={exporting || !dashboardData?.analytics}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? 'Exporting...' : 'Export to CSV'}
+          </button>
+        </motion.div>
+
         {/* Filter Indicator */}
         {hasFilters && (
           <motion.div className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg flex items-center justify-between shadow-sm" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
@@ -571,6 +674,20 @@ export default function DashboardPage() {
             <button onClick={clearFilters} className="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 bg-white px-3 py-1 rounded-full hover:bg-blue-50 transition-colors"><X className="w-3.5 h-3.5" /> Clear</button>
           </motion.div>
         )}
+
+        {/* Advanced Analytics Section */}
+        <motion.div
+          className="mb-12 p-8 bg-white rounded-xl border-2 border-slate-200 shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-900">Advanced Analytics</h2>
+            <p className="text-sm text-slate-500 mt-1">Time Range: {timeRange === '7d' ? 'Last 7 Days' : timeRange === '30d' ? 'Last 30 Days' : timeRange === '90d' ? 'Last 90 Days' : 'Last Year'}</p>
+          </div>
+          <AdvancedAnalytics isLoading={analyticsLoading} />
+        </motion.div>
 
         {/* Donut Charts */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-12">
