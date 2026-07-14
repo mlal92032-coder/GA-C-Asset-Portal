@@ -1,10 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
-// import { io, Socket } from 'socket.io-client'  // TODO: Install socket.io-client when real-time features are needed
+import { io, Socket } from 'socket.io-client'
 import { useSession } from 'next-auth/react'
-
-// Temporary placeholder types
-type Socket = any
-const io = () => null
 
 interface UseWebSocketOptions {
   autoConnect?: boolean
@@ -36,9 +32,75 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    // TODO: Implement Socket.io connection when needed
-    // For now, this is a placeholder to allow the app to build
-    return undefined
+    if (!autoConnect || !session?.user) {
+      return
+    }
+
+    // Initialize Socket.io connection
+    const socket = io(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000', {
+      path: '/api/socket.io',
+      auth: {
+        userId: session.user.id,
+        companyId: companyId || (session.user as any).companyId,
+        userEmail: session.user.email,
+        token: (session as any).sessionToken,
+      },
+      reconnection: reconnect,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      transports: ['websocket', 'polling'],
+    })
+
+    socketRef.current = socket
+
+    // Connection handlers
+    socket.on('connect', () => {
+      setConnected(true)
+      setError(null)
+
+      // Subscribe to initial subscriptions
+      subscriptions.forEach((sub) => {
+        if (sub === 'assets') {
+          socket.emit('subscribe:assets', {
+            companyId: companyId || (session.user as any).companyId,
+          })
+        } else if (sub === 'notifications') {
+          socket.emit('subscribe:notifications')
+        } else if (sub === 'analytics') {
+          socket.emit('subscribe:analytics', {
+            companyId: companyId || (session.user as any).companyId,
+          })
+        } else if (sub === 'presence') {
+          socket.emit('subscribe:presence', {
+            companyId: companyId || (session.user as any).companyId,
+          })
+        }
+      })
+    })
+
+    socket.on('disconnect', () => {
+      setConnected(false)
+    })
+
+    socket.on('error', (errorMessage: string) => {
+      setError(errorMessage)
+    })
+
+    // Update online user count
+    socket.on('presence:user_online', (data) => {
+      setOnlineUsers(data.onlineCount)
+    })
+
+    socket.on('presence:user_offline', (data) => {
+      setOnlineUsers(data.onlineCount)
+    })
+
+    return () => {
+      if (socket) {
+        socket.disconnect()
+      }
+    }
   }, [session?.user, autoConnect, reconnect, subscriptions, companyId])
 
   const addEvent = useCallback((type: string, data: any) => {
