@@ -12,6 +12,8 @@ import QRCode from '@/components/QRCode';
 import CheckoutModal, { CheckinModal } from '@/components/CheckoutModal';
 import BulkImportExport from '@/components/BulkImportExport';
 import ModernElectronicsModal from '@/components/ModernElectronicsModal';
+import { BulkActionBar } from '@/components/BulkActionBar';
+import BulkStatusUpdateModal, { type BulkStatusUpdateData } from '@/components/BulkStatusUpdateModal';
 import { Button, IconButton } from '@/components/Button';
 import { uploadImage, resolveImageUrl, buildImageUrl } from '@/lib/image-upload';
 import type { ElectronicAsset, Company, Manufacturer, Location, User, ElectronicFormData } from '@/types';
@@ -64,6 +66,9 @@ export default function ElectronicsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [sort, setSort] = useState('createdAt');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const [formData, setFormData] = useState<ElectronicFormData>({
     assetName: '',
@@ -328,6 +333,129 @@ export default function ElectronicsPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedAssets.length === 0) return;
+
+    const reason = prompt(
+      `Delete ${selectedAssets.length} asset(s)? This cannot be undone.\n\nReason for deletion:`
+    );
+    if (!reason) return;
+
+    try {
+      const res = await fetch('/api/assets/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'ELECTRONICS',
+          reason,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        success(`${json.deleted || 0} asset(s) deleted successfully`);
+        setSelectedAssets([]);
+        fetchAll();
+      } else {
+        error(json.error || 'Failed to delete assets');
+      }
+    } catch {
+      error('An error occurred');
+    }
+  };
+
+  const handleBulkExport = async () => {
+    if (selectedAssets.length === 0) return;
+
+    try {
+      const res = await fetch('/api/assets/bulk-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'ELECTRONICS',
+          format: 'csv',
+        }),
+      });
+
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `electronics-assets-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      success('Assets exported successfully');
+    } catch {
+      error('Failed to export assets');
+    }
+  };
+
+  const handleBulkStatusUpdate = async (data: BulkStatusUpdateData) => {
+    if (selectedAssets.length === 0) return;
+
+    setBulkUpdating(true);
+    try {
+      const res = await fetch('/api/assets/bulk-update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'ELECTRONICS',
+          ...data,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        success(`${json.updated} asset(s) updated successfully`);
+        setSelectedAssets([]);
+        fetchAll();
+      } else {
+        error(json.error || 'Failed to update assets');
+      }
+    } catch {
+      error('An error occurred');
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const handleBulkPrint = async () => {
+    if (selectedAssets.length === 0) return;
+
+    try {
+      const res = await fetch('/api/assets/bulk-print', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'ELECTRONICS',
+        }),
+      });
+
+      if (!res.ok) throw new Error('Print generation failed');
+
+      const html = await res.text();
+      const printWindow = window.open('', '', 'width=800,height=600');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+
+      success('Labels sent to printer');
+    } catch {
+      error('Failed to generate labels');
+    }
+  };
+
   const fetchAttachments = async (assetId: string) => {
     try {
       const res = await fetch(`/api/attachments?assetId=${assetId}&assetType=ELECTRONIC`);
@@ -540,12 +668,6 @@ export default function ElectronicsPage() {
       onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {toast && (
-        <div className={`toast toast-${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
-
       <PageHeader
         title="Electronic Assets"
         subtitle="Manage electronic and electrical equipment"
@@ -635,9 +757,23 @@ export default function ElectronicsPage() {
         </div>
       </FilterBar>
 
+      {/* BulkActionBar */}
+      <BulkActionBar
+        selectedCount={selectedAssets.length}
+        onClose={() => setSelectedAssets([])}
+        onEdit={() => setShowBulkStatusUpdate(true)}
+        onDelete={handleBulkDelete}
+        onExport={handleBulkExport}
+        onPrint={handleBulkPrint}
+        isLoading={saving || bulkUpdating}
+      />
+
       {/* DataTable */}
       <DataTable<ElectronicAsset>
         data={assets}
+        selectable={true}
+        selectedIds={selectedAssets}
+        onSelectionChange={setSelectedAssets}
         columns={[
           {
             key: 'imageUrl',
@@ -999,6 +1135,16 @@ export default function ElectronicsPage() {
           assetType="Electronics"
         />
       )}
+
+      {/* Bulk Status Update Modal */}
+      <BulkStatusUpdateModal
+        isOpen={showBulkStatusUpdate}
+        onClose={() => setShowBulkStatusUpdate(false)}
+        onUpdate={handleBulkStatusUpdate}
+        locations={locations}
+        users={users}
+        isLoading={bulkUpdating}
+      />
 
       {/* Checkout Modal */}
       {showCheckout && checkoutAsset && (
