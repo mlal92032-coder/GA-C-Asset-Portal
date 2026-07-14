@@ -9,35 +9,37 @@ import { motion } from 'framer-motion';
 import ImageUpload from './ImageUpload';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useToast } from '@/contexts/ToastContext';
+import { vehicleAssetSchema } from '@/schemas/vehicles';
 
-const vehicleAssetSchema = z.object({
+// Form-specific schema that adapts modal data to API expectations
+const vehicleFormSchema = z.object({
   assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
   assetTag: z.string().min(1, 'Asset tag is required').max(50),
-  vehicleType: z.string(),
-  brand: z.string(),
-  model: z.string(),
+  vehicleType: z.string().optional().default(''),
+  brand: z.string().optional().default(''),
+  model: z.string().optional().default(''),
   registrationNumber: z.string().min(1, 'Registration number is required').max(50),
-  engineNumber: z.string(),
-  chassisNumber: z.string(),
-  fuelType: z.string(),
-  purchaseDate: z.string(),
+  engineNumber: z.string().optional().default(''),
+  chassisNumber: z.string().optional().default(''),
+  fuelType: z.string().optional().default(''),
+  purchaseDate: z.string().min(1, 'Purchase date is required'),
   purchasePrice: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) > 0), 'Purchase price must be a positive number'),
   companyId: z.string().min(1, 'Office is required'),
-  manufacturerId: z.string(),
+  manufacturerId: z.string().optional().default(''),
   locationId: z.string().min(1, 'Location is required'),
-  assignedUserId: z.string(),
-  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']),
-  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']),
-  lastServiceDate: z.string(),
-  insuranceExpiryDate: z.string(),
-  registrationExpiry: z.string(),
-  remarks: z.string(),
-  usefulLifeYears: z.string(),
-  salvageValue: z.string(),
-  imageUrl: z.string(),
+  assignedUserId: z.string().optional().default(''),
+  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).default('GOOD'),
+  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']).default('IN_STORE'),
+  lastServiceDate: z.string().optional().default(''),
+  insuranceExpiryDate: z.string().optional().default(''),
+  registrationExpiry: z.string().optional().default(''),
+  remarks: z.string().optional().default(''),
+  usefulLifeYears: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Useful life must be a positive number').optional(),
+  salvageValue: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Salvage value must be non-negative').optional().default(''),
+  imageUrl: z.string().optional().default(''),
 });
 
-type VehicleFormData = z.infer<typeof vehicleAssetSchema>;
+type VehicleFormData = z.infer<typeof vehicleFormSchema>;
 
 interface ModernVehiclesModalProps {
   isOpen: boolean;
@@ -73,7 +75,7 @@ export default function ModernVehiclesModal({
     watch,
     setValue,
   } = useForm<VehicleFormData>({
-    resolver: zodResolver(vehicleAssetSchema),
+    resolver: zodResolver(vehicleFormSchema),
     mode: 'onChange',
     defaultValues: {
       assetName: '',
@@ -140,7 +142,9 @@ export default function ModernVehiclesModal({
 
   const onSubmit = async (data: VehicleFormData) => {
     try {
-      await onSave(data);
+      // Validate form data against schema before submission
+      const validatedData = vehicleFormSchema.parse(data);
+      await onSave(validatedData);
       success(
         editingAsset
           ? 'Vehicle asset updated successfully'
@@ -148,10 +152,16 @@ export default function ModernVehiclesModal({
       );
       reset();
     } catch (err: any) {
-      error(
-        err?.message ||
-        (editingAsset ? 'Failed to update vehicle asset' : 'Failed to create vehicle asset')
-      );
+      if (err instanceof z.ZodError) {
+        // Show first validation error via toast
+        const firstError = err.errors[0];
+        error(`Validation error: ${firstError.message}`);
+      } else {
+        error(
+          err?.message ||
+          (editingAsset ? 'Failed to update vehicle asset' : 'Failed to create vehicle asset')
+        );
+      }
     }
   };
 

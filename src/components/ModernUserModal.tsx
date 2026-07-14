@@ -16,18 +16,20 @@ import {
   getAvailableActions, ACTION_LABELS,
   type Module, type PermissionAction,
 } from '@/lib/permissions';
+import { userSchema } from '@/schemas/user';
 
-const userSchema = z.object({
+// Form-specific schema for user modal
+const userFormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters').max(255),
   email: z.string().email('Invalid email address'),
-  password: z.string().refine(v => v.length === 0 || v.length >= 6, 'Password must be at least 6 characters'),
-  phone: z.string(),
-  department: z.string(),
-  designation: z.string(),
-  status: z.enum(['ACTIVE', 'INACTIVE']),
+  password: z.string().refine(v => v.length === 0 || v.length >= 6, 'Password must be at least 6 characters').optional().default(''),
+  phone: z.string().optional().default(''),
+  department: z.string().optional().default(''),
+  designation: z.string().optional().default(''),
+  status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
 });
 
-type UserFormData = z.infer<typeof userSchema>;
+type UserFormData = z.infer<typeof userFormSchema>;
 
 interface Props {
   isOpen: boolean;
@@ -54,7 +56,7 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
     watch,
     setValue,
   } = useForm<UserFormData>({
-    resolver: zodResolver(userSchema),
+    resolver: zodResolver(userFormSchema),
     mode: 'onChange',
     defaultValues: {
       fullName: '',
@@ -111,21 +113,29 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
 
   const onSubmit = async (data: UserFormData) => {
     try {
+      // Validate form data against schema before submission
+      const validatedData = userFormSchema.parse(data);
       await onSave({
-        fullName: data.fullName,
-        email: data.email,
-        password: data.password || undefined,
+        fullName: validatedData.fullName,
+        email: validatedData.email,
+        password: validatedData.password || undefined,
         role,
-        status: data.status,
-        department: data.department || null,
-        designation: data.designation || null,
-        phone: data.phone || null,
+        status: validatedData.status,
+        department: validatedData.department || null,
+        designation: validatedData.designation || null,
+        phone: validatedData.phone || null,
         permissions: Object.keys(modulePermissions).length > 0 ? modulePermissions : null,
       });
       success(editingUser ? 'User updated successfully' : 'User created successfully');
       reset();
     } catch (err: any) {
-      error(err?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'));
+      if (err instanceof z.ZodError) {
+        // Show first validation error via toast
+        const firstError = err.errors[0];
+        error(`Validation error: ${firstError.message}`);
+      } else {
+        error(err?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'));
+      }
     }
   };
 

@@ -9,31 +9,33 @@ import { motion } from 'framer-motion';
 import ImageUpload from './ImageUpload';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useToast } from '@/contexts/ToastContext';
+import { electronicsAssetSchema } from '@/schemas/electronics';
 
-const electronicsAssetSchema = z.object({
+// Form-specific schema that adapts modal data to API expectations
+const electronicsFormSchema = z.object({
   assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
   assetTag: z.string().min(1, 'Asset tag is required').max(50),
   deviceType: z.string().min(1, 'Device type is required'),
-  brand: z.string(),
-  model: z.string(),
-  serialNumber: z.string(),
+  brand: z.string().optional().default(''),
+  model: z.string().optional().default(''),
+  serialNumber: z.string().optional().default(''),
   purchaseDate: z.string().min(1, 'Purchase date is required'),
   purchasePrice: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Purchase price must be a positive number'),
-  warrantyEndDate: z.string(),
+  warrantyEndDate: z.string().optional().default(''),
   companyId: z.string().min(1, 'Office is required'),
-  manufacturerId: z.string(),
+  manufacturerId: z.string().optional().default(''),
   locationId: z.string().min(1, 'Location is required'),
-  assignedUserId: z.string(),
-  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']),
-  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']),
-  lastMaintenanceDate: z.string(),
-  remarks: z.string(),
-  usefulLifeYears: z.string(),
-  salvageValue: z.string(),
-  imageUrl: z.string(),
+  assignedUserId: z.string().optional().default(''),
+  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).default('GOOD'),
+  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']).default('IN_STORE'),
+  lastMaintenanceDate: z.string().optional().default(''),
+  remarks: z.string().optional().default(''),
+  usefulLifeYears: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Useful life must be a positive number').optional(),
+  salvageValue: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Salvage value must be non-negative').optional().default(''),
+  imageUrl: z.string().optional().default(''),
 });
 
-type ElectronicsFormData = z.infer<typeof electronicsAssetSchema>;
+type ElectronicsFormData = z.infer<typeof electronicsFormSchema>;
 
 interface ModernElectronicsModalProps {
   isOpen: boolean;
@@ -69,7 +71,7 @@ export default function ModernElectronicsModal({
     watch,
     setValue,
   } = useForm<ElectronicsFormData>({
-    resolver: zodResolver(electronicsAssetSchema),
+    resolver: zodResolver(electronicsFormSchema),
     mode: 'onChange',
     defaultValues: {
       assetName: '',
@@ -128,7 +130,9 @@ export default function ModernElectronicsModal({
 
   const onSubmit = async (data: ElectronicsFormData) => {
     try {
-      await onSave(data);
+      // Validate form data against schema before submission
+      const validatedData = electronicsFormSchema.parse(data);
+      await onSave(validatedData);
       success(
         editingAsset
           ? 'Electronics asset updated successfully'
@@ -136,10 +140,16 @@ export default function ModernElectronicsModal({
       );
       reset();
     } catch (err: any) {
-      error(
-        err?.message ||
-        (editingAsset ? 'Failed to update electronics asset' : 'Failed to create electronics asset')
-      );
+      if (err instanceof z.ZodError) {
+        // Show first validation error via toast
+        const firstError = err.errors[0];
+        error(`Validation error: ${firstError.message}`);
+      } else {
+        error(
+          err?.message ||
+          (editingAsset ? 'Failed to update electronics asset' : 'Failed to create electronics asset')
+        );
+      }
     }
   };
 

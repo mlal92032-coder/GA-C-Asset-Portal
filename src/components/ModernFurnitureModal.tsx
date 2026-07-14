@@ -9,28 +9,30 @@ import { motion } from 'framer-motion';
 import ImageUpload from './ImageUpload';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useToast } from '@/contexts/ToastContext';
+import { furnitureAssetSchema } from '@/schemas/furniture';
 
-const furnitureAssetSchema = z.object({
+// Form-specific schema that adapts modal data to API expectations
+const furnitureFormSchema = z.object({
   assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
   assetTag: z.string().min(1, 'Asset tag is required').max(50),
   furnitureType: z.string().min(1, 'Furniture type is required'),
-  material: z.string(),
+  material: z.string().optional().default(''),
   purchaseDate: z.string().min(1, 'Purchase date is required'),
   purchasePrice: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Purchase price must be a positive number'),
   companyId: z.string().min(1, 'Office is required'),
-  manufacturerId: z.string(),
+  manufacturerId: z.string().optional().default(''),
   locationId: z.string().min(1, 'Location is required'),
-  assignedUserId: z.string(),
-  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']),
-  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']),
-  remarks: z.string(),
-  usefulLifeYears: z.string(),
-  salvageValue: z.string(),
-  depreciationMethod: z.string(),
-  imageUrl: z.string(),
+  assignedUserId: z.string().optional().default(''),
+  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).default('GOOD'),
+  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']).default('IN_STORE'),
+  remarks: z.string().optional().default(''),
+  usefulLifeYears: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Useful life must be a positive number').optional(),
+  salvageValue: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Salvage value must be non-negative').optional().default(''),
+  depreciationMethod: z.string().optional().default(''),
+  imageUrl: z.string().optional().default(''),
 });
 
-type FurnitureFormData = z.infer<typeof furnitureAssetSchema>;
+type FurnitureFormData = z.infer<typeof furnitureFormSchema>;
 
 interface ModernFurnitureModalProps {
   isOpen: boolean;
@@ -66,7 +68,7 @@ export default function ModernFurnitureModal({
     watch,
     setValue,
   } = useForm<FurnitureFormData>({
-    resolver: zodResolver(furnitureAssetSchema),
+    resolver: zodResolver(furnitureFormSchema),
     mode: 'onChange',
     defaultValues: {
       assetName: '',
@@ -119,7 +121,9 @@ export default function ModernFurnitureModal({
 
   const onSubmit = async (data: FurnitureFormData) => {
     try {
-      await onSave(data);
+      // Validate form data against schema before submission
+      const validatedData = furnitureFormSchema.parse(data);
+      await onSave(validatedData);
       success(
         editingAsset
           ? 'Furniture asset updated successfully'
@@ -127,10 +131,16 @@ export default function ModernFurnitureModal({
       );
       reset();
     } catch (err: any) {
-      error(
-        err?.message ||
-        (editingAsset ? 'Failed to update furniture asset' : 'Failed to create furniture asset')
-      );
+      if (err instanceof z.ZodError) {
+        // Show first validation error via toast
+        const firstError = err.errors[0];
+        error(`Validation error: ${firstError.message}`);
+      } else {
+        error(
+          err?.message ||
+          (editingAsset ? 'Failed to update furniture asset' : 'Failed to create furniture asset')
+        );
+      }
     }
   };
 
