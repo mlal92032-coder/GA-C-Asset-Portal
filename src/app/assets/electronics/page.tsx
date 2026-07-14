@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { useToast } from '@/contexts/ToastContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import FilterBar from '@/components/FilterBar';
@@ -58,7 +59,6 @@ export default function ElectronicsPage() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
@@ -84,6 +84,7 @@ export default function ElectronicsPage() {
   });
 
   const { data: session } = useSession();
+  const { success, error } = useToast();
   const canAddEditDelete = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'USER';
   const canDeleteItem = session?.user?.role === 'SUPER_ADMIN';
   const canRequestDelete = session?.user?.role === 'USER';
@@ -117,7 +118,7 @@ export default function ElectronicsPage() {
     setCheckoutAsset(null);
     fetchAll();
     fetchCheckedOutAssets();
-    showToast('Asset checked out successfully', 'success');
+    success('Asset checked out successfully');
   };
 
   const handleCheckinSuccess = () => {
@@ -125,7 +126,7 @@ export default function ElectronicsPage() {
     setCheckinCheckout(null);
     fetchAll();
     fetchCheckedOutAssets();
-    showToast('Asset checked in successfully', 'success');
+    success('Asset checked in successfully');
   };
 
   const openCheckoutModal = (asset: ElectronicAsset) => {
@@ -177,15 +178,10 @@ export default function ElectronicsPage() {
       if (locationsJson.success) setLocations(locationsJson.data);
       if (usersJson.success) setUsers(usersJson.data);
     } catch {
-      showToast('Failed to fetch data', 'error');
+      error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  };
-
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
   };
 
   const handleFilterChange = (key: string, value: string) => {
@@ -244,14 +240,14 @@ export default function ElectronicsPage() {
       const json = await res.json();
 
       if (json.success) {
-        showToast(json.message || `Asset ${editingAsset ? 'updated' : 'created'} successfully`, 'success');
+        success(json.message || `Asset ${editingAsset ? 'updated' : 'created'} successfully`);
         fetchAll();
         resetForm();
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     } finally {
       setSaving(false);
     }
@@ -269,15 +265,15 @@ export default function ElectronicsPage() {
       });
       const json = await res.json();
       if (json.success) {
-        showToast(json.message || `Asset ${editingAsset ? 'updated' : 'created'} successfully`, 'success');
+        success(json.message || `Asset ${editingAsset ? 'updated' : 'created'} successfully`);
         fetchAll();
         setShowModal(false);
         setEditingAsset(null);
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     } finally {
       setSaving(false);
     }
@@ -304,12 +300,12 @@ export default function ElectronicsPage() {
         const json = await res.json();
 
         if (json.success) {
-          showToast('Delete request submitted successfully', 'success');
+          success('Delete request submitted successfully');
         } else {
-          showToast(json.error || 'Failed to submit delete request', 'error');
+          error(json.error || 'Failed to submit delete request');
         }
       } catch {
-        showToast('An error occurred', 'error');
+        error('An error occurred');
       }
       return;
     }
@@ -322,13 +318,13 @@ export default function ElectronicsPage() {
       const json = await res.json();
 
       if (json.success) {
-        showToast('Asset deleted successfully', 'success');
+        success('Asset deleted successfully');
         fetchAll();
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     }
   };
 
@@ -358,13 +354,13 @@ export default function ElectronicsPage() {
       });
       const json = await res.json();
       if (json.success) {
-        showToast('File uploaded successfully', 'success');
+        success('File uploaded successfully');
         fetchAttachments(assetId);
       } else {
-        showToast(json.error || 'Failed to upload file', 'error');
+        error(json.error || 'Failed to upload file');
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     } finally {
       setUploadingFile(false);
     }
@@ -376,13 +372,13 @@ export default function ElectronicsPage() {
       const res = await fetch(`/api/attachments/${attachmentId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        showToast('File deleted successfully', 'success');
+        success('File deleted successfully');
         fetchAttachments(assetId);
       } else {
-        showToast(json.error || 'Failed to delete file', 'error');
+        error(json.error || 'Failed to delete file');
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     }
   };
 
@@ -456,7 +452,7 @@ export default function ElectronicsPage() {
       const data = await res.json();
       return data.data || [];
     } catch {
-      showToast('Failed to fetch assets for barcode', 'error');
+      error('Failed to fetch assets for barcode');
       return [];
     }
   };
@@ -1132,3 +1128,4 @@ function BulkBarcodeModal({
     </div>
   );
 }
+

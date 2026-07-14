@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useToast } from '@/contexts/ToastContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import FilterBar from '@/components/FilterBar';
@@ -67,9 +68,9 @@ export default function VehicleHubPage() {
   const [selectedMaintenanceVehicle, setSelectedMaintenanceVehicle] = useState('');
 
   // Toast state
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const { data: session } = useSession();
+  const { success, error } = useToast();
   const canAddEditDelete = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'USER';
   const canDeleteItem = session?.user?.role === 'SUPER_ADMIN';
 
@@ -109,7 +110,7 @@ export default function VehicleHubPage() {
       if (locationsJson.success) setLocations(locationsJson.data);
       if (usersJson.success) setUsers(usersJson.data);
     } catch {
-      showToast('Failed to fetch vehicles', 'error');
+      error('Failed to fetch vehicles');
     } finally {
       setLoading(false);
     }
@@ -136,7 +137,7 @@ export default function VehicleHubPage() {
         setTotalMaintenanceItems(filtered?.length || 0);
       }
     } catch {
-      showToast('Failed to fetch maintenance records', 'error');
+      error('Failed to fetch maintenance records');
     } finally {
       setMaintenanceLoading(false);
     }
@@ -152,12 +153,7 @@ export default function VehicleHubPage() {
     }
   }, [activeTab, maintenancePageNum, maintenanceItemsPerPage, selectedMaintenanceVehicle]);
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleSaveVehicle = async (vehicleData: any) => {
+const handleSaveVehicle = async (vehicleData: any) => {
     setSaving(true);
     try {
       const url = editingAsset ? `/api/vehicles/${editingAsset.id}` : '/api/vehicles';
@@ -169,15 +165,15 @@ export default function VehicleHubPage() {
       });
       const json = await res.json();
       if (json.success) {
-        showToast(json.message || `Vehicle ${editingAsset ? 'updated' : 'created'}`, 'success');
+        success(json.message || `Vehicle ${editingAsset ? 'updated' : 'created'}`);
         fetchVehicles();
         setShowVehicleModal(false);
         setEditingAsset(null);
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     } finally {
       setSaving(false);
     }
@@ -200,15 +196,15 @@ export default function VehicleHubPage() {
       });
       const json = await res.json();
       if (json.success) {
-        showToast(`Maintenance ${editingMaintenance ? 'updated' : 'added'}`, 'success');
+        success(`Maintenance ${editingMaintenance ? 'updated' : 'added'}`);
         fetchMaintenances();
         setShowMaintenanceModal(false);
         setEditingMaintenance(null);
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     }
   };
 
@@ -218,13 +214,13 @@ export default function VehicleHubPage() {
       const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        showToast('Vehicle deleted successfully', 'success');
+        success('Vehicle deleted successfully');
         fetchVehicles();
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     }
   };
 
@@ -234,13 +230,13 @@ export default function VehicleHubPage() {
       const res = await fetch(`/api/maintenances/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        showToast('Maintenance record deleted', 'success');
+        success('Maintenance record deleted');
         fetchMaintenances();
       } else {
-        showToast(json.error, 'error');
+        error(json.error);
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     }
   };
 
@@ -712,3 +708,4 @@ export default function VehicleHubPage() {
     </DashboardLayout>
   );
 }
+

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useToast } from '@/contexts/ToastContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import ModernUserModal from '@/components/ModernUserModal';
@@ -23,12 +24,12 @@ interface User {
 
 export default function UsersPage() {
   const { data: session } = useSession();
+  const { success, error } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const canManageUsers = isSuperAdmin; // Only SUPER_ADMIN can manage users
@@ -40,7 +41,7 @@ export default function UsersPage() {
       const json = await res.json();
       if (json.success) setUsers(json.data);
     } catch {
-      showToast('Failed to fetch users', 'error');
+      error('Failed to fetch users');
     }
   };
 
@@ -48,12 +49,7 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleSave = async (userData: any) => {
+const handleSave = async (userData: any) => {
     setSaving(true);
     try {
       // If creating new user, submit a request instead
@@ -67,11 +63,11 @@ export default function UsersPage() {
         const json = await res.json();
 
         if (json.success) {
-          showToast('User request submitted for approval', 'success');
+          success('User request submitted for approval');
           setShowModal(false);
           setEditingUser(null);
         } else {
-          showToast(json.error || 'Failed to submit request', 'error');
+          error(json.error || 'Failed to submit request');
         }
       } else {
         // For editing existing users, update directly
@@ -84,16 +80,16 @@ export default function UsersPage() {
         const json = await res.json();
 
         if (json.success) {
-          showToast('User updated successfully', 'success');
+          success('User updated successfully');
           fetchUsers();
           setShowModal(false);
           setEditingUser(null);
         } else {
-          showToast(json.error || 'Failed to update user', 'error');
+          error(json.error || 'Failed to update user');
         }
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     } finally {
       setSaving(false);
     }
@@ -116,12 +112,12 @@ export default function UsersPage() {
 
       const json = await res.json();
       if (json.success) {
-        showToast('Delete request submitted for approval', 'success');
+        success('Delete request submitted for approval');
       } else {
-        showToast(json.error || 'Failed to submit delete request', 'error');
+        error(json.error || 'Failed to submit delete request');
       }
     } catch {
-      showToast('An error occurred', 'error');
+      error('An error occurred');
     }
   };
 
@@ -304,4 +300,5 @@ export default function UsersPage() {
     </DashboardLayout>
   );
 }
+
 

@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useToast } from '@/contexts/ToastContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import MaintenanceHistoryModal from '@/components/MaintenanceHistoryModal';
@@ -67,6 +68,7 @@ interface VehicleSummary {
 function VehicleMaintenanceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('maintenance');
   const [vehicles, setVehicles] = useState<VehicleAsset[]>([]);
   const [maintenances, setMaintenances] = useState<MaintenanceRecord[]>([]);
@@ -85,7 +87,6 @@ function VehicleMaintenanceContent() {
   const [maintenancePage, setMaintenancePage] = useState(1);
   const [sparePartsPage, setSparePartsPage] = useState(1);
   const [itemsPerPage] = useState(15);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const maintenanceFileInputRef = useRef<HTMLInputElement>(null);
   const sparePartsFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -131,7 +132,7 @@ function VehicleMaintenanceContent() {
         const response = await fetch(`/api/maintenances?assetType=VEHICLE&page=1&limit=10000`);
         if (!response.ok) {
           console.error('API response error:', response.status);
-          showToast('Failed to load maintenance records', 'error');
+          toastError('Failed to load maintenance records');
           setDataLoading(false);
           return;
         }
@@ -140,11 +141,11 @@ function VehicleMaintenanceContent() {
           setMaintenances(data.data || []);
         } else {
           console.error('API error:', data.error);
-          showToast('Failed to load maintenance records', 'error');
+          toastError('Failed to load maintenance records');
         }
       } catch (err) {
         console.error('Failed to fetch maintenances:', err);
-        showToast('Error loading maintenance records', 'error');
+        toastError('Error loading maintenance records');
       } finally {
         setDataLoading(false);
       }
@@ -193,11 +194,6 @@ function VehicleMaintenanceContent() {
     fetchSummary();
   }, [selectedVehicle]);
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
   const handleSaveMaintenance = async (data: any) => {
     try {
       const url = editingMaintenance ? `/api/maintenances/${editingMaintenance.id}` : '/api/maintenances';
@@ -209,7 +205,7 @@ function VehicleMaintenanceContent() {
       if (result.success) {
         setMaintenanceModal(false);
         setEditingMaintenance(null);
-        showToast(editingMaintenance ? 'Maintenance record updated successfully!' : 'Maintenance record added successfully!', 'success');
+        toastSuccess(editingMaintenance ? 'Maintenance record updated successfully!' : 'Maintenance record added successfully!');
         const res = await fetch(`/api/maintenances?assetType=VEHICLE&page=1&limit=${itemsPerPage}`);
         const updated = await res.json();
         if (updated.success) {
@@ -217,10 +213,10 @@ function VehicleMaintenanceContent() {
           setMaintenances(filtered);
         }
       } else {
-        showToast(result.error || 'Failed to save maintenance record', 'error');
+        toastError(result.error || 'Failed to save maintenance record', 'error');
       }
     } catch (err) {
-      showToast('Failed to save maintenance record', 'error');
+      toastError('Failed to save maintenance record');
     }
   };
 
@@ -248,15 +244,15 @@ function VehicleMaintenanceContent() {
       if (result.success) {
         setSparePartsModal(false);
         setEditingSparePart(null);
-        showToast(editingSparePart ? 'Spare part record updated successfully!' : 'Spare part record added successfully!', 'success');
+        toastSuccess(editingSparePart ? 'Spare part record updated successfully!' : 'Spare part record added successfully!', 'success');
         const res = await fetch(`/api/spare-parts?vehicleId=${selectedVehicle}&page=1&limit=${itemsPerPage}`);
         const updated = await res.json();
         if (updated.success) setSpareParts(updated.data);
       } else {
-        showToast(result.error || 'Failed to save spare part', 'error');
+        toastError(result.error || 'Failed to save spare part', 'error');
       }
     } catch (err) {
-      showToast('Failed to save spare part', 'error');
+      toastError('Failed to save spare part');
     }
   };
 
@@ -275,7 +271,7 @@ function VehicleMaintenanceContent() {
 
   const handleExportMaintenance = () => {
     if (maintenances.length === 0) {
-      showToast('No maintenance records to export', 'error');
+      toastError('No maintenance records to export');
       return;
     }
 
@@ -306,7 +302,7 @@ function VehicleMaintenanceContent() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    showToast(`Exported ${maintenances.length} maintenance records`, 'success');
+    toastSuccess(`Exported ${maintenances.length} maintenance records`, 'success');
   };
 
   const handleImportMaintenance = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,7 +315,7 @@ function VehicleMaintenanceContent() {
         const csv = event.target?.result as string;
         const lines = csv.split('\n').filter(line => line.trim());
         if (lines.length < 2) {
-          showToast('CSV file is empty', 'error');
+          toastError('CSV file is empty');
           return;
         }
 
@@ -365,9 +361,9 @@ function VehicleMaintenanceContent() {
         const updated = await res.json();
         if (updated.success) setMaintenances(updated.data);
 
-        showToast(`Imported ${successCount} maintenance records successfully!`, 'success');
+        toastSuccess(`Imported ${successCount} maintenance records successfully!`, 'success');
       } catch (err) {
-        showToast('Error importing CSV file', 'error');
+        toastError('Error importing CSV file');
       }
     };
     reader.readAsText(file);
@@ -376,7 +372,7 @@ function VehicleMaintenanceContent() {
 
   const handleExportSpareParts = () => {
     if (spareParts.length === 0) {
-      showToast('No spare parts records to export', 'error');
+      toastError('No spare parts records to export');
       return;
     }
 
@@ -405,7 +401,7 @@ function VehicleMaintenanceContent() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    showToast(`Exported ${spareParts.length} spare parts records`, 'success');
+    toastSuccess(`Exported ${spareParts.length} spare parts records`, 'success');
   };
 
   const handleImportSpareParts = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -418,7 +414,7 @@ function VehicleMaintenanceContent() {
         const csv = event.target?.result as string;
         const lines = csv.split('\n').filter(line => line.trim());
         if (lines.length < 2) {
-          showToast('CSV file is empty', 'error');
+          toastError('CSV file is empty');
           return;
         }
 
@@ -461,9 +457,9 @@ function VehicleMaintenanceContent() {
         const updated = await res.json();
         if (updated.success) setSpareParts(updated.data);
 
-        showToast(`Imported ${successCount} spare parts records successfully!`, 'success');
+        toastSuccess(`Imported ${successCount} spare parts records successfully!`, 'success');
       } catch (err) {
-        showToast('Error importing CSV file', 'error');
+        toastError('Error importing CSV file');
       }
     };
     reader.readAsText(file);
