@@ -22,6 +22,9 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
   isLoading?: boolean;
+  selectable?: boolean;
+  selectedIds?: string[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 export default function DataTable<T extends { id?: string | number }>({
@@ -33,6 +36,9 @@ export default function DataTable<T extends { id?: string | number }>({
   onRowClick,
   emptyMessage = 'No data found',
   isLoading = false,
+  selectable = false,
+  selectedIds = [],
+  onSelectionChange,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -79,6 +85,30 @@ export default function DataTable<T extends { id?: string | number }>({
     }
   };
 
+  const handleSelectRow = (id: string | number) => {
+    const idStr = String(id);
+    const newSelection = selectedIds.includes(idStr)
+      ? selectedIds.filter((sid) => sid !== idStr)
+      : [...selectedIds, idStr];
+    onSelectionChange?.(newSelection);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = sortedAndFiltered.map((row) => String(row.id));
+      onSelectionChange?.(allIds);
+    } else {
+      onSelectionChange?.([]);
+    }
+  };
+
+  const areAllSelected = sortedAndFiltered.length > 0 && sortedAndFiltered.every(
+    (row) => selectedIds.includes(String(row.id))
+  );
+
+  const isIndeterminate =
+    selectedIds.length > 0 && selectedIds.length < sortedAndFiltered.length;
+
   return (
     <motion.div className="card shadow-lg" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       {/* Header */}
@@ -107,6 +137,22 @@ export default function DataTable<T extends { id?: string | number }>({
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-20 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
             <tr>
+              {selectable && (
+                <th className="px-4 py-4 text-left font-bold text-slate-700 w-14">
+                  <input
+                    type="checkbox"
+                    checked={areAllSelected}
+                    ref={(input) => {
+                      if (input) {
+                        input.indeterminate = isIndeterminate;
+                      }
+                    }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 cursor-pointer"
+                    aria-label="Select all rows"
+                  />
+                </th>
+              )}
               {columns.map((col) => (
                 <th key={String(col.key)} className={`px-6 py-4 text-left font-bold text-slate-700 ${col.width || ''}`}>
                   {col.sortable ? (
@@ -145,24 +191,48 @@ export default function DataTable<T extends { id?: string | number }>({
                   </td>
                 </tr>
               ) : (
-                sortedAndFiltered.map((row, idx) => (
-                  <motion.tr
-                    key={row.id || idx}
-                    className={`border-b border-slate-100 hover:bg-blue-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    transition={{ delay: idx * 0.03 }}
-                    onClick={() => onRowClick?.(row)}
-                    whileHover={{ x: onRowClick ? 4 : 0 }}
-                  >
-                    {columns.map((col) => (
-                      <td key={String(col.key)} className="px-6 py-4">
-                        {col.render ? col.render(row[col.key], row) : String(row[col.key] || '-')}
-                      </td>
-                    ))}
-                  </motion.tr>
-                ))
+                sortedAndFiltered.map((row, idx) => {
+                  const isSelected = selectedIds.includes(String(row.id));
+                  return (
+                    <motion.tr
+                      key={row.id || idx}
+                      className={`border-b border-slate-100 transition-colors ${
+                        isSelected ? 'bg-blue-100' : 'hover:bg-blue-50'
+                      } ${onRowClick || selectable ? 'cursor-pointer' : ''}`}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      transition={{ delay: idx * 0.03 }}
+                      onClick={(e) => {
+                        if (!onRowClick) return;
+                        // Only trigger row click if user didn't click checkbox
+                        const target = e.target as HTMLInputElement;
+                        if (target.type !== 'checkbox') {
+                          onRowClick(row);
+                        }
+                      }}
+                      whileHover={{ x: onRowClick ? 4 : 0 }}
+                    >
+                      {selectable && (
+                        <td className="px-4 py-4 w-14">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleSelectRow(row.id!)}
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Select row ${row.id}`}
+                          />
+                        </td>
+                      )}
+                      {columns.map((col) => (
+                        <td key={String(col.key)} className="px-6 py-4">
+                          {col.render ? col.render(row[col.key], row) : String(row[col.key] || '-')}
+                        </td>
+                      ))}
+                    </motion.tr>
+                  );
+                })
               )}
             </AnimatePresence>
           </tbody>

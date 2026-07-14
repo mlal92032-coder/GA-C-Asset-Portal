@@ -12,6 +12,7 @@ import QRCode from '@/components/QRCode';
 import CheckoutModal, { CheckinModal } from '@/components/CheckoutModal';
 import BulkImportExport from '@/components/BulkImportExport';
 import ModernFurnitureModal from '@/components/ModernFurnitureModal';
+import { BulkActionBar } from '@/components/BulkActionBar';
 import { Button, IconButton } from '@/components/Button';
 import { uploadImage, resolveImageUrl, buildImageUrl } from '@/lib/image-upload';
 import { formatCurrency } from '@/lib/depreciation';
@@ -58,6 +59,7 @@ export default function FurniturePage() {
   const [totalItems, setTotalItems] = useState(0);
   const [sort, setSort] = useState('createdAt');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
 
   const { data: session } = useSession();
   const { success, error } = useToast();
@@ -364,6 +366,70 @@ export default function FurniturePage() {
     setShowBulkBarcode(true);
   }, []);
 
+  const handleBulkDelete = async () => {
+    if (selectedAssets.length === 0) return;
+
+    const reason = prompt(
+      `Delete ${selectedAssets.length} asset(s)? This cannot be undone.\n\nReason for deletion:`
+    );
+    if (!reason) return;
+
+    try {
+      const res = await fetch('/api/assets/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'FURNITURE',
+          reason,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        success(`${json.deleted || 0} asset(s) deleted successfully`);
+        setSelectedAssets([]);
+        fetchAll();
+      } else {
+        error(json.error || 'Failed to delete assets');
+      }
+    } catch {
+      error('An error occurred');
+    }
+  };
+
+  const handleBulkExport = async () => {
+    if (selectedAssets.length === 0) return;
+
+    try {
+      const res = await fetch('/api/assets/bulk-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetIds: selectedAssets,
+          assetType: 'FURNITURE',
+          format: 'csv',
+        }),
+      });
+
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `furniture-assets-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      success('Assets exported successfully');
+    } catch {
+      error('Failed to export assets');
+    }
+  };
+
   const conditionBadge = (condition: string) => {
     switch (condition) {
       case 'GOOD':
@@ -438,12 +504,6 @@ export default function FurniturePage() {
       onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {toast && (
-        <div className={`toast toast-${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
-
       <PageHeader
         title="Furniture Assets"
         subtitle="Manage furniture and office furnishings"
@@ -533,9 +593,21 @@ export default function FurniturePage() {
         </div>
       </FilterBar>
 
+      {/* BulkActionBar */}
+      <BulkActionBar
+        selectedCount={selectedAssets.length}
+        onClose={() => setSelectedAssets([])}
+        onDelete={handleBulkDelete}
+        onExport={handleBulkExport}
+        isLoading={saving}
+      />
+
       {/* DataTable */}
       <DataTable<FurnitureAsset>
         data={assets}
+        selectable={true}
+        selectedIds={selectedAssets}
+        onSelectionChange={setSelectedAssets}
         columns={[
           {
             key: 'imageUrl',
