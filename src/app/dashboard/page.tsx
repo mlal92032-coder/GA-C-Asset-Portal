@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
-import NotificationBell from '@/components/NotificationBell';
+import { NotificationCenter, type Notification } from '@/components/NotificationCenter';
 import { SkeletonCard, SkeletonStats, SkeletonTable } from '@/components/Skeleton';
 import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animations';
 import {
@@ -221,7 +221,9 @@ export default function DashboardPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  // Fetch dashboard data
   useEffect(() => {
     async function fetchData() {
       try {
@@ -241,6 +243,85 @@ export default function DashboardPage() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch notifications
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const res = await fetch('/api/notifications?unreadOnly=false', { credentials: 'include' });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          // Convert API notifications to NotificationCenter format
+          const convertedNotifications: Notification[] = json.data.map((notif: any) => ({
+            id: notif.id,
+            type: notif.type?.toLowerCase() === 'asset' ? 'asset'
+              : notif.type?.toLowerCase() === 'checkout' ? 'checkout'
+              : notif.type?.toLowerCase() === 'maintenance' ? 'maintenance'
+              : notif.type?.toLowerCase() === 'alert' ? 'alert'
+              : 'system',
+            title: notif.title,
+            message: notif.message,
+            read: notif.isRead,
+            timestamp: new Date(notif.createdAt),
+            actionUrl: notif.link,
+          }));
+          setNotifications(convertedNotifications);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    }
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle notification read
+  const handleNotificationRead = async (id: string) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+        credentials: 'include',
+      });
+      setNotifications(prev =>
+        prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  // Handle notification delete
+  const handleNotificationDelete = async (id: string) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+        credentials: 'include',
+      });
+      setNotifications(prev => prev.filter(notif => notif.id !== id));
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  };
+
+  // Handle mark all as read
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAllAsRead: true }),
+        credentials: 'include',
+      });
+      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  };
 
   const filteredAssets = useMemo(() => {
     if (!dashboardData) return [];
@@ -329,7 +410,12 @@ export default function DashboardPage() {
           iconColor="text-white"
           actions={
             <div className="flex items-center gap-4">
-              <NotificationBell />
+              <NotificationCenter
+                notifications={notifications}
+                onNotificationRead={handleNotificationRead}
+                onNotificationDelete={handleNotificationDelete}
+                onMarkAllRead={handleMarkAllRead}
+              />
             </div>
           }
         />
@@ -363,7 +449,12 @@ export default function DashboardPage() {
         iconColor="text-white"
         actions={
           <div className="flex items-center gap-4">
-            <NotificationBell />
+            <NotificationCenter
+              notifications={notifications}
+              onNotificationRead={handleNotificationRead}
+              onNotificationDelete={handleNotificationDelete}
+              onMarkAllRead={handleMarkAllRead}
+            />
             <Link href="/admin/users" className="btn btn-primary btn-sm">
               <Plus className="w-4 h-4" /> Manage
             </Link>
