@@ -94,6 +94,30 @@ export type {
 } from './Dropdown';
 
 // ============================================================================
+// ADVANCED COMPONENTS (Priority 3)
+// ============================================================================
+
+// DataTable Component
+export { DataTable } from './DataTable';
+export type { DataTableProps, Column, SortConfig, PaginationConfig } from './DataTable';
+
+// Loading Components
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonCircle,
+  SkeletonCard,
+  SkeletonTable,
+} from './Skeleton';
+
+export {
+  Spinner,
+  SpinnerDots,
+  SpinnerRing,
+  SpinnerWithText,
+} from './Spinner';
+
+// ============================================================================
 // UTILITY EXPORTS
 // ============================================================================
 
