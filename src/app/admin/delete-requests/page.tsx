@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
-import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Calendar, User, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { CheckCircle, XCircle, AlertTriangle, Calendar, User, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface DeleteRequest {
@@ -24,7 +23,6 @@ interface DeleteRequest {
 }
 
 export default function DeleteRequestsPage() {
-  const router = useRouter();
   const [requests, setRequests] = useState<DeleteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);

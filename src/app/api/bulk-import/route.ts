@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const createdAssets = [];
-    const errors = [];
+    const createdAssets: any[] = [];
+    const errors: Array<{ row: number; error: string }> = [];
 
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];

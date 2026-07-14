@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import ModernUserModal from '@/components/ModernUserModal';
 import { Button, IconButton } from '@/components/Button';
-import { Plus, Search, Edit, Trash2, Users as UsersIcon, Shield, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users as UsersIcon, Shield } from 'lucide-react';
 
 interface User {
   id: string;
@@ -163,23 +163,6 @@ const handleSave = async (userData: any) => {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-      {toast && (
-        <div className={`fixed top-20 right-4 z-[10001] px-6 py-3 rounded-lg shadow-lg animate-slide-in ${
-          toast.type === 'success'
-            ? 'bg-emerald-500 text-white'
-            : 'bg-red-500 text-white'
-        }`}>
-          <div className="flex items-center gap-2">
-            {toast.type === 'success' ? (
-              <CheckCircle className="w-5 h-5" />
-            ) : (
-              <XCircle className="w-5 h-5" />
-            )}
-            {toast.message}
-          </div>
-        </div>
-      )}
-
       <PageHeader
         title="User Management"
         subtitle="Manage system users and permissions"

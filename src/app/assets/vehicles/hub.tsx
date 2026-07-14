@@ -337,8 +337,6 @@ const handleSaveVehicle = async (vehicleData: any) => {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        {toast && (<div className={`toast toast-${toast.type}`}>{toast.message}</div>)}
-
         <PageHeader
           title="Vehicle Management Hub"
           subtitle="Manage vehicles and maintenance records"

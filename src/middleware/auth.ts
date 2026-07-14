@@ -1,6 +1,6 @@
 // src/middleware/auth.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT, verifyRefreshToken } from '@/utils/security';
+import { verifyJWT, verifyRefreshToken, generateJWT } from '@/utils/security';
 import { prisma } from '@/lib/prisma';
 
 export async function authenticate(req: NextRequest): Promise<NextResponse | null> {
@@ -51,7 +51,7 @@ export async function authenticate(req: NextRequest): Promise<NextResponse | nul
           where: { id: decoded.id }
         });
 
-        if (!user || user.status !== 'active') {
+        if (!user || user.status !== 'ACTIVE') {
           return NextResponse.json(
             { error: 'User not found or inactive' },
             { status: 401 }

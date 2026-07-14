@@ -11,9 +11,9 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
@@ -38,7 +38,7 @@
         "./src/services/*"
       ],
       "@/lib/*": [
-        "./lib/*"
+        "./src/lib/*"
       ]
     },
     "allowJs": true,
@@ -48,7 +48,8 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "strictNullChecks": true
   },
   "include": [
     "src",

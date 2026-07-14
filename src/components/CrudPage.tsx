@@ -164,12 +164,6 @@ export default function CrudPage({
 
   return (
     <>
-      {toast && (
-        <div className={`toast toast-${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
-
       <PageHeader
         title={title}
         subtitle={subtitle}

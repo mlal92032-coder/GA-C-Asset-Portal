@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import { Trash2, Plus, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -26,7 +25,6 @@ interface AssetAddRequest {
 }
 
 export default function RequestsPage() {
-  const router = useRouter();
   const [addRequests, setAddRequests] = useState<AssetAddRequest[]>([]);
   const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
   const [loading, setLoading] = useState(true);
