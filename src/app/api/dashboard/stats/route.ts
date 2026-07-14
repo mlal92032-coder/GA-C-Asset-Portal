@@ -1,17 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
+import { generateAnalyticsReport, type TimeRange } from '@/lib/analytics';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('[DASHBOARD] Fetching stats...');
     const authResult = await requireAuth();
-    console.log('[DASHBOARD] Auth result type:', authResult instanceof NextResponse ? 'NextResponse' : 'user');
     if (authResult instanceof NextResponse) {
-      console.log('[DASHBOARD] Auth failed, returning error response');
       return authResult;
     }
-    console.log('[DASHBOARD] Auth successful for user:', authResult.user.email);
+
+    // Get time range from query params (default: 30d)
+    const timeRange = (request.nextUrl.searchParams.get('timeRange') || '30d') as TimeRange;
+    const validRanges = ['7d', '30d', '90d', '1y'];
+    if (!validRanges.includes(timeRange)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid timeRange parameter' },
+        { status: 400 }
+      );
+    }
 
     // Get actual counts from database
     const [furnitureCount, electronicCount, vehicleCount] = await Promise.all([
@@ -223,6 +230,9 @@ export async function GET() {
       })),
     ];
 
+    // Generate advanced analytics
+    const analyticsReport = await generateAnalyticsReport(timeRange);
+
     const responseData = {
       success: true,
       data: {
@@ -237,17 +247,10 @@ export async function GET() {
         recentAssets,
         employeeAssets,
         sampleAssetTags: { furniture: furnitureTags, electronic: electronicTags, vehicle: vehicleTags },
+        analytics: analyticsReport,
       },
     };
-    console.log('[DASHBOARD API] Returning:', {
-      totalAssets,
-      furnitureCount,
-      electronicCount,
-      vehicleCount,
-      recentAssetsCount: recentAssets.length,
-      locationCount: assetsByLocation.length,
-      conditionBreakdown
-    });
+    console.log('[DASHBOARD API] Returning stats for timeRange:', timeRange);
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('Dashboard API Error:', error instanceof Error ? error.message : String(error));
