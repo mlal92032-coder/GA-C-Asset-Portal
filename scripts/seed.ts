@@ -33,7 +33,7 @@ async function main() {
       prisma.location.create({ data: { locationName: 'IT Department', building: 'Building B', floor: '3rd Floor', roomType: 'Department' } }),
       prisma.location.create({ data: { locationName: 'Storage Room', building: 'Building C', floor: 'Ground', roomType: 'Store' } }),
       prisma.location.create({ data: { locationName: 'Training Center', building: 'Building D', floor: '1st Floor', roomType: 'Training Room' } }),
-      prisma.location.create({ data: { locationName: 'Branch Office - Lahore', building: 'Building A', city: 'Lahore', roomType: 'Office' } }),
+      prisma.location.create({ data: { locationName: 'Branch Office - Lahore', building: 'Building A', floor: 'Ground', roomType: 'Office' } }),
       prisma.location.create({ data: { locationName: 'Warehouse', building: 'Warehouse A', floor: 'Ground', roomType: 'Warehouse' } }),
     ]);
     console.log('✅ Created 7 locations');

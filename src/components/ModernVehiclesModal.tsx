@@ -1,9 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Car, DollarSign, Calendar, MapPin, User, AlertCircle, CheckCircle, Wrench, FileText } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { X, Car, DollarSign, AlertCircle, CheckCircle, Wrench } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ImageUpload from './ImageUpload';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useToast } from '@/contexts/ToastContext';
+
+const vehicleAssetSchema = z.object({
+  assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
+  assetTag: z.string().min(1, 'Asset tag is required').max(50),
+  vehicleType: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  registrationNumber: z.string().min(1, 'Registration number is required').max(50),
+  engineNumber: z.string(),
+  chassisNumber: z.string(),
+  fuelType: z.string(),
+  purchaseDate: z.string(),
+  purchasePrice: z.string().refine(v => v === '' || (!isNaN(Number(v)) && Number(v) > 0), 'Purchase price must be a positive number'),
+  companyId: z.string().min(1, 'Office is required'),
+  manufacturerId: z.string(),
+  locationId: z.string().min(1, 'Location is required'),
+  assignedUserId: z.string(),
+  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']),
+  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']),
+  lastServiceDate: z.string(),
+  insuranceExpiryDate: z.string(),
+  registrationExpiry: z.string(),
+  remarks: z.string(),
+  usefulLifeYears: z.string(),
+  salvageValue: z.string(),
+  imageUrl: z.string(),
+});
+
+type VehicleFormData = z.infer<typeof vehicleAssetSchema>;
 
 interface ModernVehiclesModalProps {
   isOpen: boolean;
@@ -28,70 +62,20 @@ export default function ModernVehiclesModal({
   locations,
   users,
 }: ModernVehiclesModalProps) {
-  const [formData, setFormData] = useState({
-    assetName: '',
-    assetTag: '',
-    vehicleType: '',
-    brand: '',
-    model: '',
-    registrationNumber: '',
-    engineNumber: '',
-    chassisNumber: '',
-    fuelType: '',
-    purchaseDate: '',
-    purchasePrice: '',
-    companyId: '',
-    manufacturerId: '',
-    locationId: '',
-    assignedUserId: '',
-    condition: 'GOOD',
-    status: 'IN_STORE',
-    lastServiceDate: '',
-    insuranceExpiryDate: '',
-    remarks: '',
-    usefulLifeYears: '10',
-    salvageValue: '',
-    imageUrl: '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
+  const { success, error } = useToast();
   const modalRef = useFocusTrap({ isOpen, onClose });
 
-  useEffect(() => {
-    if (editingAsset) {
-      setFormData({
-        assetName: editingAsset.assetName || '',
-        assetTag: editingAsset.assetTag || '',
-        vehicleType: editingAsset.vehicleType || '',
-        brand: editingAsset.brand || '',
-        model: editingAsset.model || '',
-        registrationNumber: editingAsset.registrationNumber || '',
-        engineNumber: editingAsset.engineNumber || '',
-        chassisNumber: editingAsset.chassisNumber || '',
-        fuelType: editingAsset.fuelType || '',
-        purchaseDate: editingAsset.purchaseDate?.split('T')[0] || '',
-        purchasePrice: editingAsset.purchasePrice?.toString() || '',
-        companyId: editingAsset.companyId || '',
-        manufacturerId: editingAsset.manufacturerId || '',
-        locationId: editingAsset.locationId || '',
-        assignedUserId: editingAsset.assignedUserId || '',
-        condition: editingAsset.condition || 'GOOD',
-        status: editingAsset.status || 'IN_STORE',
-        lastServiceDate: editingAsset.lastServiceDate?.split('T')[0] || '',
-        insuranceExpiryDate: editingAsset.insuranceExpiryDate?.split('T')[0] || '',
-        remarks: editingAsset.remarks || '',
-        usefulLifeYears: editingAsset.usefulLifeYears?.toString() || '10',
-        salvageValue: editingAsset.salvageValue?.toString() || '',
-        imageUrl: editingAsset.imageUrl || '',
-      });
-    } else {
-      resetForm();
-    }
-  }, [editingAsset, isOpen]);
-
-  const resetForm = () => {
-    setFormData({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors: formErrors },
+    reset,
+    watch,
+    setValue,
+  } = useForm<VehicleFormData>({
+    resolver: zodResolver(vehicleAssetSchema),
+    mode: 'onChange',
+    defaultValues: {
       assetName: '',
       assetTag: '',
       vehicleType: '',
@@ -111,41 +95,64 @@ export default function ModernVehiclesModal({
       status: 'IN_STORE',
       lastServiceDate: '',
       insuranceExpiryDate: '',
+      registrationExpiry: '',
       remarks: '',
       usefulLifeYears: '10',
       salvageValue: '',
       imageUrl: '',
-    });
-    setErrors({});
-  };
+    },
+  });
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const imageUrlValue = watch('imageUrl');
+
+  useEffect(() => {
+    if (editingAsset) {
+      reset({
+        assetName: editingAsset.assetName || '',
+        assetTag: editingAsset.assetTag || '',
+        vehicleType: editingAsset.vehicleType || '',
+        brand: editingAsset.brand || '',
+        model: editingAsset.model || '',
+        registrationNumber: editingAsset.registrationNumber || '',
+        engineNumber: editingAsset.engineNumber || '',
+        chassisNumber: editingAsset.chassisNumber || '',
+        fuelType: editingAsset.fuelType || '',
+        purchaseDate: editingAsset.purchaseDate?.split('T')[0] || '',
+        purchasePrice: editingAsset.purchasePrice?.toString() || '',
+        companyId: editingAsset.companyId || '',
+        manufacturerId: editingAsset.manufacturerId || '',
+        locationId: editingAsset.locationId || '',
+        assignedUserId: editingAsset.assignedUserId || '',
+        condition: editingAsset.condition || 'GOOD',
+        status: editingAsset.status || 'IN_STORE',
+        lastServiceDate: editingAsset.lastServiceDate?.split('T')[0] || '',
+        insuranceExpiryDate: editingAsset.insuranceExpiryDate?.split('T')[0] || '',
+        registrationExpiry: editingAsset.registrationExpiry?.split('T')[0] || '',
+        remarks: editingAsset.remarks || '',
+        usefulLifeYears: editingAsset.usefulLifeYears?.toString() || '10',
+        salvageValue: editingAsset.salvageValue?.toString() || '',
+        imageUrl: editingAsset.imageUrl || '',
+      });
+    } else {
+      reset();
     }
-  };
+  }, [editingAsset, isOpen, reset]);
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.assetName.trim()) newErrors.assetName = 'Asset name is required';
-    if (!formData.assetTag.trim()) newErrors.assetTag = 'Asset tag is required';
-    if (!formData.vehicleType.trim()) newErrors.vehicleType = 'Vehicle type is required';
-    if (!formData.registrationNumber.trim()) newErrors.registrationNumber = 'Registration number is required';
-    if (!formData.purchaseDate) newErrors.purchaseDate = 'Purchase date is required';
-    if (!formData.companyId) newErrors.companyId = 'Office is required';
-    if (!formData.locationId) newErrors.locationId = 'Location is required';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    await onSave(formData);
+  const onSubmit = async (data: VehicleFormData) => {
+    try {
+      await onSave(data);
+      success(
+        editingAsset
+          ? 'Vehicle asset updated successfully'
+          : 'Vehicle asset created successfully'
+      );
+      reset();
+    } catch (err: any) {
+      error(
+        err?.message ||
+        (editingAsset ? 'Failed to update vehicle asset' : 'Failed to create vehicle asset')
+      );
+    }
   };
 
   if (!isOpen) return null;
@@ -160,7 +167,6 @@ export default function ModernVehiclesModal({
         aria-modal="true"
         aria-labelledby="vehicles-modal-title"
       >
-        {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-4 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -179,463 +185,491 @@ export default function ModernVehiclesModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="text-white/70 hover:text-white transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Form Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
           <div className="modal-body space-y-5 overflow-y-auto">
-          {/* Asset Details Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <Car className="w-5 h-5 text-emerald-600" />
-              Vehicle Details
-            </h3>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <Car className="w-5 h-5 text-emerald-600" />
+                Vehicle Details
+              </h3>
 
-            {/* Image Upload */}
-            <div className="mb-4">
-              <ImageUpload
-                value={formData.imageUrl}
-                onChange={(url) => handleChange('imageUrl', url || '')}
-                label="Vehicle Image"
-              />
-            </div>
+              <div className="mb-4">
+                <ImageUpload
+                  value={imageUrlValue}
+                  onChange={(url) => setValue('imageUrl', url || '')}
+                  label="Vehicle Image"
+                />
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label required">Asset Name</label>
-                <div className="form-input-wrapper">
-                  <Car className="form-input-icon w-4 h-4 text-slate-400" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name *</label>
                   <input
                     type="text"
-                    value={formData.assetName}
-                    onChange={(e) => handleChange('assetName', e.target.value)}
-                    className={`pl-10 ${errors.assetName ? 'error' : ''}`}
+                    {...register('assetName')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.assetName ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="e.g., Company Car"
                     disabled={saving}
-                    autoComplete="off"
                   />
+                  {formErrors.assetName && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.assetName.message}
+                    </motion.p>
+                  )}
                 </div>
-                {errors.assetName && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.assetName}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label required">Asset Tag</label>
-                <div className="form-input-wrapper">
-                  <FileText className="form-input-icon w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Tag *</label>
                   <input
                     type="text"
-                    value={formData.assetTag}
-                    onChange={(e) => handleChange('assetTag', e.target.value)}
-                    className={`pl-10 ${errors.assetTag ? 'error' : ''}`}
+                    {...register('assetTag')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm transition-all ${
+                      formErrors.assetTag ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="e.g., VEH-001"
                     disabled={saving}
-                    autoComplete="off"
                   />
+                  {formErrors.assetTag && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.assetTag.message}
+                    </motion.p>
+                  )}
                 </div>
-                {errors.assetTag && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.assetTag}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label required">Vehicle Type</label>
-                <select
-                  value={formData.vehicleType}
-                  onChange={(e) => handleChange('vehicleType', e.target.value)}
-                  className={errors.vehicleType ? 'error' : ''}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="">Select type</option>
-                  <option value="Sedan">Sedan</option>
-                  <option value="SUV">SUV</option>
-                  <option value="Van">Van</option>
-                  <option value="Truck">Truck</option>
-                  <option value="Motorcycle">Motorcycle</option>
-                  <option value="Other">Other</option>
-                </select>
-                {errors.vehicleType && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.vehicleType}
-                  </p>
-                )}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type *</label>
+                  <select
+                    {...register('vehicleType')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.vehicleType ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  >
+                    <option value="">Select type</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Van">Van</option>
+                    <option value="Truck">Truck</option>
+                    <option value="Motorcycle">Motorcycle</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {formErrors.vehicleType && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.vehicleType.message}
+                    </motion.p>
+                  )}
+                </div>
 
-              <div>
-                <label className="form-label required">Registration Number</label>
-                <div className="form-input-wrapper">
-                  <FileText className="form-input-icon w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number *</label>
                   <input
                     type="text"
-                    value={formData.registrationNumber}
-                    onChange={(e) => handleChange('registrationNumber', e.target.value)}
-                    className={`pl-10 ${errors.registrationNumber ? 'error' : ''}`}
+                    {...register('registrationNumber')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.registrationNumber ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="e.g., ABC-1234"
                     disabled={saving}
-                    autoComplete="off"
+                  />
+                  {formErrors.registrationNumber && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.registrationNumber.message}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <input
+                    type="text"
+                    {...register('brand')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    placeholder="e.g., Toyota, Honda"
+                    disabled={saving}
                   />
                 </div>
-                {errors.registrationNumber && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.registrationNumber}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label">Brand</label>
-                <input
-                  type="text"
-                  value={formData.brand}
-                  onChange={(e) => handleChange('brand', e.target.value)}
-                  placeholder="e.g., Toyota, Honda"
-                  disabled={saving}
-                  autoComplete="off"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                  <input
+                    type="text"
+                    {...register('model')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    placeholder="e.g., Corolla, Civic"
+                    disabled={saving}
+                  />
+                </div>
 
-              <div>
-                <label className="form-label">Model</label>
-                <input
-                  type="text"
-                  value={formData.model}
-                  onChange={(e) => handleChange('model', e.target.value)}
-                  placeholder="e.g., Corolla, Civic"
-                  disabled={saving}
-                  autoComplete="off"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Engine Number</label>
+                  <input
+                    type="text"
+                    {...register('engineNumber')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    placeholder="e.g., ENG123456"
+                    disabled={saving}
+                  />
+                </div>
 
-              <div>
-                <label className="form-label">Engine Number</label>
-                <input
-                  type="text"
-                  value={formData.engineNumber}
-                  onChange={(e) => handleChange('engineNumber', e.target.value)}
-                  placeholder="e.g., ENG123456"
-                  disabled={saving}
-                  autoComplete="off"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Chassis Number</label>
+                  <input
+                    type="text"
+                    {...register('chassisNumber')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    placeholder="e.g., CHAS123456"
+                    disabled={saving}
+                  />
+                </div>
 
-              <div>
-                <label className="form-label">Chassis Number</label>
-                <input
-                  type="text"
-                  value={formData.chassisNumber}
-                  onChange={(e) => handleChange('chassisNumber', e.target.value)}
-                  placeholder="e.g., CHAS123456"
-                  disabled={saving}
-                  autoComplete="off"
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Fuel Type</label>
-                <select
-                  value={formData.fuelType}
-                  onChange={(e) => handleChange('fuelType', e.target.value)}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="">Select fuel type</option>
-                  <option value="Petrol">Petrol</option>
-                  <option value="Diesel">Diesel</option>
-                  <option value="Electric">Electric</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="CNG">CNG</option>
-                </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Type</label>
+                  <select
+                    {...register('fuelType')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select fuel type</option>
+                    <option value="Petrol">Petrol</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="CNG">CNG</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Purchase Information Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
-              Purchase Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label required">Purchase Date</label>
-                <div className="form-input-wrapper">
-                  <Calendar className="form-input-icon w-4 h-4 text-slate-400" />
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+                Purchase Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
                   <input
                     type="date"
-                    value={formData.purchaseDate}
-                    onChange={(e) => handleChange('purchaseDate', e.target.value)}
-                    className={`pl-10 ${errors.purchaseDate ? 'error' : ''}`}
+                    {...register('purchaseDate')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.purchaseDate ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     disabled={saving}
-                    autoComplete="off"
                   />
+                  {formErrors.purchaseDate && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.purchaseDate.message}
+                    </motion.p>
+                  )}
                 </div>
-                {errors.purchaseDate && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.purchaseDate}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label">Purchase Price (PKR)</label>
-                <div className="form-input-wrapper">
-                  <DollarSign className="form-input-icon w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (PKR) *</label>
                   <input
                     type="number"
-                    value={formData.purchasePrice}
-                    onChange={(e) => handleChange('purchasePrice', e.target.value)}
-                    className="pl-10"
+                    step="0.01"
+                    {...register('purchasePrice')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.purchasePrice ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="0.00"
                     disabled={saving}
-                    autoComplete="off"
                   />
+                  {formErrors.purchasePrice && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.purchasePrice.message}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                  <select
+                    {...register('manufacturerId')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select manufacturer</option>
+                    {manufacturers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.manufacturerName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Useful Life (Years)</label>
+                  <input
+                    type="number"
+                    {...register('usefulLifeYears')}
+                    placeholder="10"
+                    disabled={saving}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.usefulLifeYears ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                  />
+                  {formErrors.usefulLifeYears && (
+                    <motion.p
+                      className="text-red-500 text-xs mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-2 h-2" />
+                      {formErrors.usefulLifeYears.message}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Salvage Value (PKR)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    {...register('salvageValue')}
+                    placeholder="0.00"
+                    disabled={saving}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.salvageValue ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                  />
+                  {formErrors.salvageValue && (
+                    <motion.p
+                      className="text-red-500 text-xs mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-2 h-2" />
+                      {formErrors.salvageValue.message}
+                    </motion.p>
+                  )}
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label className="form-label">Manufacturer</label>
-                <select
-                  value={formData.manufacturerId}
-                  onChange={(e) => handleChange('manufacturerId', e.target.value)}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="">Select manufacturer</option>
-                  {manufacturers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.manufacturerName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                Location & Assignment
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Office *</label>
+                  <select
+                    {...register('companyId')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.companyId ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  >
+                    <option value="">Select office</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.companyName}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.companyId && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.companyId.message}
+                    </motion.p>
+                  )}
+                </div>
 
-              <div>
-                <label className="form-label">Useful Life (Years)</label>
-                <input
-                  type="number"
-                  value={formData.usefulLifeYears}
-                  onChange={(e) => handleChange('usefulLifeYears', e.target.value)}
-                  placeholder="10"
-                  disabled={saving}
-                  autoComplete="off"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                  <select
+                    {...register('locationId')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                      formErrors.locationId ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  >
+                    <option value="">Select location</option>
+                    {locations.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.locationName}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.locationId && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.locationId.message}
+                    </motion.p>
+                  )}
+                </div>
 
-              <div>
-                <label className="form-label">Salvage Value (PKR)</label>
-                <input
-                  type="number"
-                  value={formData.salvageValue}
-                  onChange={(e) => handleChange('salvageValue', e.target.value)}
-                  placeholder="0.00"
-                  disabled={saving}
-                  autoComplete="off"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                  <select
+                    {...register('assignedUserId')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Not assigned</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Location & Assignment Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <MapPin className="w-5 h-5 text-emerald-600" />
-              Location & Assignment
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label required">Office</label>
-                <select
-                  value={formData.companyId}
-                  onChange={(e) => handleChange('companyId', e.target.value)}
-                  className={errors.companyId ? 'error' : ''}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="">Select office</option>
-                  {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.companyName}
-                    </option>
-                  ))}
-                </select>
-                {errors.companyId && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.companyId}
-                  </p>
-                )}
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-emerald-600" />
+                Condition & Maintenance
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                  <select
+                    {...register('condition')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  >
+                    <option value="GOOD">Good</option>
+                    <option value="REPAIR">Needs Repair</option>
+                    <option value="DAMAGED">Damaged</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="form-label required">Location</label>
-                <select
-                  value={formData.locationId}
-                  onChange={(e) => handleChange('locationId', e.target.value)}
-                  className={errors.locationId ? 'error' : ''}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="">Select location</option>
-                  {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.locationName}
-                    </option>
-                  ))}
-                </select>
-                {errors.locationId && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.locationId}
-                  </p>
-                )}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    {...register('status')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  >
+                    <option value="IN_STORE">In Store</option>
+                    <option value="IN_USE">In Use</option>
+                    <option value="DISPOSED">Disposed</option>
+                    <option value="AUCTION">Auction</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="form-label">Assigned To</label>
-                <select
-                  value={formData.assignedUserId}
-                  onChange={(e) => handleChange('assignedUserId', e.target.value)}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="">Not assigned</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Condition & Maintenance Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <Wrench className="w-5 h-5 text-emerald-600" />
-              Condition & Maintenance
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label required">Condition</label>
-                <select
-                  value={formData.condition}
-                  onChange={(e) => handleChange('condition', e.target.value)}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="GOOD">Good</option>
-                  <option value="REPAIR">Needs Repair</option>
-                  <option value="DAMAGED">Damaged</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label required">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleChange('status', e.target.value)}
-                  disabled={saving}
-                  autoComplete="off"
-                >
-                  <option value="IN_STORE">In Store</option>
-                  <option value="IN_USE">In Use</option>
-                  <option value="DISPOSED">Disposed</option>
-                  <option value="AUCTION">Auction</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label">Last Service Date</label>
-                <div className="form-input-wrapper">
-                  <Calendar className="form-input-icon w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Service Date</label>
                   <input
                     type="date"
-                    value={formData.lastServiceDate}
-                    onChange={(e) => handleChange('lastServiceDate', e.target.value)}
-                    className="pl-10"
+                    {...register('lastServiceDate')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     disabled={saving}
-                    autoComplete="off"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="form-label">Insurance Expiry Date</label>
-                <div className="form-input-wrapper">
-                  <Calendar className="form-input-icon w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Expiry Date</label>
                   <input
                     type="date"
-                    value={formData.insuranceExpiryDate}
-                    onChange={(e) => handleChange('insuranceExpiryDate', e.target.value)}
-                    className="pl-10"
+                    {...register('insuranceExpiryDate')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     disabled={saving}
-                    autoComplete="off"
                   />
                 </div>
-              </div>
 
-              <div className="md:col-span-2">
-                <label className="form-label">Remarks</label>
-                <textarea
-                  value={formData.remarks}
-                  onChange={(e) => handleChange('remarks', e.target.value)}
-                  rows={3}
-                  placeholder="Additional notes or comments..."
-                  disabled={saving}
-                  autoComplete="off"
-                />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                  <textarea
+                    {...register('remarks')}
+                    rows={3}
+                    placeholder="Additional notes or comments..."
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  />
+                </div>
               </div>
             </div>
           </div>
-          </div>
 
-        {/* Footer */}
-        <div className="modal-footer">
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn btn-primary flex items-center justify-center gap-2"
-            >
-            {saving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                {editingAsset ? 'Update Asset' : 'Create Asset'}
-              </>
-            )}
-            </button>
+          <div className="modal-footer">
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn btn-primary"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    {editingAsset ? 'Update Asset' : 'Create Asset'}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
         </form>
       </div>
     </div>

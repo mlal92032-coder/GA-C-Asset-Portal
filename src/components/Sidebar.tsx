@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import NotificationBell from '@/components/NotificationBell';
+import { buttonHover, buttonTap } from '@/lib/animations';
 import {
   LayoutDashboard, Users, Building2, Factory, MapPin, Armchair, Monitor,
-  Car, BarChart3, LogOut, X, Settings, Package, AlertTriangle, UserCog,
+  Car, LogOut, X, Package, AlertTriangle, UserCog, Settings,
   ClipboardList, ChevronLeft, ChevronRight, Menu,
 } from 'lucide-react';
 import { getAccessibleModules, type Module } from '@/lib/permissions';
@@ -27,13 +28,12 @@ const navItems: NavItem[] = [
   { href: '/assets/electronics', label: 'Electronics', icon: Monitor, module: 'electronics' },
   { href: '/assets/vehicles', label: 'Vehicles', icon: Car, module: 'vehicles' },
   { href: '/admin/users', label: 'Users', icon: Users, module: 'users' },
-  { href: '/admin/delete-requests', label: 'Delete Requests', icon: AlertTriangle, module: 'users' },
+  { href: '/admin/requests', label: 'Requests & Approvals', icon: AlertTriangle, module: 'users' },
   { href: '/admin/offices', label: 'Offices', icon: Building2, module: 'companies' },
   { href: '/admin/manufacturers', label: 'Manufacturers', icon: Factory, module: 'manufacturers' },
   { href: '/admin/locations', label: 'Locations', icon: MapPin, module: 'locations' },
   { href: '/admin/audit-logs', label: 'Audit Logs', icon: ClipboardList, module: 'audit_logs' },
-  { href: '/reports', label: 'Reports', icon: BarChart3, module: 'reports' },
-  { href: '/settings', label: 'Settings', icon: Settings, module: 'settings' },
+  { href: '/settings', label: 'Settings', icon: Settings, module: null },
 ];
 
 interface SidebarProps { onClose: () => void; collapsed: boolean; onToggleCollapse: () => void; setMobileOpen?: (open: boolean) => void; }
@@ -55,35 +55,37 @@ export default function Sidebar({ onClose, collapsed, onToggleCollapse, setMobil
   const overviewItems = filteredItems.filter((i) => i.href === '/dashboard' || i.href === '/employees');
   const allAssetsItem = filteredItems.filter((i) => i.href === '/assets/all');
   const assetItems = filteredItems.filter((i) => i.href.startsWith('/assets/') && i.href !== '/assets/all');
-  const adminItems = filteredItems.filter((i) => i.href.startsWith('/admin/') && i.href !== '/admin/audit-logs' && i.href !== '/admin/delete-requests');
-  const deleteItems = filteredItems.filter((i) => i.href === '/admin/delete-requests');
+  const adminItems = filteredItems.filter((i) => i.href.startsWith('/admin/') && i.href !== '/admin/audit-logs' && i.href !== '/admin/requests');
+  const requestsItems = filteredItems.filter((i) => i.href === '/admin/requests');
   const auditItems = filteredItems.filter((i) => i.href === '/admin/audit-logs');
-  const reportItems = filteredItems.filter((i) => i.href === '/reports');
   const settingsItems = filteredItems.filter((i) => i.href === '/settings');
 
   const renderNavItem = (item: NavItem) => {
     const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
     return (
-      <Link
-        key={item.href}
-        href={item.href}
-        onClick={() => onClose()}
-        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl mx-2 ${
-          isActive
-            ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-700 border border-blue-300/60 shadow-md backdrop-blur-sm'
-            : 'text-slate-600 hover:bg-gradient-to-r hover:from-slate-200/40 hover:to-slate-100/40 hover:text-slate-900 border border-transparent hover:border-slate-300/40 hover:backdrop-blur-sm'
-        }`}
-        title={collapsed ? item.label : undefined}
-      >
-        <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
-        <AnimatePresence mode="wait">
-          {!collapsed && (
-            <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="truncate">
-              {item.label}
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </Link>
+      <motion.div key={item.href} whileHover={!isActive ? { x: 4 } : {}} whileTap={{ x: 2 }}>
+        <Link
+          href={item.href}
+          onClick={() => onClose()}
+          className={`flex items-center gap-3 px-3 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl mx-2 ${
+            isActive
+              ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-700 border border-blue-300/60 shadow-md backdrop-blur-sm'
+              : 'text-slate-700 hover:bg-gradient-to-r hover:from-slate-200/40 hover:to-slate-100/40 hover:text-slate-900 border border-transparent hover:border-slate-300/40 hover:backdrop-blur-sm'
+          }`}
+          title={collapsed ? item.label : undefined}
+        >
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+            <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+          </motion.div>
+          <AnimatePresence mode="wait">
+            {!collapsed && (
+              <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="truncate">
+                {item.label}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
+      </motion.div>
     );
   };
 
@@ -110,7 +112,13 @@ export default function Sidebar({ onClose, collapsed, onToggleCollapse, setMobil
           {/* Left - Logo and Organization */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 bg-white flex-shrink-0 shadow-md border border-slate-200/60 flex items-center justify-center">
-              <img src="/sef-logo.png" alt="SEF Logo" className="w-8 h-8 object-contain" />
+              <Image
+                src="/sef-logo.png"
+                alt="SEF Logo"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
             </div>
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0">
@@ -131,10 +139,9 @@ export default function Sidebar({ onClose, collapsed, onToggleCollapse, setMobil
       <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
         {renderSection('Overview', overviewItems)}
         {renderSection('Assets', [...allAssetsItem, ...assetItems])}
-        {renderSection('Administration', [...adminItems, ...deleteItems])}
+        {renderSection('Administration', [...adminItems, ...requestsItems])}
         {renderSection('Monitoring', auditItems)}
-        {renderSection('Analytics', reportItems)}
-        {renderSection('System', settingsItems)}
+        {renderSection('Configuration', settingsItems)}
       </nav>
 
 
@@ -152,10 +159,17 @@ export default function Sidebar({ onClose, collapsed, onToggleCollapse, setMobil
           )}
         </div>
 
-        <button onClick={() => signOut({ callbackUrl: '/' })} className={`flex items-center gap-3 px-3 py-2 text-sm font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg w-full border border-transparent hover:border-red-200/50 ${collapsed ? 'justify-center' : ''}`}>
-          <LogOut className="w-4 h-4 flex-shrink-0" />
+        <motion.button
+          onClick={() => signOut({ callbackUrl: '/' })}
+          className={`flex items-center gap-3 px-3 py-2 text-sm font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg w-full border border-transparent hover:border-red-200/50 ${collapsed ? 'justify-center' : ''}`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <motion.div whileHover={{ rotate: 10 }}>
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+          </motion.div>
           {!collapsed && <span>Sign Out</span>}
-        </button>
+        </motion.button>
       </div>
     </motion.aside>
   );

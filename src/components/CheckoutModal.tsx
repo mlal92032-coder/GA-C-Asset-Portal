@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useToast } from '@/contexts/ToastContext';
 
 interface CheckoutModalProps {
   assetId: string;
@@ -36,6 +37,7 @@ export default function CheckoutModal({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { success, error: errorToast } = useToast();
 
   const modalRef = useFocusTrap({ isOpen: true, onClose });
 
@@ -60,12 +62,17 @@ export default function CheckoutModal({
       const json = await res.json();
 
       if (json.success) {
+        success(`${assetName} checked out successfully`);
         onSuccess();
       } else {
-        setError(json.error || 'Failed to checkout asset');
+        const errorMsg = json.error || 'Failed to checkout asset';
+        setError(errorMsg);
+        errorToast(errorMsg);
       }
-    } catch {
-      setError('An error occurred while checking out the asset');
+    } catch (err: any) {
+      const errorMsg = 'An error occurred while checking out the asset';
+      setError(errorMsg);
+      errorToast(err?.message || errorMsg);
     } finally {
       setLoading(false);
     }

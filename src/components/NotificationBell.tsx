@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Trash2, CheckCheck, AlertTriangle, Info, CheckCircle, XCircle, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, Trash2, CheckCheck, AlertTriangle, Info, CheckCircle, XCircle, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
@@ -15,19 +16,50 @@ interface Notification {
 }
 
 export default function NotificationBell() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/notification-sound.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Fallback: try with Web Audio API
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 800;
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+      });
+    } catch (error) {
+      console.error('Could not play notification sound:', error);
+    }
+  };
+
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('/api/notifications?unreadOnly=false');
+      const res = await fetch('/api/notifications?unreadOnly=false', { credentials: 'include' });
       const json = await res.json();
       if (json.success) {
+        const previousUnreadCount = unreadCount;
+        const newUnreadCount = json.unreadCount;
+
         setNotifications(json.data);
-        setUnreadCount(json.unreadCount);
+        setUnreadCount(newUnreadCount);
+
+        // Play sound if new unread notifications arrived
+        if (newUnreadCount > previousUnreadCount) {
+          playNotificationSound();
+        }
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -38,12 +70,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 30 seconds for new notifications
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -51,9 +81,11 @@ export default function NotificationBell() {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, setIsOpen]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -61,6 +93,7 @@ export default function NotificationBell() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
+        credentials: 'include',
       });
       fetchNotifications();
     } catch (error) {
@@ -74,6 +107,7 @@ export default function NotificationBell() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAllAsRead: true }),
+        credentials: 'include',
       });
       fetchNotifications();
     } catch (error) {
@@ -87,6 +121,7 @@ export default function NotificationBell() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
+        credentials: 'include',
       });
       fetchNotifications();
     } catch (error) {
@@ -100,6 +135,7 @@ export default function NotificationBell() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deleteAll: true }),
+        credentials: 'include',
       });
       fetchNotifications();
     } catch (error) {
@@ -120,15 +156,18 @@ export default function NotificationBell() {
     }
   };
 
-  const handleClickNotification = (link?: string) => {
-    if (link) {
-      window.location.href = link;
-    }
+  const handleClickNotification = (id: string, link?: string) => {
+    markAsRead(id);
     setIsOpen(false);
+    if (link) {
+      setTimeout(() => {
+        router.push(link);
+      }, 100);
+    }
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div ref={dropdownRef} className="relative">
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -143,15 +182,18 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown - Fixed positioning to prevent overlap */}
       {isOpen && (
-        <div className="absolute right-0 top-[calc(100%+8px)] w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg border border-slate-200 shadow-2xl shadow-slate-900/10 z-[1000] animate-scale-in max-h-[70vh] overflow-hidden flex flex-col">
+        <div
+          className="fixed top-16 right-4 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg border border-slate-200 shadow-2xl z-[9999] max-h-[calc(100vh-120px)] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
             <h3 className="font-semibold text-slate-900">
               Notifications
               {unreadCount > 0 && (
-                <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5">
+                <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {unreadCount} new
                 </span>
               )}
@@ -160,7 +202,7 @@ export default function NotificationBell() {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded"
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-4 h-4" />
@@ -169,12 +211,18 @@ export default function NotificationBell() {
               {notifications.length > 0 && (
                 <button
                   onClick={deleteAllNotifications}
-                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors rounded"
                   title="Clear all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -182,7 +230,7 @@ export default function NotificationBell() {
           <div className="overflow-y-auto flex-1">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent" />
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-slate-400">
@@ -195,10 +243,10 @@ export default function NotificationBell() {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`group p-4 hover:bg-slate-50 transition-colors cursor-pointer ${
-                      !notification.isRead ? 'bg-blue-50/50' : ''
+                    className={`group p-4 hover:bg-slate-50 transition-colors cursor-pointer border-l-4 ${
+                      !notification.isRead ? 'bg-blue-50/30 border-l-blue-500' : 'border-l-transparent'
                     }`}
-                    onClick={() => handleClickNotification(notification.link || undefined)}
+                    onClick={() => handleClickNotification(notification.id, notification.link || undefined)}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">
@@ -248,7 +296,7 @@ export default function NotificationBell() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-slate-100 text-center">
+            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 text-center">
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium"

@@ -143,9 +143,8 @@ export function getVehicleMaintenanceSummary(
   const numberOfServices = calculateNumberOfServices(completed);
   const lastService = getLastServiceDate(completed);
   const currentOdometer = getCurrentOdometerReading(maintenances);
-  const lastOdometer = completed.length > 1
-    ? completed[completed.length - 2].odometerReading
-    : null;
+  const prevMaintenance = completed.length > 1 ? completed[completed.length - 2] : null;
+  const lastOdometer = prevMaintenance?.odometerReading || null;
 
   return {
     totalMaintenanceCost: totalCost,

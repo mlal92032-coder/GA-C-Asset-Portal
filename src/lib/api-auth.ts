@@ -204,7 +204,7 @@ export async function requireWrite(module: Module): Promise<{ user: UserSession 
  * Create an audit log entry.
  */
 export async function createAuditLog(data: {
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT';
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'APPROVE' | 'REJECT';
   entity: string;
   entityId: string;
   details?: Record<string, unknown>;

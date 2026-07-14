@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertCircle, Package } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 import type { VehicleAsset } from '@/types';
 
 interface SparePartRecord {
@@ -44,6 +45,7 @@ export default function SparePartsModal({
   const [calculatedTotal, setCalculatedTotal] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const { success, error: errorToast } = useToast();
 
   useEffect(() => {
     if (editingSparePart) {
@@ -116,6 +118,19 @@ export default function SparePartsModal({
         vehicleId: formData.vehicleId || null,
         remarks: formData.remarks || null,
       });
+      success(
+        editingSparePart
+          ? 'Spare part record updated successfully'
+          : 'Spare part record created successfully'
+      );
+      onClose();
+    } catch (err: any) {
+      errorToast(
+        err?.message ||
+        (editingSparePart
+          ? 'Failed to update spare part record'
+          : 'Failed to create spare part record')
+      );
     } finally {
       setSubmitting(false);
     }

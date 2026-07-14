@@ -15,6 +15,7 @@ const vehicleSchema = z.object({
   chassisNumber: z.union([z.string(), z.null(), z.undefined()]).optional(),
   fuelType: z.union([z.string(), z.null(), z.undefined()]).optional(),
   purchaseDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  purchasePrice: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional(),
   companyId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   manufacturerId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   locationId: z.union([z.string(), z.null(), z.undefined()]).optional(),
@@ -24,6 +25,8 @@ const vehicleSchema = z.object({
   lastServiceDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   insuranceExpiryDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   remarks: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  usefulLifeYears: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional(),
+  salvageValue: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -57,7 +60,7 @@ export async function GET(req: NextRequest) {
       ];
     }
     if (condition) where.condition = condition as 'GOOD' | 'REPAIR' | 'DAMAGED';
-    if (status) where.status = status as 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+    if (status) where.status = status as 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
     if (locationId) where.locationId = locationId;
     if (companyId) where.companyId = companyId;
 
@@ -126,6 +129,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check chassis number uniqueness (if provided)
+    if (validatedData.chassisNumber) {
+      const existingChassis = await prisma.vehicleAsset.findFirst({
+        where: { chassisNumber: validatedData.chassisNumber },
+      });
+      if (existingChassis) {
+        return NextResponse.json(
+          { success: false, error: 'Chassis number already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
     const asset = await prisma.vehicleAsset.create({
       data: {
         assetTag: validatedData.assetTag,
@@ -136,8 +152,10 @@ export async function POST(req: NextRequest) {
         brand: validatedData.brand || null,
         model: validatedData.model || null,
         engineNumber: validatedData.engineNumber || null,
+        chassisNumber: validatedData.chassisNumber || null,
         fuelType: validatedData.fuelType || null,
         purchaseDate: validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null,
+        purchasePrice: validatedData.purchasePrice ? Number(validatedData.purchasePrice) : null,
         companyId: validatedData.companyId || null,
         manufacturerId: validatedData.manufacturerId || null,
         locationId: validatedData.locationId || null,
@@ -147,6 +165,8 @@ export async function POST(req: NextRequest) {
         lastServiceDate: validatedData.lastServiceDate ? new Date(validatedData.lastServiceDate) : null,
         insuranceExpiryDate: validatedData.insuranceExpiryDate ? new Date(validatedData.insuranceExpiryDate) : null,
         remarks: validatedData.remarks || null,
+        usefulLifeYears: validatedData.usefulLifeYears ? Number(validatedData.usefulLifeYears) : null,
+        salvageValue: validatedData.salvageValue ? Number(validatedData.salvageValue) : null,
       },
       include: {
         company: { select: { id: true, companyName: true } },

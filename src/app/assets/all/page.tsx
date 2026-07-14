@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import FilterBar from '@/components/FilterBar';
-import { Pagination } from '@/components/Pagination';
 import { buildImageUrl } from '@/lib/image-upload';
 import {
   Plus,
@@ -231,7 +230,14 @@ export default function AllAssetsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      currentPage={currentPage}
+      totalPages={totalPages}
+      itemsPerPage={itemsPerPage}
+      totalItems={filteredAssets.length}
+      onPageChange={setCurrentPage}
+      onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
+    >
       <div className="max-w-7xl mx-auto">
       <PageHeader
         title="All Assets"
@@ -252,87 +258,87 @@ export default function AllAssetsPage() {
         }}
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-0.5">Type</label>
-              <select
-                value={filters.type}
-                onChange={(e) => { setFilters({ ...filters, type: e.target.value }); setCurrentPage(1); }}
-                className="py-1.5 text-sm"
-              >
-                <option value="">All Types</option>
-                <option value="FURNITURE">Furniture</option>
-                <option value="ELECTRONIC">Electronic</option>
-                <option value="VEHICLE">Vehicle</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-0.5">Condition</label>
-              <select
-                value={filters.condition}
-                onChange={(e) => { setFilters({ ...filters, condition: e.target.value }); setCurrentPage(1); }}
-                className="py-1.5 text-sm"
-              >
-                <option value="">All Conditions</option>
-                <option value="GOOD">Good</option>
-                <option value="REPAIR">Repair</option>
-                <option value="DAMAGED">Damaged</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-0.5">Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => { setFilters({ ...filters, status: e.target.value }); setCurrentPage(1); }}
-                className="py-1.5 text-sm"
-              >
-                <option value="">All Status</option>
-                <option value="IN_USE">In Use</option>
-                <option value="IN_STORE">In Store</option>
-                <option value="DISPOSED">Disposed</option>
-                <option value="AUCTION">Auction</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-0.5">Location</label>
-              <select
-                value={filters.locationId}
-                onChange={(e) => { setFilters({ ...filters, locationId: e.target.value }); setCurrentPage(1); }}
-                className="py-1.5 text-sm"
-              >
-                <option value="">All Locations</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.locationName}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-0.5">Company</label>
-              <select
-                value={filters.companyId}
-                onChange={(e) => { setFilters({ ...filters, companyId: e.target.value }); setCurrentPage(1); }}
-                className="py-1.5 text-sm"
-              >
-                <option value="">All Companies</option>
-                {companies.map((comp) => (
-                  <option key={comp.id} value={comp.id}>{comp.companyName}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-0.5">Assigned To</label>
-              <select
-                value={filters.assignedUserId}
-                onChange={(e) => { setFilters({ ...filters, assignedUserId: e.target.value }); setCurrentPage(1); }}
-                className="py-1.5 text-sm"
-              >
-                <option value="">All Users</option>
-                {users.filter((u) => u.status === 'ACTIVE').map((user) => (
-                  <option key={user.id} value={user.id}>{user.fullName}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">Type</label>
+            <select
+              value={filters.type}
+              onChange={(e) => { setFilters({ ...filters, type: e.target.value }); setCurrentPage(1); }}
+              className="py-1.5 text-sm"
+            >
+              <option value="">All Types</option>
+              <option value="FURNITURE">Furniture</option>
+              <option value="ELECTRONIC">Electronic</option>
+              <option value="VEHICLE">Vehicle</option>
+            </select>
           </div>
-        </FilterBar>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">Condition</label>
+            <select
+              value={filters.condition}
+              onChange={(e) => { setFilters({ ...filters, condition: e.target.value }); setCurrentPage(1); }}
+              className="py-1.5 text-sm"
+            >
+              <option value="">All Conditions</option>
+              <option value="GOOD">Good</option>
+              <option value="REPAIR">Repair</option>
+              <option value="DAMAGED">Damaged</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => { setFilters({ ...filters, status: e.target.value }); setCurrentPage(1); }}
+              className="py-1.5 text-sm"
+            >
+              <option value="">All Status</option>
+              <option value="IN_USE">In Use</option>
+              <option value="IN_STORE">In Store</option>
+              <option value="DISPOSED">Disposed</option>
+              <option value="AUCTION">Auction</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">Location</label>
+            <select
+              value={filters.locationId}
+              onChange={(e) => { setFilters({ ...filters, locationId: e.target.value }); setCurrentPage(1); }}
+              className="py-1.5 text-sm"
+            >
+              <option value="">All Locations</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>{loc.locationName}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">Company</label>
+            <select
+              value={filters.companyId}
+              onChange={(e) => { setFilters({ ...filters, companyId: e.target.value }); setCurrentPage(1); }}
+              className="py-1.5 text-sm"
+            >
+              <option value="">All Companies</option>
+              {companies.map((comp) => (
+                <option key={comp.id} value={comp.id}>{comp.companyName}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">Assigned To</label>
+            <select
+              value={filters.assignedUserId}
+              onChange={(e) => { setFilters({ ...filters, assignedUserId: e.target.value }); setCurrentPage(1); }}
+              className="py-1.5 text-sm"
+            >
+              <option value="">All Users</option>
+              {users.filter((u) => u.status === 'ACTIVE').map((user) => (
+                <option key={user.id} value={user.id}>{user.fullName}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </FilterBar>
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -397,17 +403,6 @@ export default function AllAssetsPage() {
             <p className="empty-state-title text-lg font-semibold text-slate-600">No assets found</p>
             <p className="empty-state-text mt-1">Add assets from their respective pages</p>
           </div>
-        )}
-
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredAssets.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={(page) => setCurrentPage(page)}
-            onItemsPerPageChange={setItemsPerPage}
-          />
         )}
       </div>
       </div>

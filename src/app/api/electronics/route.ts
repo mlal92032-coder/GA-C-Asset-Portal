@@ -10,6 +10,7 @@ const electronicSchema = z.object({
   deviceType: z.union([z.string(), z.null(), z.undefined()]).optional(),
   brand: z.union([z.string(), z.null(), z.undefined()]).optional(),
   model: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  serialNumber: z.union([z.string(), z.null(), z.undefined()]).optional(),
   purchaseDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   warrantyEndDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   companyId: z.union([z.string(), z.null(), z.undefined()]).optional(),
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     const where: {
       OR?: Array<{ assetName?: { contains: string } } | { brand?: { contains: string } } | { model?: { contains: string } } | { serialNumber?: { contains: string } }>;
       condition?: 'GOOD' | 'REPAIR' | 'DAMAGED';
-      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
       locationId?: string;
       companyId?: string;
     } = {};
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
       ];
     }
     if (condition) where.condition = condition as 'GOOD' | 'REPAIR' | 'DAMAGED';
-    if (status) where.status = status as 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+    if (status) where.status = status as 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
     if (locationId) where.locationId = locationId;
     if (companyId) where.companyId = companyId;
 
@@ -111,6 +112,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check serial number uniqueness (if provided)
+    if (validatedData.serialNumber) {
+      const existingSerial = await prisma.electronicAsset.findFirst({
+        where: { serialNumber: validatedData.serialNumber },
+      });
+      if (existingSerial) {
+        return NextResponse.json(
+          { success: false, error: 'Serial number already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
     const asset = await prisma.electronicAsset.create({
       data: {
         assetTag: validatedData.assetTag,
@@ -119,6 +133,7 @@ export async function POST(req: NextRequest) {
         deviceType: validatedData.deviceType || null,
         brand: validatedData.brand || null,
         model: validatedData.model || null,
+        serialNumber: validatedData.serialNumber || null,
         purchaseDate: validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null,
         companyId: validatedData.companyId || null,
         manufacturerId: validatedData.manufacturerId || null,

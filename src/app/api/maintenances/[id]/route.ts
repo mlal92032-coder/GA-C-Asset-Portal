@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-options';
+import { requirePermission } from '@/lib/api-auth';
 import { z } from 'zod';
 
 const maintenancePutSchema = z.object({
@@ -25,10 +24,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requirePermission('maintenance', 'edit');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const { id } = await params;
     const body = await request.json();
@@ -104,7 +102,7 @@ export async function PUT(
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user?.id!,
+        userId: user.id,
         action: 'UPDATE',
         entity: 'MAINTENANCE',
         entityId: id,
@@ -124,15 +122,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only SUPER_ADMIN can delete
-    if (session.user?.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ success: false, error: 'Only administrators can delete maintenance records' }, { status: 403 });
-    }
+    const authResult = await requirePermission('maintenance', 'delete');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const { id } = await params;
 
@@ -151,7 +143,7 @@ export async function DELETE(
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user?.id!,
+        userId: user.id,
         action: 'DELETE',
         entity: 'MAINTENANCE',
         entityId: id,

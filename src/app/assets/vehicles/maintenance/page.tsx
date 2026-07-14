@@ -1,21 +1,23 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
-import { Pagination } from '@/components/Pagination';
 import MaintenanceHistoryModal from '@/components/MaintenanceHistoryModal';
 import SparePartsModal from '@/components/SparePartsModal';
 import { Button, IconButton } from '@/components/Button';
 import type { VehicleAsset } from '@/types';
 import {
-  Plus, Edit2, Trash2, Wrench, Package, TrendingUp, Calendar, DollarSign, AlertCircle, ChevronLeft, Download, Upload
+  Plus, Edit2, Trash2, Wrench, Package, TrendingUp, Calendar, DollarSign, AlertCircle, ChevronLeft, Download, Upload, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   formatCurrency, formatDate, getStatusColor, getWorkTypeColor
 } from '@/lib/vehicleCalculations';
+
+export const dynamic = 'force-dynamic';
 
 type Tab = 'maintenance' | 'spareparts' | 'summary';
 
@@ -62,7 +64,7 @@ interface VehicleSummary {
   totalLifecycleCostWithSpares: number;
 }
 
-export default function VehicleMaintenancePage() {
+function VehicleMaintenanceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('maintenance');
@@ -86,6 +88,16 @@ export default function VehicleMaintenancePage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const maintenanceFileInputRef = useRef<HTMLInputElement>(null);
   const sparePartsFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Search and filter states
+  const [vehicleSearch, setVehicleSearch] = useState('');
+  const [maintenanceSearch, setMaintenanceSearch] = useState('');
+  const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState<'ALL' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [maintenanceDepartmentFilter, setMaintenanceDepartmentFilter] = useState('ALL');
+  const [maintenanceVehicleFilter, setMaintenanceVehicleFilter] = useState('ALL');
+  const [sparePartsSearch, setSparePartsSearch] = useState('');
+  const [sparePartsVehicleFilter, setSparePartsVehicleFilter] = useState('ALL');
+  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
 
   // Fetch vehicles
   useEffect(() => {
@@ -111,17 +123,21 @@ export default function VehicleMaintenancePage() {
     fetchVehicles();
   }, [searchParams]);
 
-  // Fetch maintenance records
+  // Fetch ALL maintenance records (no vehicle filtering)
   useEffect(() => {
-    if (!selectedVehicle) return;
     const fetchMaintenances = async () => {
       setDataLoading(true);
       try {
-        const response = await fetch(`/api/maintenances?assetType=VEHICLE&page=${maintenancePage}&limit=${itemsPerPage}`);
+        const response = await fetch(`/api/maintenances?assetType=VEHICLE&page=1&limit=10000`);
+        if (!response.ok) {
+          console.error('API response error:', response.status);
+          showToast('Failed to load maintenance records', 'error');
+          setDataLoading(false);
+          return;
+        }
         const data = await response.json();
         if (data.success) {
-          const filtered = data.data.filter((m: any) => m.assetId === selectedVehicle);
-          setMaintenances(filtered);
+          setMaintenances(data.data || []);
         } else {
           console.error('API error:', data.error);
           showToast('Failed to load maintenance records', 'error');
@@ -134,14 +150,17 @@ export default function VehicleMaintenancePage() {
       }
     };
     fetchMaintenances();
-  }, [selectedVehicle, maintenancePage, itemsPerPage]);
+  }, []);
 
-  // Fetch spare parts
+  // Fetch ALL spare parts (no vehicle filtering)
   useEffect(() => {
-    if (!selectedVehicle) return;
     const fetchSpareParts = async () => {
       try {
-        const response = await fetch(`/api/spare-parts?vehicleId=${selectedVehicle}&page=${sparePartsPage}&limit=${itemsPerPage}`);
+        const response = await fetch(`/api/spare-parts?page=1&limit=10000`);
+        if (!response.ok) {
+          console.error('API response error:', response.status);
+          return;
+        }
         const data = await response.json();
         if (data.success) {
           setSpareParts(data.data || []);
@@ -153,7 +172,7 @@ export default function VehicleMaintenancePage() {
       }
     };
     fetchSpareParts();
-  }, [selectedVehicle, sparePartsPage, itemsPerPage]);
+  }, []);
 
   // Fetch vehicle summary
   useEffect(() => {
@@ -517,8 +536,71 @@ export default function VehicleMaintenancePage() {
     );
   }
 
+  const getPaginationData = () => {
+    if (activeTab === 'maintenance') {
+      const filteredMaintenances = maintenances.filter((m) => {
+        const matchesSearch = maintenanceSearch === '' ||
+          m.description.toLowerCase().includes(maintenanceSearch.toLowerCase()) ||
+          m.remarks?.toLowerCase().includes(maintenanceSearch.toLowerCase());
+        const matchesVehicle = maintenanceVehicleFilter === 'ALL' || m.assetId === maintenanceVehicleFilter;
+        const matchesStatus = maintenanceStatusFilter === 'ALL' || m.status === maintenanceStatusFilter;
+        const matchesDepartment = maintenanceDepartmentFilter === 'ALL' ||
+          (maintenanceDepartmentFilter === 'MAINTENANCE' && m.workType === 'MAINTENANCE') ||
+          (maintenanceDepartmentFilter === 'REPAIR' && m.workType === 'REPAIR') ||
+          (maintenanceDepartmentFilter === 'SERVICE' && m.workType === 'SERVICE') ||
+          (maintenanceDepartmentFilter === 'OTHER' && !['MAINTENANCE', 'REPAIR', 'SERVICE'].includes(m.workType || ''));
+        return matchesSearch && matchesVehicle && matchesStatus && matchesDepartment;
+      });
+      return {
+        currentPage: maintenancePage,
+        totalPages: Math.ceil(filteredMaintenances.length / itemsPerPage),
+        itemsPerPage,
+        totalItems: filteredMaintenances.length,
+      };
+    } else if (activeTab === 'spareparts') {
+      const filteredSpareParts = spareParts.filter((p) => {
+        const matchesSearch = sparePartsSearch === '' ||
+          p.partName.toLowerCase().includes(sparePartsSearch.toLowerCase()) ||
+          p.supplierName.toLowerCase().includes(sparePartsSearch.toLowerCase()) ||
+          p.remarks?.toLowerCase().includes(sparePartsSearch.toLowerCase());
+        const matchesVehicle = sparePartsVehicleFilter === 'ALL' || p.vehicleId === sparePartsVehicleFilter;
+        return matchesSearch && matchesVehicle;
+      });
+      return {
+        currentPage: sparePartsPage,
+        totalPages: Math.ceil(filteredSpareParts.length / itemsPerPage),
+        itemsPerPage,
+        totalItems: filteredSpareParts.length,
+      };
+    }
+    return {
+      currentPage: 1,
+      totalPages: 1,
+      itemsPerPage,
+      totalItems: 0,
+    };
+  };
+
+  const paginationData = getPaginationData();
+
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      currentPage={paginationData.currentPage}
+      totalPages={paginationData.totalPages}
+      itemsPerPage={paginationData.itemsPerPage}
+      totalItems={paginationData.totalItems}
+      onPageChange={(page) => {
+        if (activeTab === 'maintenance') {
+          setMaintenancePage(page);
+        } else if (activeTab === 'spareparts') {
+          setSparePartsPage(page);
+        }
+      }}
+      onItemsPerPageChange={(perPage) => {
+        // Would need to modify itemsPerPage state if we want per-page changes
+        // For now, keeping fixed itemsPerPage
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {toast && (
           <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${toast.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
@@ -543,29 +625,6 @@ export default function VehicleMaintenancePage() {
           iconColor="text-blue-600"
         />
 
-        {/* Vehicle Selector */}
-        <div className="card p-4 mb-6">
-          <div className="flex items-center gap-4">
-            <label className="font-semibold text-slate-700 whitespace-nowrap">Select Vehicle:</label>
-            <select
-              value={selectedVehicle}
-              onChange={(e) => {
-                setSelectedVehicle(e.target.value);
-                setMaintenancePage(1);
-                setSparePartsPage(1);
-              }}
-              className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoComplete="off"
-            >
-              <option value="">Select a vehicle...</option>
-              {vehicles.map((vehicle) => (
-                <option key={vehicle.id} value={vehicle.id}>
-                  {vehicle.assetName} ({vehicle.brand} {vehicle.model}) - {vehicle.assetTag || 'No Tag'}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
@@ -603,6 +662,87 @@ export default function VehicleMaintenancePage() {
               )}
               {!dataLoading && (
               <div>
+              {/* Maintenance Filters */}
+              <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-slate-200 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  {/* Search Description */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">SEARCH</label>
+                    <input
+                      type="text"
+                      placeholder="Description..."
+                      value={maintenanceSearch}
+                      onChange={(e) => setMaintenanceSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    />
+                  </div>
+
+                  {/* Vehicle Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">VEHICLE</label>
+                    <select
+                      value={maintenanceVehicleFilter}
+                      onChange={(e) => setMaintenanceVehicleFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="ALL">All Vehicles</option>
+                      {vehicles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.assetName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">STATUS</label>
+                    <select
+                      value={maintenanceStatusFilter}
+                      onChange={(e) => setMaintenanceStatusFilter(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="ALL">All</option>
+                      <option value="SCHEDULED">Scheduled</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+
+                  {/* Department Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">DEPT</label>
+                    <select
+                      value={maintenanceDepartmentFilter}
+                      onChange={(e) => setMaintenanceDepartmentFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="ALL">All</option>
+                      <option value="MAINTENANCE">Maintenance</option>
+                      <option value="REPAIR">Repair</option>
+                      <option value="SERVICE">Service</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Clear Button */}
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => {
+                        setMaintenanceSearch('');
+                        setMaintenanceStatusFilter('ALL');
+                        setMaintenanceDepartmentFilter('ALL');
+                        setMaintenanceVehicleFilter('ALL');
+                      }}
+                      className="w-full px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all font-medium"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">Maintenance Records</h3>
                 <div className="flex gap-3">
@@ -640,32 +780,54 @@ export default function VehicleMaintenancePage() {
                 </div>
               </div>
 
-              {maintenances.length === 0 ? (
-                <div className="text-center py-12">
-                  <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-500">No maintenance records found</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">SN</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Type</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Description</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Vendor</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Odometer</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Cost</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {maintenances.map((m, i) => (
-                        <tr key={m.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-sm font-medium text-slate-600">{(maintenancePage - 1) * itemsPerPage + i + 1}</td>
-                          <td className="px-4 py-3 text-sm text-slate-900">{formatDate(new Date(m.maintenanceDate))}</td>
+              {(() => {
+                const filteredMaintenances = maintenances.filter((m) => {
+                  const matchesSearch = maintenanceSearch === '' ||
+                    m.description.toLowerCase().includes(maintenanceSearch.toLowerCase()) ||
+                    m.remarks?.toLowerCase().includes(maintenanceSearch.toLowerCase());
+
+                  const matchesVehicle = maintenanceVehicleFilter === 'ALL' || m.assetId === maintenanceVehicleFilter;
+
+                  const matchesStatus = maintenanceStatusFilter === 'ALL' || m.status === maintenanceStatusFilter;
+
+                  const matchesDepartment = maintenanceDepartmentFilter === 'ALL' ||
+                    (maintenanceDepartmentFilter === 'MAINTENANCE' && m.workType === 'MAINTENANCE') ||
+                    (maintenanceDepartmentFilter === 'REPAIR' && m.workType === 'REPAIR') ||
+                    (maintenanceDepartmentFilter === 'SERVICE' && m.workType === 'SERVICE') ||
+                    (maintenanceDepartmentFilter === 'OTHER' && !['MAINTENANCE', 'REPAIR', 'SERVICE'].includes(m.workType || ''));
+
+                  return matchesSearch && matchesVehicle && matchesStatus && matchesDepartment;
+                });
+
+                return filteredMaintenances.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500">No maintenance records found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">SN</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Vehicle</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Type</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Description</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Odometer</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Cost</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredMaintenances.slice((maintenancePage - 1) * itemsPerPage, maintenancePage * itemsPerPage).map((m, i) => {
+                          const vehicleRecord = vehicles.find((v) => v.id === m.assetId);
+                          return (
+                            <tr key={m.id} className="border-b border-slate-200 hover:bg-slate-50">
+                              <td className="px-4 py-3 text-sm font-medium text-slate-600">{(maintenancePage - 1) * itemsPerPage + i + 1}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-slate-900">{vehicleRecord?.assetName || 'Unknown'}</td>
+                              <td className="px-4 py-3 text-sm text-slate-900">{formatDate(new Date(m.maintenanceDate))}</td>
                           <td className="px-4 py-3 text-sm">
                             {m.workType && (
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getWorkTypeColor(m.workType)}`}>
@@ -701,25 +863,15 @@ export default function VehicleMaintenancePage() {
                               />
                             </div>
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
 
-              {maintenances.length > 0 && (
-                <div className="mt-6">
-                  <Pagination
-                    currentPage={maintenancePage}
-                    totalPages={Math.ceil(maintenances.length / itemsPerPage)}
-                    totalItems={maintenances.length}
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={setMaintenancePage}
-                    onItemsPerPageChange={() => {}}
-                  />
-                </div>
-              )}
               </div>
               )}
             </div>
@@ -728,6 +880,53 @@ export default function VehicleMaintenancePage() {
           {/* TAB: Spare Parts */}
           {activeTab === 'spareparts' && (
             <div className="p-6">
+              {/* Spare Parts Filters */}
+              <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-slate-200 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Search */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">SEARCH</label>
+                    <input
+                      type="text"
+                      placeholder="Part name..."
+                      value={sparePartsSearch}
+                      onChange={(e) => setSparePartsSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    />
+                  </div>
+
+                  {/* Vehicle Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">VEHICLE</label>
+                    <select
+                      value={sparePartsVehicleFilter}
+                      onChange={(e) => setSparePartsVehicleFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="ALL">All Vehicles</option>
+                      {vehicles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.assetName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Clear */}
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => {
+                        setSparePartsSearch('');
+                        setSparePartsVehicleFilter('ALL');
+                      }}
+                      className="w-full px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all font-medium"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">Spare Parts & Purchases</h3>
                 <div className="flex gap-3">
@@ -765,31 +964,47 @@ export default function VehicleMaintenancePage() {
                 </div>
               </div>
 
-              {spareParts.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-500">No spare parts records found</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">SN</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Part Name</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Qty</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Unit Price</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Total Cost</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Supplier</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {spareParts.map((p, i) => (
-                        <tr key={p.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-sm font-medium text-slate-600">{(sparePartsPage - 1) * itemsPerPage + i + 1}</td>
-                          <td className="px-4 py-3 text-sm text-slate-900">{formatDate(new Date(p.partDate))}</td>
+              {(() => {
+                const filteredSpareParts = spareParts.filter((p) => {
+                  const matchesSearch = sparePartsSearch === '' ||
+                    p.partName.toLowerCase().includes(sparePartsSearch.toLowerCase()) ||
+                    p.supplierName.toLowerCase().includes(sparePartsSearch.toLowerCase()) ||
+                    p.remarks?.toLowerCase().includes(sparePartsSearch.toLowerCase());
+
+                  const matchesVehicle = sparePartsVehicleFilter === 'ALL' || p.vehicleId === sparePartsVehicleFilter;
+
+                  return matchesSearch && matchesVehicle;
+                });
+
+                return filteredSpareParts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500">No spare parts records found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">SN</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Vehicle</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Part Name</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Qty</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Unit Price</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Total Cost</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Supplier</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSpareParts.slice((sparePartsPage - 1) * itemsPerPage, sparePartsPage * itemsPerPage).map((p, i) => {
+                          const vehicleRecord = vehicles.find((v) => v.id === p.vehicleId);
+                          return (
+                            <tr key={p.id} className="border-b border-slate-200 hover:bg-slate-50">
+                              <td className="px-4 py-3 text-sm font-medium text-slate-600">{(sparePartsPage - 1) * itemsPerPage + i + 1}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-slate-900">{vehicleRecord?.assetName || 'Unknown'}</td>
+                              <td className="px-4 py-3 text-sm text-slate-900">{formatDate(new Date(p.partDate))}</td>
                           <td className="px-4 py-3 text-sm font-medium text-slate-900">{p.partName}</td>
                           <td className="px-4 py-3 text-sm text-slate-700">{p.quantity}</td>
                           <td className="px-4 py-3 text-sm text-slate-700">{formatCurrency(p.unitPrice)}</td>
@@ -813,26 +1028,16 @@ export default function VehicleMaintenancePage() {
                                 tooltip="Delete"
                               />
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+                            </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
                   </table>
-                </div>
-              )}
+                  </div>
+                );
+              })()}
 
-              {spareParts.length > 0 && (
-                <div className="mt-6">
-                  <Pagination
-                    currentPage={sparePartsPage}
-                    totalPages={Math.ceil(spareParts.length / itemsPerPage)}
-                    totalItems={spareParts.length}
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={setSparePartsPage}
-                    onItemsPerPageChange={() => {}}
-                  />
-                </div>
-              )}
             </div>
           )}
 
@@ -896,11 +1101,25 @@ export default function VehicleMaintenancePage() {
             onClose={() => { setSparePartsModal(false); setEditingSparePart(null); }}
             onSave={handleSaveSparepart}
             vehicles={vehicles}
-            selectedVehicleId={selectedVehicle}
             editingSparePart={editingSparePart}
           />
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function VehicleMaintenancePage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Upload className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="ml-3 text-slate-600">Loading maintenance data...</span>
+        </div>
+      </DashboardLayout>
+    }>
+      <VehicleMaintenanceContent />
+    </Suspense>
   );
 }

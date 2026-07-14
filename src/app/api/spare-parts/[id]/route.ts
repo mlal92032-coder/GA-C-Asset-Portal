@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-options';
+import { requirePermission } from '@/lib/api-auth';
 import { z } from 'zod';
 
 const sparePartUpdateSchema = z.object({
@@ -16,10 +15,9 @@ const sparePartUpdateSchema = z.object({
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requirePermission('vehicles', 'edit');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const { id } = await params;
     const body = await request.json();
@@ -76,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user?.id!,
+        userId: user.id,
         action: 'UPDATE',
         entity: 'SPARE_PART',
         entityId: id,
@@ -97,10 +95,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requirePermission('vehicles', 'delete');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const { id } = await params;
 
@@ -120,7 +117,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user?.id!,
+        userId: user.id,
         action: 'DELETE',
         entity: 'SPARE_PART',
         entityId: id,

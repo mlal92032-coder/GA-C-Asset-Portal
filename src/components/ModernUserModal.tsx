@@ -1,18 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, User, Mail, Lock, Shield, Phone, Briefcase, Eye, EyeOff,
-  CheckSquare, Square, AlertCircle, ChevronDown, ChevronRight,
+  X, User, AlertCircle, CheckSquare, Square, ChevronDown, ChevronRight,
   Crown, Users, EyeIcon, Loader2,
 } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useToast } from '@/contexts/ToastContext';
 import {
   MODULES, MODULE_LABELS, MODULE_ICONS,
   getAvailableActions, ACTION_LABELS,
   type Module, type PermissionAction,
 } from '@/lib/permissions';
+
+const userSchema = z.object({
+  fullName: z.string().min(2, 'Full name must be at least 2 characters').max(255),
+  email: z.string().email('Invalid email address'),
+  password: z.string().refine(v => v.length === 0 || v.length >= 6, 'Password must be at least 6 characters'),
+  phone: z.string(),
+  department: z.string(),
+  designation: z.string(),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
+});
+
+type UserFormData = z.infer<typeof userSchema>;
 
 interface Props {
   isOpen: boolean;
@@ -23,53 +38,96 @@ interface Props {
 }
 
 export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, saving }: Props) {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState('USER');
-  const [status, setStatus] = useState('ACTIVE');
-  const [department, setDepartment] = useState('');
-  const [designation, setDesignation] = useState('');
-  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [modulePermissions, setModulePermissions] = useState<Record<string, string[]>>({});
+  const { success, error } = useToast();
 
   const modalRef = useFocusTrap({ isOpen, onClose });
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors: formErrors },
+    reset,
+    watch,
+    setValue,
+  } = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
+    mode: 'onChange',
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      phone: '',
+      department: '',
+      designation: '',
+      status: 'ACTIVE',
+    },
+  });
+
+  const fullNameValue = watch('fullName');
+
+  const generateEmailFromName = (name: string): string => {
+    const cleaned = name.trim().toLowerCase().replace(/\s+/g, '.');
+    return `${cleaned}@sef.org.pk`;
+  };
+
   useEffect(() => {
     if (!isOpen) return;
-    // Always reset first, then populate if editing
-    resetForm();
-    // Only populate if explicitly editing a user
+    reset();
+    setRole('USER');
+    setExpandedModules([]);
+    setModulePermissions({});
+
     if (editingUser && editingUser.id) {
-      setFullName((editingUser.fullName as string) || '');
-      setEmail((editingUser.email as string) || '');
-      setPassword('');
+      reset({
+        fullName: (editingUser.fullName as string) || '',
+        email: (editingUser.email as string) || '',
+        password: '',
+        phone: (editingUser.phone as string) || '',
+        department: (editingUser.department as string) || '',
+        designation: (editingUser.designation as string) || '',
+        status: (editingUser.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
+      });
       setRole((editingUser.role as string) || 'USER');
-      setStatus((editingUser.status as string) || 'ACTIVE');
-      setDepartment((editingUser.department as string) || '');
-      setDesignation((editingUser.designation as string) || '');
-      setPhone((editingUser.phone as string) || '');
       try {
         const raw = editingUser.permissions as string;
-        if (raw) { const p = JSON.parse(raw); setModulePermissions(p); setExpandedModules(Object.keys(p).filter((m: string) => p[m]?.length > 0)); }
-        else { setModulePermissions({}); setExpandedModules([]); }
-      } catch { setModulePermissions({}); setExpandedModules([]); }
+        if (raw) {
+          const p = JSON.parse(raw);
+          setModulePermissions(p);
+          setExpandedModules(Object.keys(p).filter((m: string) => p[m]?.length > 0));
+        }
+      } catch {
+        setModulePermissions({});
+        setExpandedModules([]);
+      }
     }
-  }, [editingUser, isOpen]);
+  }, [editingUser, isOpen, reset]);
 
-  const resetForm = () => { setFullName(''); setEmail(''); setPassword(''); setRole('USER'); setStatus('ACTIVE'); setDepartment(''); setDesignation(''); setPhone(''); setModulePermissions({}); setExpandedModules([]); setShowPassword(false); setErrors({}); };
-
-  const handleNameChange = (name: string) => { setFullName(name); };
   const toggleExpand = (m: string) => setExpandedModules(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
   const toggleAction = (m: string, a: string) => setModulePermissions(p => { const c = [...(p[m] || [])]; if (c.includes(a)) { const f = c.filter(x => x !== a); if (!f.length) { const n = { ...p }; delete n[m]; return n; } return { ...p, [m]: f }; } return { ...p, [m]: [...c, a] }; });
-  const selectAllForModule = (m: Module) => setModulePermissions(p => ({ ...p, [m]: [...getAvailableActions(m)] }));
-  const clearModule = (m: string) => setModulePermissions(p => { const n = { ...p }; delete n[m]; return n; });
-  const validate = () => { const e: Record<string, string> = {}; if (!fullName.trim()) e.fullName = 'Required'; if (!email.trim()) e.email = 'Required'; if (!editingUser && !password) e.password = 'Required'; if (password && password.length < 6) e.password = 'Min 6 chars'; setErrors(e); return !Object.keys(e).length; };
 
-  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); if (!validate()) return; await onSave({ fullName, email, password: password || undefined, role, status, department: department || null, designation: designation || null, phone: phone || null, permissions: Object.keys(modulePermissions).length > 0 ? modulePermissions : null }); };
+  const onSubmit = async (data: UserFormData) => {
+    try {
+      await onSave({
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password || undefined,
+        role,
+        status: data.status,
+        department: data.department || null,
+        designation: data.designation || null,
+        phone: data.phone || null,
+        permissions: Object.keys(modulePermissions).length > 0 ? modulePermissions : null,
+      });
+      success(editingUser ? 'User updated successfully' : 'User created successfully');
+      reset();
+    } catch (err: any) {
+      error(err?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -108,49 +166,130 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
               <div className="modal-body space-y-5 overflow-y-auto">
-                {/* Profile + Role in a clean layout */}
                 <div className="space-y-5">
-                  {/* Name & Email row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Full Name <span className="text-red-500">*</span></label>
-                      <input type="text" value={fullName} onChange={e => handleNameChange(e.target.value)} className={errors.fullName ? 'border-red-400' : ''} placeholder="John Doe" disabled={saving} />
-                      {errors.fullName && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.fullName}</p>}
+                      <input
+                        type="text"
+                        {...register('fullName')}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                          formErrors.fullName ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                        }`}
+                        placeholder="John Doe"
+                        disabled={saving}
+                        onBlur={(e) => {
+                          if (!editingUser && e.target.value.trim()) {
+                            setValue('email', generateEmailFromName(e.target.value));
+                          }
+                        }}
+                      />
+                      {formErrors.fullName && (
+                        <motion.p
+                          className="text-xs text-red-500 mt-1 flex items-center gap-1"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          {formErrors.fullName.message}
+                        </motion.p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Email <span className="text-red-500">*</span></label>
-                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" className={errors.email ? 'border-red-400' : ''} placeholder="john@sef.com" disabled={saving || !!editingUser} />
-                      {errors.email && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.email}</p>}
+                      <input
+                        type="email"
+                        {...register('email')}
+                        autoComplete="off"
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                          formErrors.email ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                        }`}
+                        placeholder="john@sef.com"
+                        disabled={saving || !!editingUser}
+                      />
+                      {formErrors.email && (
+                        <motion.p
+                          className="text-xs text-red-500 mt-1 flex items-center gap-1"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          {formErrors.email.message}
+                        </motion.p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Password + Phone row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{editingUser ? 'New Password' : 'Password'} {!editingUser && <span className="text-red-500">*</span>}</label>
                       <div className="relative">
-                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" className={`pr-10 ${errors.password ? 'border-red-400' : ''}`} placeholder={editingUser ? 'Leave blank' : 'Min 6 chars'} disabled={saving} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-slate-400 hover:text-slate-600"><Lock className="w-3.5 h-3.5" /></button>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          {...register('password')}
+                          autoComplete="new-password"
+                          className={`w-full px-4 py-2.5 pr-10 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                            formErrors.password ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                          }`}
+                          placeholder={editingUser ? 'Leave blank' : 'Min 6 chars'}
+                          disabled={saving}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPassword ? '👁️' : '🔒'}
+                        </button>
                       </div>
-                      {errors.password && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.password}</p>}
+                      {formErrors.password && (
+                        <motion.p
+                          className="text-xs text-red-500 mt-1 flex items-center gap-1"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          {formErrors.password.message}
+                        </motion.p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Phone</label>
-                      <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+92 300 1234567" disabled={saving} />
+                      <input
+                        type="tel"
+                        {...register('phone')}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="+92 300 1234567"
+                        disabled={saving}
+                      />
                     </div>
                   </div>
 
-                  {/* Department + Designation row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Department</label>
-                      <input type="text" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g., IT, Finance" disabled={saving} />
+                      <input
+                        type="text"
+                        {...register('department')}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="e.g., IT, Finance"
+                        disabled={saving}
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Designation</label>
-                      <input type="text" value={designation} onChange={e => setDesignation(e.target.value)} placeholder="e.g., Manager" disabled={saving} />
+                      <input
+                        type="text"
+                        {...register('designation')}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="e.g., Manager"
+                        disabled={saving}
+                      />
                     </div>
                   </div>
                 </div>
@@ -186,10 +325,13 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
                   </div>
                 </div>
 
-                {/* Status */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Status</label>
-                  <select value={status} onChange={e => setStatus(e.target.value)} disabled={saving} className="max-w-[200px]">
+                  <select
+                    {...register('status')}
+                    disabled={saving}
+                    className="max-w-[200px] px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  >
                     <option value="ACTIVE">Active</option>
                     <option value="INACTIVE">Inactive</option>
                   </select>

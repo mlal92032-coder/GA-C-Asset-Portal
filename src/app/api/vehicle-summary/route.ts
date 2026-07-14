@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-options';
+import { requirePermission } from '@/lib/api-auth';
 import { getVehicleMaintenanceSummary } from '@/lib/vehicleCalculations';
 import { z } from 'zod';
 
@@ -11,10 +10,8 @@ const vehicleSummarySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requirePermission('vehicles', 'view');
+    if (authResult instanceof NextResponse) return authResult;
 
     const { searchParams } = new URL(request.url);
     const vehicleId = searchParams.get('vehicleId');

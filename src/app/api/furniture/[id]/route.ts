@@ -37,7 +37,7 @@ export async function GET(
         company: true,
         manufacturer: true,
         location: true,
-        assignedUser: { select: { id: true, fullName: true, email: true, department: true, designation: true } },
+        assignedUser: { select: { id: true, fullName: true, email: true, department: true, designation: true, status: true } },
       },
     });
 

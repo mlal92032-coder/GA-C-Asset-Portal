@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             assetTag: true,
+            serialNumber: true,
             assetName: true,
             furnitureType: true,
             condition: true,
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             assetTag: true,
+            serialNumber: true,
             assetName: true,
             deviceType: true,
             brand: true,
@@ -60,6 +62,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             assetTag: true,
+            serialNumber: true,
             assetName: true,
             vehicleType: true,
             brand: true,

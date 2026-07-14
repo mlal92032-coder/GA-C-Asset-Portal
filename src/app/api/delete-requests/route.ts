@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireView } from '@/lib/api-auth';
+import { requireAdmin } from '@/lib/api-auth';
 import { z } from 'zod';
 
 export async function GET() {
   try {
-    const authResult = await requireView('furniture');
+    const authResult = await requireAdmin();
     if (authResult instanceof NextResponse) return authResult;
 
     const requests = await prisma.deleteRequest.findMany({
@@ -43,7 +43,7 @@ const deleteRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireView('furniture');
+    const authResult = await requireAdmin();
     if (authResult instanceof NextResponse) return authResult;
     const currentUser = authResult.user;
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           title: 'Delete Request Pending',
           message: `${currentUser.fullName} requested deletion of ${validatedData.assetName}`,
           type: 'WARNING',
-          link: `/admin/delete-requests`,
+          link: `/admin/requests`,
         },
       });
     }

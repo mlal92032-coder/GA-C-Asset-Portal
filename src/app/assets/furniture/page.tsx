@@ -5,8 +5,7 @@ import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import FilterBar from '@/components/FilterBar';
-import { Pagination } from '@/components/Pagination';
-import { SortableHeader } from '@/components/SortableHeader';
+import DataTable, { type DataColumn } from '@/components/DataTable';
 import BarcodeComponent from '@/components/Barcode';
 import QRCode from '@/components/QRCode';
 import CheckoutModal, { CheckinModal } from '@/components/CheckoutModal';
@@ -433,7 +432,14 @@ export default function FurniturePage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      currentPage={currentPage}
+      totalPages={Math.ceil(totalItems / itemsPerPage)}
+      itemsPerPage={itemsPerPage}
+      totalItems={totalItems}
+      onPageChange={setCurrentPage}
+      onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {toast && (
         <div className={`toast toast-${toast.type}`}>
@@ -530,137 +536,137 @@ export default function FurniturePage() {
         </div>
       </FilterBar>
 
-      {/* Table */}
-      <div className="card overflow-hidden">
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>SN</th>
-                <th>Image</th>
-                <SortableHeader label="Asset Name" sortKey="assetName" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <SortableHeader label="Asset Tag" sortKey="assetTag" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <SortableHeader label="Type" sortKey="furnitureType" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <SortableHeader label="Location" sortKey="location" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <SortableHeader label="Assigned To" sortKey="assignedUser" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <SortableHeader label="Condition" sortKey="condition" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <SortableHeader label="Status" sortKey="status" currentSort={sort} currentOrder={order} onSort={handleSort} />
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assets.map((asset, index) => (
-                <tr key={asset.id}>
-                  <td className="font-medium text-gray-600">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td>
-                    {buildImageUrl(asset.imageUrl) ? (
-                      <img
-                        src={buildImageUrl(asset.imageUrl)!}
-                        alt={asset.assetName}
-                        className="w-12 h-12 object-cover border border-slate-200"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-slate-100 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
-                  </td>
-                  <td className="font-medium">{asset.assetName}</td>
-                  <td className="font-mono text-sm">{asset.assetTag || '-'}</td>
-                  <td>{asset.furnitureType || '-'}</td>
-                  <td>{asset.location?.locationName || '-'}</td>
-                  <td>{asset.assignedUser?.fullName || '-'}</td>
-                  <td>{conditionBadge(asset.condition)}</td>
-                  <td>{statusBadge(asset.status)}</td>
-                  <td>
-                    <div className="flex items-center gap-2">
+      {/* DataTable */}
+      <DataTable<FurnitureAsset>
+        data={assets}
+        columns={[
+          {
+            key: 'imageUrl',
+            label: 'Image',
+            sortable: false,
+            width: '80px',
+            render: (value, row) => (
+              buildImageUrl(row.imageUrl) ? (
+                <img
+                  src={buildImageUrl(row.imageUrl)!}
+                  alt={row.assetName}
+                  className="w-12 h-12 object-cover border border-slate-200 rounded"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-slate-100 flex items-center justify-center rounded border border-slate-200">
+                  <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )
+            ),
+          },
+          {
+            key: 'assetName',
+            label: 'Asset Name',
+            sortable: true,
+            render: (value) => <span className="font-medium">{value}</span>,
+          },
+          {
+            key: 'assetTag',
+            label: 'Asset Tag',
+            sortable: true,
+            render: (value) => <span className="font-mono text-sm">{value || '-'}</span>,
+          },
+          {
+            key: 'furnitureType',
+            label: 'Type',
+            sortable: true,
+            render: (value) => value || '-',
+          },
+          {
+            key: 'location',
+            label: 'Location',
+            sortable: false,
+            render: (_, row) => row.location?.locationName || '-',
+          },
+          {
+            key: 'assignedUser',
+            label: 'Assigned To',
+            sortable: false,
+            render: (_, row) => row.assignedUser?.fullName || '-',
+          },
+          {
+            key: 'condition',
+            label: 'Condition',
+            sortable: true,
+            render: (value) => conditionBadge(value),
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            sortable: true,
+            render: (value) => statusBadge(value),
+          },
+          {
+            key: 'id',
+            label: 'Actions',
+            sortable: false,
+            width: '200px',
+            render: (_, row) => (
+              <div className="flex items-center gap-1.5">
+                <IconButton
+                  onClick={() => {
+                    setViewingAsset(row);
+                    fetchAttachments(row.id);
+                  }}
+                  variant="secondary"
+                  size="sm"
+                  icon={<Eye className="w-4 h-4" />}
+                  tooltip="View Details"
+                />
+                {checkedOutAssets[row.id] ? (
+                  <IconButton
+                    onClick={() => openCheckinModal(row.id, row.assetName)}
+                    variant="success"
+                    size="sm"
+                    icon={<ArrowDownCircle className="w-4 h-4" />}
+                    tooltip="Check In"
+                  />
+                ) : (
+                  <IconButton
+                    onClick={() => openCheckoutModal(row)}
+                    variant="primary"
+                    size="sm"
+                    icon={<ArrowUpCircle className="w-4 h-4" />}
+                    tooltip="Check Out"
+                  />
+                )}
+                {canAddEditDelete && (
+                  <>
+                    <IconButton
+                      onClick={() => openEdit(row)}
+                      variant="secondary"
+                      size="sm"
+                      icon={<Edit className="w-4 h-4" />}
+                      tooltip="Edit"
+                    />
+                    {(canDeleteItem || canRequestDelete) && (
                       <IconButton
-                        onClick={() => {
-                          setViewingAsset(asset);
-                          fetchAttachments(asset.id);
-                        }}
-                        variant="secondary"
+                        onClick={() => handleDelete(row.id, row.assetName)}
+                        variant="danger"
                         size="sm"
-                        icon={<Eye className="w-4 h-4" />}
-                        tooltip="View Details"
+                        icon={<Trash2 className="w-4 h-4" />}
+                        tooltip={canRequestDelete ? "Request Delete" : "Delete"}
                       />
-                      {checkedOutAssets[asset.id] ? (
-                        <IconButton
-                          onClick={() => openCheckinModal(asset.id, asset.assetName)}
-                          variant="success"
-                          size="sm"
-                          icon={<ArrowDownCircle className="w-4 h-4" />}
-                          tooltip="Check In"
-                        />
-                      ) : (
-                        <IconButton
-                          onClick={() => openCheckoutModal(asset)}
-                          variant="primary"
-                          size="sm"
-                          icon={<ArrowUpCircle className="w-4 h-4" />}
-                          tooltip="Check Out"
-                        />
-                      )}
-                      {canAddEditDelete && (
-                        <>
-                          <IconButton
-                            onClick={() => openEdit(asset)}
-                            variant="secondary"
-                            size="sm"
-                            icon={<Edit className="w-4 h-4" />}
-                            tooltip="Edit"
-                          />
-                          {(canDeleteItem || canRequestDelete) && (
-                            <IconButton
-                              onClick={() => handleDelete(asset.id, asset.assetName)}
-                              variant="danger"
-                              size="sm"
-                              icon={<Trash2 className="w-4 h-4" />}
-                              tooltip={canRequestDelete ? "Request Delete" : "Delete"}
-                            />
-                          )}
-                        </>
-                      )}
-                      {canViewOnly && (
-                        <span className="text-xs text-slate-400 px-2">View Only</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {assets.length === 0 && (
-          <div className="empty-state border-t border-slate-100">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center mb-4">
-              <Armchair className="w-10 h-10 text-purple-300" />
-            </div>
-            <p className="empty-state-title text-lg font-semibold text-slate-600">No furniture assets found</p>
-            <p className="empty-state-text mt-1">Get started by adding your first furniture asset</p>
-            {canAddEditDelete && (
-              <Button
-                onClick={openCreate}
-                variant="primary"
-                icon={<Plus className="w-4 h-4" />}
-                className="mt-4"
-              >
-                Add Furniture
-              </Button>
-            )}
-          </div>
-        )}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(totalItems / itemsPerPage)}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={(page) => setCurrentPage(page)}
-          onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
-        />
-      </div>
+                    )}
+                  </>
+                )}
+                {canViewOnly && (
+                  <span className="text-xs text-slate-400">View Only</span>
+                )}
+              </div>
+            ),
+          },
+        ]}
+        isLoading={loading}
+        emptyMessage="No furniture assets found"
+      />
 
       {/* Modern Furniture Modal */}
       <ModernFurnitureModal

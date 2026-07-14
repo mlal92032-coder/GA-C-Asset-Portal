@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -33,6 +34,17 @@ model User {
   reviews       Review[]
   maintenances  Maintenance[]
   deleteRequests DeleteRequest[] @relation("DeleteRequestUser")
+  userCreationRequests UserCreationRequest[] @relation("UserCreationRequestUser")
+  userDeleteRequests UserDeleteRequest[] @relation("UserDeleteRequestUser")
+  assetAddRequests AssetAddRequest[] @relation("AssetAddRequestUser")
+
+  // Settings & Permissions
+  settingAuditLogs SettingAuditLog[] @relation("SettingsAuditUser")
+  notificationPreference NotificationPreference? @relation("NotificationPref")
+  permissionOverrides UserPermissionOverride[] @relation("PermissionOverrides")
+  permissionsApplied UserPermissionOverride[] @relation("PermissionAppliedBy")
+  profileSettings UserProfileSettings? @relation("ProfileSettings")
+  systemLogs SystemLog[] @relation("SystemLogs")
 
   @@map("users")
 }
@@ -49,6 +61,18 @@ enum Status {
 }
 
 enum DeleteRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserDeleteRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserCreationRequestStatus {
   PENDING
   APPROVED
   REJECTED
@@ -153,6 +177,9 @@ model FurnitureAsset {
   @@index([condition])
   @@index([status])
   @@index([createdAt])
+  @@index([status, condition])
+  @@index([companyId, status])
+  @@index([locationId, status])
   @@map("furniture_assets")
 }
 
@@ -194,6 +221,9 @@ model ElectronicAsset {
   @@index([condition])
   @@index([status])
   @@index([createdAt])
+  @@index([status, condition])
+  @@index([companyId, status])
+  @@index([locationId, status])
   @@map("electronic_assets")
 }
 
@@ -241,6 +271,9 @@ model VehicleAsset {
   @@index([condition])
   @@index([status])
   @@index([createdAt])
+  @@index([status, condition])
+  @@index([companyId, status])
+  @@index([locationId, status])
   @@map("vehicle_assets")
 }
 
@@ -267,6 +300,8 @@ model AssetCheckout {
   @@index([checkedOutBy])
   @@index([assetType])
   @@index([checkedOutAt])
+  @@index([checkInDate])
+  @@index([expectedReturnDate, checkInDate])
   @@map("asset_checkouts")
 }
 
@@ -416,4 +451,403 @@ model DeleteRequest {
   @@index([requestedById])
   @@index([createdAt])
   @@map("delete_requests")
+}
+
+model UserCreationRequest {
+  id              String   @id @default(cuid())
+  fullName        String   @map("full_name")
+  email           String   @unique
+  role            Role     @default(VIEW_USER)
+  department      String?
+  designation     String?
+  phone           String?
+  requestedById   String   @map("requested_by_id")
+  reason          String?
+  status          UserCreationRequestStatus @default(PENDING)
+  reviewedById    String?  @map("reviewed_by_id")
+  reviewNotes     String?  @map("review_notes")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  requestedBy     User     @relation("UserCreationRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([status])
+  @@index([requestedById])
+  @@index([createdAt])
+  @@map("user_creation_requests")
+}
+
+model UserDeleteRequest {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  userName        String   @map("user_name")
+  userEmail       String   @map("user_email")
+  requestedById   String   @map("requested_by_id")
+  reason          String?
+  status          UserDeleteRequestStatus @default(PENDING)
+  reviewedById    String?  @map("reviewed_by_id")
+  reviewNotes     String?  @map("review_notes")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  requestedBy     User     @relation("UserDeleteRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedById])
+  @@index([createdAt])
+  @@map("user_delete_requests")
+}
+
+model AssetAddRequest {
+  id              String   @id @default(cuid())
+  assetType       String   @map("asset_type")
+  assetData       String   // JSON string of asset data
+  requestedById   String   @map("requested_by_id")
+  status          String   @default("PENDING")
+  reviewedById    String?  @map("reviewed_by_id")
+  reviewNotes     String?  @map("review_notes")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  requestedBy     User     @relation("AssetAddRequestUser", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@index([assetType])
+  @@index([status])
+  @@index([requestedById])
+  @@index([createdAt])
+  @@map("asset_add_requests")
+}
+
+// ============= UNIFIED SETTINGS SYSTEM =============
+
+model SettingCategory {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  slug          String   @unique
+  description   String?
+  icon          String   // Icon name from lucide-react
+  color         String   // text color class
+  bgColor       String   // background gradient class
+  order         Int      @default(0)
+  isSystem      Boolean  @default(false) // Cannot be deleted if true
+  requiredRole  Role     @default(SUPER_ADMIN) // Minimum role to access
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  settings      SystemSetting[]
+
+  @@map("setting_categories")
+}
+
+model SystemSetting {
+  id              String   @id @default(cuid())
+  categoryId      String   @map("category_id")
+  category        SettingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  key             String   // e.g., "organizationName"
+  displayName     String   // e.g., "Organization Name"
+  description     String?
+  value           String?  // Stored as JSON for complex types
+  dataType        String   @default("string") // string, number, boolean, json, email, url
+  fieldType       String   @default("text") // text, textarea, number, email, color, select, checkbox, date, time, phone, url
+  validation      String?  // e.g., "required, email"
+  options         String?  // For select/radio: JSON array
+  placeholder     String?
+  helpText        String?
+  isEncrypted     Boolean  @default(false) // For passwords, API keys
+  isRequired      Boolean  @default(false)
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  isVisible       Boolean  @default(true) // Can be hidden from UI
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  auditLogs       SettingAuditLog[]
+
+  @@unique([categoryId, key])
+  @@map("system_settings")
+}
+
+model SettingAuditLog {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation("SettingsAuditUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  settingId       String   @map("setting_id")
+  setting         SystemSetting @relation(fields: [settingId], references: [id], onDelete: Cascade)
+
+  categoryName    String
+  fieldName       String
+  oldValue        String?
+  newValue        String?
+  changeReason    String?
+  ipAddress       String?
+  userAgent       String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([settingId])
+  @@index([createdAt])
+  @@map("setting_audit_logs")
+}
+
+model SecurityPolicy {
+  id                      String   @id @default(cuid())
+
+  // Authentication
+  sessionTimeoutMinutes   Int      @default(30)
+  maxLoginAttempts        Int      @default(5)
+  lockoutDurationMinutes  Int      @default(15)
+  passwordExpiryDays      Int      @default(90)
+  passwordHistoryCount    Int      @default(5) // Can't reuse last N passwords
+  minPasswordLength       Int      @default(8)
+  requirePasswordUppercase Boolean @default(true)
+  requirePasswordNumbers   Boolean @default(true)
+  requirePasswordSpecial   Boolean @default(true)
+  require2FA              Boolean @default(false)
+  allow2FABypass          Boolean @default(false) // Recovery codes
+
+  // IP Restrictions
+  enableIPRestriction     Boolean @default(false)
+  allowedIPs              String?  // JSON array of IPs
+
+  // API Settings
+  enableAPIAccess         Boolean @default(true)
+  apiRateLimitPerMinute   Int     @default(100)
+  apiKeyRotationDays      Int     @default(90)
+
+  // Audit & Logging
+  enableAuditLogging      Boolean @default(true)
+  logSensitiveActions     Boolean @default(true)
+  auditLogRetentionDays   Int     @default(365)
+
+  // Data Privacy
+  enableGDPRMode          Boolean @default(true)
+  dataRetentionYears      Int     @default(7)
+  autoDeleteOldRecords    Boolean @default(false)
+  encryptSensitiveFields  Boolean @default(true)
+
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@map("security_policies")
+}
+
+model NotificationPreference {
+  id                      String   @id @default(cuid())
+  userId                  String?  @unique @map("user_id")
+  user                    User?    @relation("NotificationPref", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Email Settings
+  emailNotificationsEnabled  Boolean @default(true)
+  emailAddress            String?
+  emailFrequency          String   @default("REALTIME") // REALTIME, DAILY, WEEKLY
+
+  // In-App Settings
+  inAppNotificationsEnabled  Boolean @default(true)
+  soundEnabled            Boolean @default(true) // Bell sound ✓
+  soundVolume             Int     @default(50) // 0-100
+  desktopNotificationsEnabled Boolean @default(true)
+
+  // Alert Types (JSON)
+  alertTypes              String?  // {"assetAdded": true, "checkout": true, ...}
+
+  // Thresholds
+  maintenanceAlertDays    Int     @default(7)
+  warrantyAlertDays       Int     @default(30)
+  stockLevelAlertThreshold Int    @default(10)
+  budgetVarianceAlertPercent Int  @default(10)
+  overdueCheckoutAlertDays Int    @default(3)
+
+  // Quiet Hours
+  quietHoursEnabled       Boolean @default(false)
+  quietHoursStart         String? // "18:00"
+  quietHoursEnd           String? // "09:00"
+
+  // Notification Retention
+  retentionDays           Int     @default(30)
+  autoDeleteNotifications Boolean @default(true)
+
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_preferences")
+}
+
+model RolePermission {
+  id              String   @id @default(cuid())
+  role            Role
+  module          String   // dashboard, furniture, electronics, vehicles, users, reports, settings, audit_logs
+  action          String   // view, create, edit, delete, export, import, approve, reject, checkout, checkin
+  isAllowed       Boolean  @default(true)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([role, module, action])
+  @@map("role_permissions")
+}
+
+model UserPermissionOverride {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation("PermissionOverrides", fields: [userId], references: [id], onDelete: Cascade)
+
+  module          String   // Module name
+  action          String   // Action name
+  isAllowed       Boolean  @default(true) // Override to allow/deny
+
+  validFrom       DateTime @default(now()) @map("valid_from")
+  validUntil      DateTime? @map("valid_until")
+  reason          String?
+
+  appliedBy       String   @map("applied_by")
+  appliedByUser   User     @relation("PermissionAppliedBy", fields: [appliedBy], references: [id], onDelete: Restrict)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, module, action])
+  @@index([userId])
+  @@index([validFrom, validUntil])
+  @@map("user_permission_overrides")
+}
+
+model OrganizationInfo {
+  id              String   @id @default(cuid())
+
+  organizationName String
+  organizationLogo String?
+  organizationBanner String?
+  address         String?
+  city            String?
+  country         String?
+  postalCode      String?
+
+  phone           String?
+  email           String?
+  website         String?
+  registrationNumber String?
+  taxNumber       String?
+
+  // Branding
+  primaryColor    String  @default("#2563eb") // Hex color
+  secondaryColor  String  @default("#1e40af")
+  accentColor     String  @default("#f97316")
+
+  // Regional Settings
+  timezone        String  @default("Asia/Karachi")
+  language        String  @default("en") // en, ur
+  dateFormat      String  @default("DD/MM/YYYY")
+  timeFormat      String  @default("24h") // 24h, 12h
+  currency        String  @default("PKR")
+  currencySymbol  String  @default("₨")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("organization_info")
+}
+
+model AssetDefaults {
+  id              String   @id @default(cuid())
+
+  assetTagPrefix  String  @default("SEF-")
+  autoGenerateTags Boolean @default(true)
+  defaultCondition String  @default("GOOD") // GOOD, REPAIR, DAMAGED
+  defaultStatus   String  @default("IN_STORE") // IN_USE, IN_STORE, DISPOSED, AUCTION
+
+  defaultDepreciationMethod String @default("STRAIGHT_LINE") // STRAIGHT_LINE, DECLINING_BALANCE, UNITS_OF_PRODUCTION
+  defaultUsefulLife Int     @default(5) // years
+  salvageValuePercent Int   @default(10) // %
+
+  enableQRCodes   Boolean @default(true)
+  enableBarcodes  Boolean @default(false)
+  enableSerialNumbers Boolean @default(true)
+
+  stockReorderLevel Int     @default(5)
+  itemsPerPage    Int     @default(25)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("asset_defaults")
+}
+
+model ReportConfiguration {
+  id              String   @id @default(cuid())
+
+  reportName      String
+  reportType      String   // inventory, depreciation, activity, checkout, maintenance, budget, condition, location, department
+  description     String?
+
+  schedule        String?  // DAILY, WEEKLY, MONTHLY or cron expression
+  isScheduled     Boolean  @default(false)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+
+  format          String  @default("PDF") // PDF, EXCEL, CSV, JSON
+
+  recipients      String?  // JSON array of emails
+  includeCharts   Boolean @default(true)
+  includeSummary  Boolean @default(true)
+  dataRange       Int     @default(30) // days
+
+  isActive        Boolean @default(true)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("report_configurations")
+}
+
+model SystemLog {
+  id              String   @id @default(cuid())
+
+  userId          String?  @map("user_id")
+  user            User?    @relation("SystemLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  actionType      String   // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, EXPORT, IMPORT, APPROVE, REJECT, DOWNLOAD, UPLOAD
+  module          String
+  entityId        String?
+  entityType      String?
+
+  status          String  @default("SUCCESS") // SUCCESS, ERROR, PENDING
+  message         String?
+  details         String? // JSON
+
+  ipAddress       String?
+  userAgent       String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([actionType])
+  @@index([createdAt])
+  @@map("system_logs")
+}
+
+// Update User model to add new relations
+model UserProfileSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  user            User     @relation("ProfileSettings", fields: [userId], references: [id], onDelete: Cascade)
+
+  theme           String  @default("light") // light, dark, auto
+  language        String  @default("en")
+  timezone        String?
+  dateFormat      String?
+
+  profilePhoto    String?
+  bio             String?
+  signature       String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_profile_settings")
 }

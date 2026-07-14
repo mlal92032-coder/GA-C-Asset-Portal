@@ -91,6 +91,7 @@ export async function PUT(request: NextRequest) {
           title: 'Delete Request Approved',
           message: `Your deletion request for "${deleteRequest.assetName}" has been approved and the asset has been deleted.`,
           type: 'SUCCESS',
+          link: `/admin/requests`,
         },
       });
     } else {
@@ -101,6 +102,7 @@ export async function PUT(request: NextRequest) {
           title: 'Delete Request Rejected',
           message: `Your deletion request for "${deleteRequest.assetName}" has been rejected. ${validatedData.reviewNotes || ''}`,
           type: 'ERROR',
+          link: `/admin/requests`,
         },
       });
     }

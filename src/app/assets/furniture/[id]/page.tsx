@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import CheckoutModal, { CheckinModal } from '@/components/CheckoutModal';
-import BarcodeComponent from '@/components/Barcode';
+import QRCode from '@/components/QRCode';
 import ReviewSection from '@/components/ReviewSection';
 import MaintenanceSection from '@/components/MaintenanceSection';
 import { buildImageUrl } from '@/lib/image-upload';
@@ -12,7 +12,6 @@ import { getCurrentBookValue, formatCurrency } from '@/lib/depreciation';
 import {
   ArrowLeft,
   Edit,
-  Trash2,
   ArrowUpCircle,
   ArrowDownCircle,
   MapPin,
@@ -32,12 +31,14 @@ import {
   Upload,
   FileText,
   Trash2 as TrashIcon,
+  QrCode,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface FurnitureDetail {
   id: string;
   assetTag: string | null;
+  serialNumber: string | null;
   assetName: string;
   imageUrl: string | null;
   furnitureType: string | null;
@@ -59,7 +60,7 @@ interface FurnitureDetail {
   company: { id: string; companyName: string } | null;
   manufacturer: { id: string; manufacturerName: string } | null;
   location: { id: string; locationName: string } | null;
-  assignedUser: { id: string; fullName: string; email: string } | null;
+  assignedUser: { id: string; fullName: string; email: string; department: string | null; designation: string | null; status: string } | null;
 }
 
 interface User {
@@ -97,6 +98,7 @@ export default function FurnitureDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadToast, setUploadToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [qrMessage, setQrMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [maintenances, setMaintenances] = useState<any[]>([]);
 
@@ -299,6 +301,94 @@ export default function FurnitureDetailPage() {
     }
   };
 
+  const handleDownloadQR = () => {
+    if (!asset?.assetTag || !asset?.assetName) return;
+
+    try {
+      const qrValue = `${asset.assetTag}|${asset.assetName}`;
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code - ${asset.assetTag}</title>
+  <style>
+    body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f0f0f0; }
+    .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+    h1 { color: #2563eb; margin: 0 0 10px 0; }
+    img { border: 2px solid #2563eb; padding: 10px; background: white; }
+    p { color: #666; font-size: 12px; margin: 15px 0 0 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${asset.assetTag}</h1>
+    <p>${asset.assetName}</p>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}" alt="QR Code" />
+    <p>Scan this QR code to view asset details</p>
+  </div>
+</body>
+</html>`;
+
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `qr-${asset.assetTag}.html`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setQrMessage({ text: `✅ QR code downloaded!`, type: 'success' });
+      setTimeout(() => setQrMessage(null), 3000);
+    } catch (error) {
+      setQrMessage({ text: `❌ Failed to download QR code`, type: 'error' });
+      setTimeout(() => setQrMessage(null), 3000);
+    }
+  };
+
+  const handlePrintQR = () => {
+    if (!asset?.assetTag || !asset?.assetName) return;
+
+    try {
+      const qrValue = `${asset.assetTag}|${asset.assetName}`;
+      const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Print QR Label</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; }
+    .label { display: inline-block; width: 120px; height: 150px; border: 1px solid #ccc; padding: 10px; margin: 5px; text-align: center; page-break-inside: avoid; }
+    .label-id { font-weight: bold; font-size: 12px; color: #2563eb; }
+    .label-name { font-size: 10px; color: #666; }
+    .qr-img { width: 80px; height: 80px; margin: 5px 0; }
+    @media print { body { margin: 0; } .label { margin: 2px; } }
+  </style>
+</head>
+<body>
+  <div class="label">
+    <div class="label-id">${asset.assetTag}</div>
+    <div class="label-name">${asset.assetName}</div>
+    <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(qrValue)}" />
+  </div>
+</body>
+</html>`;
+
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow?.document.write(printContent);
+      printWindow?.document.close();
+      printWindow?.focus();
+      setTimeout(() => printWindow?.print(), 250);
+    } catch (error) {
+      setQrMessage({ text: `❌ Failed to print QR code`, type: 'error' });
+      setTimeout(() => setQrMessage(null), 3000);
+    }
+  };
+
   const getConditionColor = (condition: string) => {
     switch (condition) {
       case 'GOOD':
@@ -367,6 +457,16 @@ export default function FurnitureDetailPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
+      {/* Toast Message */}
+      {qrMessage && (
+        <div className={`mb-6 p-4 rounded-lg border font-semibold flex items-center gap-3 ${
+          qrMessage.type === 'success'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          {qrMessage.text}
+        </div>
+      )}
       {/* Header with Image */}
       <div className="mb-8">
         {/* Asset Image */}
@@ -492,9 +592,9 @@ export default function FurnitureDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Details */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 p-8">
+        <div className="lg:col-span-3 bg-white border border-slate-200 p-8">
           <h2 className="text-xl font-bold text-slate-900 mb-6">Asset Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -528,10 +628,10 @@ export default function FurnitureDetailPage() {
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
-                <User className="w-3 h-3" />
-                Assigned To
+                <Package className="w-3 h-3" />
+                Serial Number
               </label>
-              <p className="font-semibold text-slate-900">{asset.assignedUser?.fullName || 'Unassigned'}</p>
+              <p className="font-semibold text-slate-900 font-mono">{asset.serialNumber || '-'}</p>
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
@@ -556,111 +656,107 @@ export default function FurnitureDetailPage() {
               <p className="text-slate-700 whitespace-pre-wrap">{asset.remarks}</p>
             </div>
           )}
-        </div>
 
-        {/* Barcode & QR */}
-        <div className="bg-white border border-slate-200 p-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Barcode</h2>
-          {asset.assetTag ? (
-            <div className="flex flex-col items-center">
-              <BarcodeComponent value={asset.assetTag} />
-              <p className="text-sm text-slate-600 mt-4 font-mono">{asset.assetTag}</p>
-              <button
-                onClick={copyAssetTag}
-                className="btn btn-secondary btn-sm mt-4"
-              >
-                <Copy className="w-4 h-4" />
-                Copy Tag
-              </button>
+          {/* Employee Assignment Card */}
+          {asset.assignedUser ? (
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <label className="text-xs text-slate-500 mb-3 block flex items-center gap-2">
+                <User className="w-3 h-3" />
+                Assigned Employee
+              </label>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Name</p>
+                      <p className="font-bold text-lg text-slate-900">{asset.assignedUser.fullName}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${asset.assignedUser.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                      {asset.assignedUser.status === 'ACTIVE' ? '✓ Active' : '✗ Inactive'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Email</p>
+                      <p className="text-sm font-medium text-slate-800">{asset.assignedUser.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Office</p>
+                      <p className="text-sm font-medium text-slate-800">{asset.company?.companyName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Department</p>
+                      <p className="text-sm font-medium text-slate-800">{asset.assignedUser.department || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Designation</p>
+                      <p className="text-sm font-medium text-slate-800">{asset.assignedUser.designation || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-slate-400">
-              <Package className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-              <p className="text-sm">No barcode generated</p>
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <label className="text-xs text-slate-500 mb-3 block flex items-center gap-2">
+                <User className="w-3 h-3" />
+                Assigned Employee
+              </label>
+              <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+                <p className="text-sm text-slate-500">No employee assigned to this asset</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* QR Code */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 flex flex-col items-center justify-center">
+          <div className="flex items-center gap-2 mb-4">
+            <QrCode className="w-5 h-5 text-blue-600" />
+            <h3 className="text-sm font-bold text-slate-900">QR Code</h3>
+          </div>
+          {asset.assetTag ? (
+            <>
+              <div className="bg-white p-4 rounded border border-slate-200 mb-4">
+                <QRCode
+                  asset={{
+                    id: asset.id,
+                    assetTag: asset.assetTag,
+                    assetName: asset.assetName,
+                    type: 'Furniture',
+                    location: asset.location?.locationName,
+                    condition: asset.condition,
+                    status: asset.status,
+                  }}
+                  size={150}
+                />
+              </div>
+              <div className="flex gap-2 w-full">
+                <button
+                  onClick={handleDownloadQR}
+                  className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+                <button
+                  onClick={handlePrintQR}
+                  className="flex-1 px-3 py-2 bg-slate-600 text-white text-xs font-semibold rounded hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                >
+                  🖨️ Print
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-6 text-slate-400">
+              <Package className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+              <p className="text-xs">No QR available</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Attachments Section */}
-      <div className="mt-6 bg-white border border-slate-200 p-8">
-        <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Attachments
-        </h2>
-        <div className="flex items-center gap-4 mb-4">
-          <label className="btn btn-primary btn-sm cursor-pointer">
-            <Upload className="w-4 h-4" />
-            {uploading ? 'Uploading...' : 'Upload File'}
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-              onChange={handleFileUpload}
-              disabled={uploading}
-            />
-          </label>
-          <span className="text-xs text-slate-500">Max 5MB per file</span>
-        </div>
-        {attachments.length === 0 ? (
-          <p className="text-sm text-slate-400 py-4 text-center">No attachments yet</p>
-        ) : (
-          <div className="space-y-2">
-            {attachments.map((att) => (
-              <div key={att.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <FileText className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{att.fileName}</p>
-                    <p className="text-xs text-slate-500">{formatFileSize(att.fileSize)} &middot; {format(new Date(att.createdAt), 'PPP')}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <a
-                    href={att.filePath}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
-                    title="View"
-                  >
-                    <Download className="w-4 h-4" />
-                  </a>
-                  <button
-                    onClick={() => handleDeleteAttachment(att.id)}
-                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                    title="Delete"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Metadata */}
-      <div className="mt-6 bg-white border border-slate-200 p-8">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">Metadata</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-slate-500">Created:</span>{' '}
-            <span className="font-semibold text-slate-900">
-              {format(new Date(asset.createdAt), 'PPP pp')}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500">Last Updated:</span>{' '}
-            <span className="font-semibold text-slate-900">
-              {format(new Date(asset.updatedAt), 'PPP pp')}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500">Asset ID:</span>{' '}
-            <span className="font-mono font-semibold text-slate-900">{asset.id}</span>
-          </div>
-        </div>
-      </div>
 
       {/* Maintenance Section */}
       <div className="mt-6">

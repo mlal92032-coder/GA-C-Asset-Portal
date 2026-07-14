@@ -1,11 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import path from 'path';
 import bcrypt from 'bcryptjs';
 
-const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-const adapter = new PrismaBetterSqlite3({ url: dbPath });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seeding...');
@@ -556,6 +552,233 @@ async function main() {
   });
 
   console.log('✅ Spare parts records created');
+
+  // ============= SETTINGS SYSTEM SEEDING =============
+
+  // Create Setting Categories
+  const categories = await Promise.all([
+    prisma.settingCategory.upsert({
+      where: { slug: 'system' },
+      update: {},
+      create: {
+        name: 'System Configuration',
+        slug: 'system',
+        description: 'Organization branding, localization, and general settings',
+        icon: 'Settings',
+        color: 'text-blue-600',
+        bgColor: 'from-blue-50 to-blue-100',
+        order: 1,
+        isSystem: true,
+        requiredRole: 'SUPER_ADMIN',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'security' },
+      update: {},
+      create: {
+        name: 'Security & Access',
+        slug: 'security',
+        description: 'Authentication, permissions, and access control',
+        icon: 'Shield',
+        color: 'text-red-600',
+        bgColor: 'from-red-50 to-red-100',
+        order: 2,
+        isSystem: true,
+        requiredRole: 'SUPER_ADMIN',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'organization' },
+      update: {},
+      create: {
+        name: 'Organization',
+        slug: 'organization',
+        description: 'Companies, departments, and organizational structure',
+        icon: 'Building2',
+        color: 'text-purple-600',
+        bgColor: 'from-purple-50 to-purple-100',
+        order: 3,
+        isSystem: true,
+        requiredRole: 'SUPER_ADMIN',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'assets' },
+      update: {},
+      create: {
+        name: 'Asset Structure',
+        slug: 'assets',
+        description: 'Categories, models, manufacturers, and depreciation settings',
+        icon: 'Package',
+        color: 'text-orange-600',
+        bgColor: 'from-orange-50 to-orange-100',
+        order: 4,
+        isSystem: true,
+        requiredRole: 'SUPER_ADMIN',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'users' },
+      update: {},
+      create: {
+        name: 'Users & Teams',
+        slug: 'users',
+        description: 'User management, permissions, and team structure',
+        icon: 'Users',
+        color: 'text-cyan-600',
+        bgColor: 'from-cyan-50 to-cyan-100',
+        order: 5,
+        isSystem: true,
+        requiredRole: 'SUPER_ADMIN',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'notifications' },
+      update: {},
+      create: {
+        name: 'Notifications & Alerts',
+        slug: 'notifications',
+        description: 'Email alerts, webhooks, and notification preferences',
+        icon: 'Bell',
+        color: 'text-yellow-600',
+        bgColor: 'from-yellow-50 to-yellow-100',
+        order: 6,
+        isSystem: true,
+        requiredRole: 'USER',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'reports' },
+      update: {},
+      create: {
+        name: 'Reports & Analytics',
+        slug: 'reports',
+        description: 'Report scheduling, dashboards, and analytics',
+        icon: 'BarChart3',
+        color: 'text-green-600',
+        bgColor: 'from-green-50 to-green-100',
+        order: 7,
+        isSystem: true,
+        requiredRole: 'USER',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'maintenance' },
+      update: {},
+      create: {
+        name: 'Maintenance & System',
+        slug: 'maintenance',
+        description: 'Backups, database, file storage, and system health',
+        icon: 'Zap',
+        color: 'text-indigo-600',
+        bgColor: 'from-indigo-50 to-indigo-100',
+        order: 8,
+        isSystem: true,
+        requiredRole: 'SUPER_ADMIN',
+      },
+    }),
+    prisma.settingCategory.upsert({
+      where: { slug: 'profile' },
+      update: {},
+      create: {
+        name: 'Profile Settings',
+        slug: 'profile',
+        description: 'Personal profile, password, and preferences',
+        icon: 'User',
+        color: 'text-slate-600',
+        bgColor: 'from-slate-50 to-slate-100',
+        order: 9,
+        isSystem: true,
+        requiredRole: 'USER',
+      },
+    }),
+  ]);
+
+  console.log('✅ Created 9 setting categories');
+
+  // Create Organization Info
+  await prisma.organizationInfo.upsert({
+    where: { id: 'default-org' },
+    update: {},
+    create: {
+      id: 'default-org',
+      organizationName: 'Sindh Education Foundation',
+      address: 'Government of Sindh',
+      city: 'Karachi',
+      country: 'Pakistan',
+      phone: '+92-21-9261-2000',
+      email: 'info@sef.org.pk',
+      registrationNumber: 'SEF-001',
+      timezone: 'Asia/Karachi',
+      language: 'en',
+      currency: 'PKR',
+    },
+  });
+
+  console.log('✅ Created organization info');
+
+  // Create Security Policy
+  await prisma.securityPolicy.upsert({
+    where: { id: 'default-policy' },
+    update: {},
+    create: {
+      id: 'default-policy',
+      sessionTimeoutMinutes: 30,
+      maxLoginAttempts: 5,
+      lockoutDurationMinutes: 15,
+      passwordExpiryDays: 90,
+      minPasswordLength: 8,
+      require2FA: false,
+      enableAuditLogging: true,
+      auditLogRetentionDays: 365,
+    },
+  });
+
+  console.log('✅ Created security policy');
+
+  // Create Asset Defaults
+  await prisma.assetDefaults.upsert({
+    where: { id: 'default-assets' },
+    update: {},
+    create: {
+      id: 'default-assets',
+      assetTagPrefix: 'SEF-',
+      autoGenerateTags: true,
+      defaultDepreciationMethod: 'STRAIGHT_LINE',
+      defaultUsefulLife: 5,
+      enableQRCodes: true,
+      stockReorderLevel: 5,
+      itemsPerPage: 25,
+    },
+  });
+
+  console.log('✅ Created asset defaults');
+
+  // Create Role Permissions for all roles
+  const roles: Array<{ role: 'SUPER_ADMIN' | 'USER' | 'VIEW_USER'; modules: string[] }> = [
+    { role: 'SUPER_ADMIN', modules: ['dashboard', 'furniture', 'electronics', 'vehicles', 'users', 'reports', 'settings', 'audit_logs'] },
+    { role: 'USER', modules: ['dashboard', 'furniture', 'electronics', 'vehicles', 'reports'] },
+    { role: 'VIEW_USER', modules: ['dashboard'] },
+  ];
+
+  for (const { role, modules } of roles) {
+    for (const module of modules) {
+      for (const action of ['view', 'create', 'edit', 'delete', 'export', 'import']) {
+        await prisma.rolePermission.upsert({
+          where: { role_module_action: { role, module, action } },
+          update: {},
+          create: {
+            role,
+            module,
+            action,
+            isAllowed: role === 'SUPER_ADMIN' || (role === 'USER' && action !== 'delete') || (role === 'VIEW_USER' && action === 'view'),
+          },
+        });
+      }
+    }
+  }
+
+  console.log('✅ Created role permissions');
 
   console.log('\n🎉 Database seeding completed successfully!');
   console.log('\n📋 Login Credentials:');

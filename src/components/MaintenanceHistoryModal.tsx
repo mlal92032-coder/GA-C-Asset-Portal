@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertCircle, Wrench } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 import type { VehicleAsset } from '@/types';
 
 interface MaintenanceRecord {
@@ -68,6 +69,7 @@ export default function MaintenanceHistoryModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const { success, error: errorToast } = useToast();
 
   useEffect(() => {
     if (editingMaintenance) {
@@ -145,6 +147,19 @@ export default function MaintenanceHistoryModal({
         nextDueDate: formData.nextDueDate || null,
         status: formData.status,
       });
+      success(
+        editingMaintenance
+          ? 'Maintenance record updated successfully'
+          : 'Maintenance record created successfully'
+      );
+      onClose();
+    } catch (err: any) {
+      errorToast(
+        err?.message ||
+        (editingMaintenance
+          ? 'Failed to update maintenance record'
+          : 'Failed to create maintenance record')
+      );
     } finally {
       setSubmitting(false);
     }

@@ -66,20 +66,33 @@ export default function PageHeader({
   const fromColor = gradientColorMap[gradientFrom]?.from || '#2563eb';
   const toColor = gradientColorMap[gradientTo]?.to || '#1e40af';
 
+  // Detect if gradient is light (for text color adjustment)
+  const isLightGradient = gradientFrom.includes('-100') || gradientTo.includes('-100');
+  const titleTextColor = isLightGradient ? 'text-slate-900' : 'text-white';
+  const subtitleTextColor = isLightGradient ? 'text-slate-600' : 'text-blue-50';
+  const badgeBackground = isLightGradient ? 'bg-slate-900/10' : 'bg-white/25';
+  const badgeTextColor = isLightGradient ? 'text-slate-800' : 'text-white';
+  const statValueColor = isLightGradient ? 'text-slate-900' : 'text-slate-800';
+  const statLabelColor = isLightGradient ? 'text-slate-600' : 'text-slate-500';
+
   const gradientStyle = {
     backgroundImage: `linear-gradient(to right, ${fromColor}, ${toColor})`,
   };
 
   return (
     <div className="mb-4 sm:mb-6 p-4 sm:p-6 lg:p-8">
-      <div className="p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/50 relative overflow-hidden backdrop-blur-xl" style={gradientStyle}>
+      <div className="p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/50 relative overflow-visible backdrop-blur-xl" style={gradientStyle}>
         {/* Premium background blur layers */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/8 to-white/15 backdrop-blur-lg" />
 
-        {/* Sophisticated depth layers - blue theme */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-400/12 to-transparent rounded-full blur-3xl -translate-x-32 -translate-y-32" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-indigo-400/12 to-transparent rounded-full blur-3xl translate-x-32 translate-y-32" />
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-br from-blue-500/8 via-indigo-500/5 to-transparent rounded-full blur-3xl" />
+        {/* Sophisticated depth layers */}
+        {!isLightGradient && (
+          <>
+            <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-400/12 to-transparent rounded-full blur-3xl -translate-x-32 -translate-y-32" />
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-indigo-400/12 to-transparent rounded-full blur-3xl translate-x-32 translate-y-32" />
+            <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-br from-blue-500/8 via-indigo-500/5 to-transparent rounded-full blur-3xl" />
+          </>
+        )}
 
         {/* Premium accent line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
@@ -93,15 +106,15 @@ export default function PageHeader({
               </div>
               <div className="flex-1 min-w-0">
                 {badge && (
-                  <span className={`inline-block px-3 py-1 text-xs font-bold bg-white/25 text-white rounded-full mb-2 tracking-wider shadow-md backdrop-blur-sm`}>
+                  <span className={`inline-block px-3 py-1 text-xs font-bold ${badgeBackground} ${badgeTextColor} rounded-full mb-2 tracking-wider shadow-md backdrop-blur-sm`}>
                     {badge}
                   </span>
                 )}
-                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-lg">
+                <h1 className={`text-3xl sm:text-4xl font-black ${titleTextColor} tracking-tight drop-shadow-lg`}>
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className="text-blue-50 text-sm mt-2 font-semibold">
+                  <p className={`${subtitleTextColor} text-sm mt-2 font-semibold`}>
                     {subtitle}
                   </p>
                 )}
@@ -114,10 +127,10 @@ export default function PageHeader({
               <div className="flex gap-6">
                 {stats.map((stat, index) => (
                   <div key={index} className="text-right">
-                    <p className="text-3xl sm:text-4xl font-bold text-slate-800">
+                    <p className={`text-3xl sm:text-4xl font-bold ${statValueColor}`}>
                       {stat.value}
                     </p>
-                    <p className="text-xs sm:text-sm text-slate-500">
+                    <p className={`text-xs sm:text-sm ${statLabelColor}`}>
                       {stat.label}
                     </p>
                   </div>

@@ -1,681 +1,631 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
-import QRCode from '@/components/QRCode';
 import {
-  Settings, Building2, DollarSign, Globe, Calendar, Mail,
-  AlertTriangle, List, Palette, Save, ArrowLeft, CheckCircle,
-  Shield, Database, BarChart3, Image as ImageIcon, Bell, Key,
-  HardDrive, Printer, Download, Loader2, QrCode,
+  Settings as SettingsIcon, Save, Database, Lock, Users, AlertCircle, CheckCircle,
+  Download, Upload, RefreshCw, Bell, Shield, Trash2, Plus, Search, Clock, Activity,
+  QrCode, BarChart3, HardDrive, Zap, Package
 } from 'lucide-react';
 
-interface AppSettings {
-  // General
-  siteName: string;
-  siteLogo: string;
-  tagPrefix: string;
-  itemsPerPage: number;
-  
-  // Branding
-  companyName: string;
-  supportEmail: string;
-  supportPhone: string;
-  
-  // Regional
-  currency: string;
-  language: string;
-  dateFormat: string;
-  timezone: string;
-  
-  // Assets
-  defaultDepreciationMethod: string;
-  defaultUsefulLife: number;
-  autoGenerateAssetTag: boolean;
-  
-  // Notifications
-  enableEmailNotifications: boolean;
-  warrantyAlertDays: number;
-  maintenanceAlertDays: number;
-  overdueCheckoutDays: number;
-  
-  // Security
-  sessionTimeout: number;
-  maxLoginAttempts: number;
-  lockoutDuration: number;
-  
-  // Theme
-  defaultTheme: string;
-  
-  // QR Code
-  barcodeType: string;
-  barcodeWidth: number;
-  barcodeHeight: number;
-  showBarcodeLabel: boolean;
-  
-  // File Upload
-  maxFileSize: number;
-  allowedFileTypes: string;
-}
-
 export default function SettingsPage() {
+  const { data: session } = useSession();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState('general');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  
-  // Bulk QR state
-  const [qrAssetType, setQrAssetType] = useState('FURNITURE');
-  const [qrAssets, setQrAssets] = useState<any[]>([]);
-  const [loadingQr, setLoadingQr] = useState(false);
-  
-  const [settings, setSettings] = useState<AppSettings>({
-    siteName: 'Asset Management System',
-    siteLogo: '',
-    tagPrefix: 'AST',
-    itemsPerPage: 20,
-    companyName: 'My Organization',
-    supportEmail: '',
-    supportPhone: '',
-    currency: 'PKR',
-    language: 'en',
-    dateFormat: 'DD/MM/YYYY',
-    timezone: 'Asia/Karachi',
-    defaultDepreciationMethod: 'STRAIGHT_LINE',
-    defaultUsefulLife: 5,
-    autoGenerateAssetTag: true,
-    enableEmailNotifications: false,
-    warrantyAlertDays: 30,
-    maintenanceAlertDays: 7,
-    overdueCheckoutDays: 14,
-    sessionTimeout: 480,
-    maxLoginAttempts: 5,
-    lockoutDuration: 15,
-    defaultTheme: 'light',
-    barcodeType: 'CODE128',
-    barcodeWidth: 2,
-    barcodeHeight: 50,
-    showBarcodeLabel: true,
-    maxFileSize: 10,
-    allowedFileTypes: 'image/jpeg,image/png,image/webp',
+  const [activeTab, setActiveTab] = useState('qr');
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // QR Code States
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [allAssets, setAllAssets] = useState<any[]>([]);
+  const [assetsLoading, setAssetsLoading] = useState(true);
+  const [assetsError, setAssetsError] = useState<string | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  // General Settings
+  const [companyName, setCompanyName] = useState('Sindh Education Foundation');
+  const [companyEmail, setCompanyEmail] = useState('admin@company.com');
+  const [companyPhone, setCompanyPhone] = useState('+92 300 1234567');
+
+  // System Stats
+  const [systemStats, setSystemStats] = useState({
+    totalAssets: 0,
+    totalUsers: 0,
+    lastBackup: '2 hours ago',
+    systemUptime: '15 days',
+    databaseSize: '245 MB'
   });
 
-  const updateSetting = (key: keyof AppSettings, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
-  };
+  // Fetch real assets from database
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        setAssetsLoading(true);
+        setAssetsError(null);
 
-  const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        const [furnitureRes, electronicsRes, vehiclesRes] = await Promise.all([
+          fetch('/api/furniture?page=1&limit=10000'),
+          fetch('/api/electronics?page=1&limit=10000'),
+          fetch('/api/vehicles?page=1&limit=10000'),
+        ]);
+
+        if (!furnitureRes.ok || !electronicsRes.ok || !vehiclesRes.ok) {
+          throw new Error('Failed to fetch assets from API');
+        }
+
+        const furnitureData = await furnitureRes.json();
+        const electronicsData = await electronicsRes.json();
+        const vehiclesData = await vehiclesRes.json();
+
+        const transformedAssets: any[] = [];
+
+        if (furnitureData?.data && Array.isArray(furnitureData.data)) {
+          furnitureData.data.forEach((asset: any) => {
+            if (asset.assetTag && asset.assetName) {
+              transformedAssets.push({
+                id: asset.assetTag,
+                name: asset.assetName,
+                category: 'FURNITURE',
+                status: asset.status || 'Unknown',
+                location: asset.location?.locationName || 'Unknown',
+                icon: '🪑',
+              });
+            }
+          });
+        }
+
+        if (electronicsData?.data && Array.isArray(electronicsData.data)) {
+          electronicsData.data.forEach((asset: any) => {
+            if (asset.assetTag && asset.assetName) {
+              transformedAssets.push({
+                id: asset.assetTag,
+                name: asset.assetName,
+                category: 'ELECTRONICS',
+                status: asset.status || 'Unknown',
+                location: asset.location?.locationName || 'Unknown',
+                icon: '💻',
+              });
+            }
+          });
+        }
+
+        if (vehiclesData?.data && Array.isArray(vehiclesData.data)) {
+          vehiclesData.data.forEach((asset: any) => {
+            if (asset.assetTag && asset.assetName) {
+              transformedAssets.push({
+                id: asset.assetTag,
+                name: asset.assetName,
+                category: 'VEHICLES',
+                status: asset.status || 'Unknown',
+                location: asset.location?.locationName || 'Unknown',
+                icon: '🚗',
+              });
+            }
+          });
+        }
+
+        setAllAssets(transformedAssets);
+        setSystemStats(prev => ({
+          ...prev,
+          totalAssets: transformedAssets.length
+        }));
+      } catch (error: any) {
+        setAssetsError(error.message || 'Failed to load assets');
+      } finally {
+        setAssetsLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to save:', error);
-    } finally {
-      setSaving(false);
-    }
+    };
+
+    fetchAssets();
+  }, []);
+
+  const uniqueLocations = Array.from(new Set(allAssets.map(a => a.location)));
+
+  const filteredAssets = allAssets.filter(asset => {
+    if (filterCategory !== 'all' && asset.category !== filterCategory) return false;
+    if (filterStatus !== 'all' && asset.status !== filterStatus) return false;
+    if (filterLocation !== 'all' && asset.location !== filterLocation) return false;
+    return true;
+  });
+
+  const toggleAsset = (assetId: string) => {
+    setSelectedAssets(prev =>
+      prev.includes(assetId) ? prev.filter(id => id !== assetId) : [...prev, assetId]
+    );
   };
 
-  const sections = [
-    { id: 'general', label: 'General', icon: Settings },
-    { id: 'branding', label: 'Branding', icon: Building2 },
-    { id: 'regional', label: 'Regional', icon: Globe },
-    { id: 'assets', label: 'Assets', icon: List },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'barcode', label: 'Bulk QR Codes', icon: BarChart3 },
-    { id: 'files', label: 'File Upload', icon: ImageIcon },
+  const handleSelectAll = () => {
+    setSelectedAssets(filteredAssets.map(a => a.id));
+  };
+
+  const handleDownloadSingleQR = (assetId: string, assetName: string) => {
+    setMessage({ text: `📱 Generating QR for ${assetId}...`, type: 'success' });
+    setLoading(true);
+
+    setTimeout(() => {
+      try {
+        const qrValue = `${assetId}|${assetName}`;
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code - ${assetId}</title>
+  <style>
+    body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f0f0f0; }
+    .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+    h1 { color: #2563eb; margin: 0 0 10px 0; }
+    img { border: 2px solid #2563eb; padding: 10px; background: white; }
+    p { color: #666; font-size: 12px; margin: 15px 0 0 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${assetId}</h1>
+    <p>${assetName}</p>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}" alt="QR Code" />
+    <p>Scan this QR code to view asset details</p>
+  </div>
+</body>
+</html>`;
+
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `qr-${assetId}.html`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setMessage({ text: `✅ Downloaded QR for ${assetId}!`, type: 'success' });
+        setLoading(false);
+      } catch (error) {
+        setMessage({ text: `❌ Failed to download QR`, type: 'error' });
+        setLoading(false);
+      }
+    }, 800);
+  };
+
+  const handleDownloadQR = () => {
+    if (selectedAssets.length === 0) {
+      setMessage({ text: 'Please select at least one asset', type: 'error' });
+      return;
+    }
+
+    const selectedAssetObjects = allAssets.filter(a => selectedAssets.includes(a.id));
+
+    let printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Print QR Labels</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; }
+    .label { display: inline-block; width: 120px; height: 150px; border: 1px solid #ccc; padding: 10px; margin: 5px; text-align: center; page-break-inside: avoid; }
+    .label img { width: 80px; height: 80px; }
+    .label p { margin: 5px 0; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div style="text-align: center; margin-bottom: 20px;">
+    <h1>QR Code Labels - ${new Date().toLocaleDateString()}</h1>
+  </div>
+  <div>`;
+
+    selectedAssetObjects.forEach(asset => {
+      const qrValue = `${asset.id}|${asset.name}`;
+      printContent += `
+    <div class="label">
+      <p><strong>${asset.id}</strong></p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(qrValue)}" alt="QR Code" />
+      <p>${asset.name.substring(0, 15)}</p>
+    </div>`;
+    });
+
+    printContent += `
+  </div>
+  <script>
+    setTimeout(() => window.print(), 500);
+  </script>
+</body>
+</html>`;
+
+    const blob = new Blob([printContent], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
+
+  const tabConfig = [
+    { id: 'qr', label: 'QR Codes', icon: QrCode },
+    { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'backup', label: 'Backup', icon: Database },
+    { id: 'users', label: 'Users', icon: Users },
   ];
-
-  // Fetch assets for bulk QR
-  const fetchAssetsForQr = async (type: string) => {
-    setLoadingQr(true);
-    try {
-      const endpoint = type === 'FURNITURE' ? '/api/furniture' : type === 'ELECTRONIC' ? '/api/electronics' : '/api/vehicles';
-      const res = await fetch(`${endpoint}?page=1&limit=10000`);
-      const json = await res.json();
-      if (json.success) {
-        setQrAssets(json.data.filter((a: any) => a.assetTag));
-      }
-    } catch (error) {
-      console.error('Failed to fetch assets:', error);
-    } finally {
-      setLoadingQr(false);
-    }
-  };
-
-  const handlePrintAllQr = () => {
-    const container = document.getElementById('qr-container');
-    if (!container) return;
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const qrHtml = Array.from(container.querySelectorAll('.qr-label')).map((el) => el.innerHTML).join('<div style="page-break-after: always; margin-top: 30px;"></div>');
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Print All QR Codes</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .qr-label { text-align: center; margin-bottom: 20px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; page-break-inside: avoid; }
-            .label-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <h1 style="text-align: center; margin-bottom: 30px;">Asset QR Codes - ${qrAssetType}</h1>
-          ${qrHtml}
-          <script>
-            window.onload = function() { window.print(); window.close(); };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
-
-  const renderSection = () => {
-    switch (activeSection) {
-      case 'general':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">General Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Site Name</label>
-                  <input
-                    type="text"
-                    value={settings.siteName}
-                    onChange={(e) => updateSetting('siteName', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Items Per Page</label>
-                  <select
-                    value={settings.itemsPerPage}
-                    onChange={(e) => updateSetting('itemsPerPage', parseInt(e.target.value))}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Asset Tag Prefix</label>
-                  <input
-                    type="text"
-                    value={settings.tagPrefix}
-                    onChange={(e) => updateSetting('tagPrefix', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Prefix for auto-generated asset tags</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={settings.autoGenerateAssetTag}
-                      onChange={(e) => updateSetting('autoGenerateAssetTag', e.target.checked)}
-                      className="w-4 h-4"
-                    />
-                    Auto-generate Asset Tags
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'branding':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">Branding & Organization</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Organization Name</label>
-                  <input
-                    type="text"
-                    value={settings.companyName}
-                    onChange={(e) => updateSetting('companyName', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Support Email (Optional)</label>
-                  <input
-                    type="email"
-                    value={settings.supportEmail}
-                    onChange={(e) => updateSetting('supportEmail', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Support Phone (Optional)</label>
-                  <input
-                    type="tel"
-                    value={settings.supportPhone}
-                    onChange={(e) => updateSetting('supportPhone', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'regional':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">Regional Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Currency</label>
-                  <select
-                    value={settings.currency}
-                    onChange={(e) => updateSetting('currency', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="PKR">PKR - Pakistani Rupee (Rs.)</option>
-                    <option value="USD">USD - US Dollar ($)</option>
-                    <option value="EUR">EUR - Euro (€)</option>
-                    <option value="GBP">GBP - British Pound (£)</option>
-                    <option value="INR">INR - Indian Rupee (₹)</option>
-                    <option value="AED">AED - UAE Dirham (د.إ)</option>
-                    <option value="SAR">SAR - Saudi Riyal (﷼)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Date Format</label>
-                  <select
-                    value={settings.dateFormat}
-                    onChange={(e) => updateSetting('dateFormat', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                    <option value="DD-MMM-YYYY">DD-MMM-YYYY</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Language</label>
-                  <select
-                    value={settings.language}
-                    onChange={(e) => updateSetting('language', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="en">English</option>
-                    <option value="ur">Urdu</option>
-                    <option value="ar">Arabic</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Timezone</label>
-                  <select
-                    value={settings.timezone}
-                    onChange={(e) => updateSetting('timezone', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Asia/Karachi">Asia/Karachi (PKT)</option>
-                    <option value="Asia/Dubai">Asia/Dubai (GST)</option>
-                    <option value="America/New_York">America/New_York (EST)</option>
-                    <option value="Europe/London">Europe/London (GMT)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'assets':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">Asset Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Default Depreciation Method</label>
-                  <select
-                    value={settings.defaultDepreciationMethod}
-                    onChange={(e) => updateSetting('defaultDepreciationMethod', e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="STRAIGHT_LINE">Straight Line</option>
-                    <option value="DECLINING_BALANCE">Declining Balance</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Default Useful Life (Years)</label>
-                  <input
-                    type="number"
-                    value={settings.defaultUsefulLife}
-                    onChange={(e) => updateSetting('defaultUsefulLife', parseInt(e.target.value))}
-                    min="1"
-                    max="50"
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'notifications':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">Notifications & Alerts</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200">
-                  <div>
-                    <p className="font-medium text-slate-900">Email Notifications</p>
-                    <p className="text-sm text-slate-500">Send alerts via email</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.enableEmailNotifications}
-                      onChange={(e) => updateSetting('enableEmailNotifications', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      <AlertTriangle className="w-4 h-4 inline mr-2 text-amber-500" />
-                      Warranty Alert (Days Before)
-                    </label>
-                    <input
-                      type="number"
-                      value={settings.warrantyAlertDays}
-                      onChange={(e) => updateSetting('warrantyAlertDays', parseInt(e.target.value))}
-                      min="1"
-                      max="365"
-                      className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      <Calendar className="w-4 h-4 inline mr-2 text-blue-500" />
-                      Maintenance Reminder (Days Before)
-                    </label>
-                    <input
-                      type="number"
-                      value={settings.maintenanceAlertDays}
-                      onChange={(e) => updateSetting('maintenanceAlertDays', parseInt(e.target.value))}
-                      min="1"
-                      max="90"
-                      className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      <AlertTriangle className="w-4 h-4 inline mr-2 text-red-500" />
-                      Overdue Checkout Alert (Days)
-                    </label>
-                    <input
-                      type="number"
-                      value={settings.overdueCheckoutDays}
-                      onChange={(e) => updateSetting('overdueCheckoutDays', parseInt(e.target.value))}
-                      min="1"
-                      max="60"
-                      className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'security':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">Security Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Session Timeout (Minutes)</label>
-                  <input
-                    type="number"
-                    value={settings.sessionTimeout}
-                    onChange={(e) => updateSetting('sessionTimeout', parseInt(e.target.value))}
-                    min="15"
-                    max="1440"
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Max Login Attempts</label>
-                  <input
-                    type="number"
-                    value={settings.maxLoginAttempts}
-                    onChange={(e) => updateSetting('maxLoginAttempts', parseInt(e.target.value))}
-                    min="3"
-                    max="10"
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Lockout Duration (Minutes)</label>
-                  <input
-                    type="number"
-                    value={settings.lockoutDuration}
-                    onChange={(e) => updateSetting('lockoutDuration', parseInt(e.target.value))}
-                    min="5"
-                    max="60"
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'barcode':
-        return (
-          <div className="space-y-6">
-            {/* Bulk QR Code Section */}
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">
-                <Printer className="w-5 h-5 text-blue-600" />
-                Bulk QR Codes
-              </h3>
-              
-              {/* Asset Type Selector */}
-              <div className="mb-6 p-4 bg-slate-50 border border-slate-200">
-                <label className="block text-sm font-medium text-slate-700 mb-3">Select Asset Type</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {['FURNITURE', 'ELECTRONIC', 'VEHICLE'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => { setQrAssetType(type); setQrAssets([]); }}
-                      className={`p-3 border-2 text-sm font-semibold transition-all ${
-                        qrAssetType === type
-                          ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                      }`}
-                    >
-                      {type === 'FURNITURE' ? '🪑' : type === 'ELECTRONIC' ? '💻' : '🚗'} {type}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => fetchAssetsForQr(qrAssetType)}
-                  disabled={loadingQr}
-                  className="btn btn-primary w-full mt-4"
-                >
-                  {loadingQr ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading...
-                    </span>
-                  ) : (
-                    'Load Assets for QR Codes'
-                  )}
-                </button>
-              </div>
-
-              {/* Barcode Preview & Print */}
-              {qrAssets.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-slate-600">
-                      <span className="font-semibold text-slate-900">{qrAssets.length}</span> assets with QR codes
-                    </p>
-                    <button
-                      onClick={handlePrintAllQr}
-                      className="btn btn-success"
-                    >
-                      <Download className="w-4 h-4" />
-                      Print All QR Codes
-                    </button>
-                  </div>
-                  
-                  <div id="qr-container" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto p-4 border border-slate-200">
-                    {qrAssets.map((asset) => (
-                      <div key={asset.id} className="qr-label bg-white border border-slate-200 p-3 text-center">
-                        <p className="text-xs font-semibold text-slate-700 mb-2 truncate">{asset.assetName}</p>
-                        <QRCode asset={{ id: asset.id, assetTag: asset.assetTag, assetName: asset.assetName, type: qrAssetType }} size={120} showDownload={false} />
-                        <p className="text-[10px] font-mono text-slate-500 mt-1">{asset.assetTag}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {qrAssets.length === 0 && !loadingQr && (
-                <div className="text-center py-12 text-slate-400">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-                  <p>No assets loaded</p>
-                  <p className="text-xs mt-1">Click "Load Assets" to generate QR codes</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-      case 'files':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="form-section-heading text-lg font-semibold text-slate-900">File Upload Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Max File Size (MB)</label>
-                  <input
-                    type="number"
-                    value={settings.maxFileSize}
-                    onChange={(e) => updateSetting('maxFileSize', parseInt(e.target.value))}
-                    min="1"
-                    max="50"
-                    className="w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-      <PageHeader
-        title="System Settings"
-        subtitle="Configure all system preferences and options"
-        icon={Settings}
-        badge="Configuration"
-        gradientFrom="from-slate-100"
-        gradientTo="to-gray-100"
-        iconColor="text-slate-600"
-        actions={
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={`btn ${saved ? 'btn-success' : 'btn-primary'}`}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+        <PageHeader
+          title="System Settings"
+          subtitle="Configure system, security, and QR codes"
+          icon={SettingsIcon}
+          gradientFrom="from-blue-600"
+          gradientTo="to-indigo-900"
+        />
+
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mb-6 p-4 rounded-lg border flex items-center gap-3 ${
+              message.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : 'bg-red-50 border-red-200 text-red-700'
+            }`}
           >
-            {saved ? (
-              <>
-                <CheckCircle className="w-5 h-5" />
-                Saved!
-              </>
+            {message.type === 'success' ? (
+              <CheckCircle className="w-5 h-5" />
             ) : (
-              <>
-                <Save className="w-5 h-5" />
-                {saving ? 'Saving...' : 'Save Settings'}
-              </>
+              <AlertCircle className="w-5 h-5" />
             )}
-          </button>
-        }
-      />
+            {message.text}
+          </motion.div>
+        )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar Navigation */}
-        <div className="lg:col-span-1">
-          <div className="bg-white border border-slate-200 overflow-hidden">
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
-              <h3 className="font-semibold text-slate-900">Settings Sections</h3>
-            </div>
-            <nav className="divide-y divide-slate-100">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
+        {/* System Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          {[
+            { label: 'Total Assets', value: systemStats.totalAssets, icon: Package, color: 'from-blue-500 to-blue-600' },
+            { label: 'Total Users', value: systemStats.totalUsers, icon: Users, color: 'from-purple-500 to-purple-600' },
+            { label: 'System Uptime', value: systemStats.systemUptime, icon: Zap, color: 'from-green-500 to-green-600' },
+            { label: 'Last Backup', value: systemStats.lastBackup, icon: Database, color: 'from-orange-500 to-orange-600' },
+            { label: 'DB Size', value: systemStats.databaseSize, icon: HardDrive, color: 'from-pink-500 to-pink-600' },
+          ].map((stat, idx) => (
+            <motion.div
+              key={idx}
+              whileHover={{ y: -4 }}
+              className={`bg-gradient-to-br ${stat.color} text-white rounded-lg p-4 shadow-md`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <stat.icon className="w-5 h-5 opacity-80" />
+              </div>
+              <p className="text-sm opacity-90">{stat.label}</p>
+              <p className="text-2xl font-bold">{stat.value}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="flex border-b border-slate-200 overflow-x-auto">
+            {tabConfig.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                type="button"
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all ${
+                  activeTab === tab.id
+                    ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-6">
+            {/* QR Codes Tab */}
+            {activeTab === 'qr' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                {/* Filters */}
+                <div className="bg-white rounded-lg border border-slate-200 p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Filter Assets</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase">Category</label>
+                      <select
+                        value={filterCategory}
+                        onChange={(e) => { setFilterCategory(e.target.value); setSelectedAssets([]); }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="FURNITURE">🪑 Furniture</option>
+                        <option value="ELECTRONICS">💻 Electronics</option>
+                        <option value="VEHICLES">🚗 Vehicles</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase">Status</label>
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => { setFilterStatus(e.target.value); setSelectedAssets([]); }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="IN_USE">In Use</option>
+                        <option value="IN_STORE">In Store</option>
+                        <option value="DISPOSED">Disposed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase">Location</label>
+                      <select
+                        value={filterLocation}
+                        onChange={(e) => { setFilterLocation(e.target.value); setSelectedAssets([]); }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="all">All Locations</option>
+                        {uniqueLocations.map(location => (
+                          <option key={location} value={location}>{location}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Select/Clear Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectAll}
+                      className="px-4 py-2 bg-blue-50 border border-blue-300 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-sm cursor-pointer"
+                    >
+                      ✓ Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAssets([])}
+                      className="px-4 py-2 bg-slate-50 border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-100 active:scale-95 transition-all text-sm cursor-pointer"
+                    >
+                      ✕ Clear All
+                    </button>
+                    <div className="flex-1"></div>
+                    <span className="text-sm text-slate-600 font-semibold self-center">
+                      {selectedAssets.length} selected of {filteredAssets.length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Assets Grid */}
+                <div className="bg-white rounded-lg border border-slate-200 p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Assets ({filteredAssets.length})</h3>
+
+                  {assetsLoading ? (
+                    <div className="text-center py-12">
+                      <div className="w-10 h-10 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-sm text-slate-500">Loading assets...</p>
+                    </div>
+                  ) : assetsError ? (
+                    <div className="text-center py-12 bg-red-50 border border-red-200 rounded-lg p-4">
+                      <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+                      <p className="text-red-700 font-semibold mb-2">Error Loading Assets</p>
+                      <p className="text-sm text-red-600">{assetsError}</p>
+                    </div>
+                  ) : filteredAssets.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <QrCode className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                      <p>No assets found matching your filters</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {filteredAssets.map((asset) => (
+                        <motion.div
+                          key={asset.id}
+                          whileHover={{ y: -4 }}
+                          className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all bg-white shadow-sm hover:shadow-lg ${
+                            selectedAssets.includes(asset.id)
+                              ? 'border-blue-500 bg-blue-50 shadow-md'
+                              : 'border-slate-200 hover:border-blue-400'
+                          }`}
+                          onClick={() => toggleAsset(asset.id)}
+                        >
+                          <div className="absolute top-3 right-3 z-10">
+                            <input
+                              type="checkbox"
+                              checked={selectedAssets.includes(asset.id)}
+                              onChange={() => toggleAsset(asset.id)}
+                              className="w-5 h-5 accent-blue-600 cursor-pointer"
+                            />
+                          </div>
+
+                          <div className="flex justify-center items-center mb-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg h-32 p-2 border border-slate-200 overflow-hidden">
+                            {failedImages.has(asset.id) ? (
+                              <div className="text-center">
+                                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 mb-2">
+                                  <QrCode className="w-10 h-10 text-white mx-auto" />
+                                </div>
+                                <p className="text-xs text-slate-600 font-semibold">{asset.id}</p>
+                              </div>
+                            ) : (
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`${asset.id}|${asset.name}`)}`}
+                                alt={`QR-${asset.id}`}
+                                className="w-28 h-28 object-contain"
+                                onLoad={() => setLoadedImages(prev => new Set([...prev, asset.id]))}
+                                onError={() => setFailedImages(prev => new Set([...prev, asset.id]))}
+                              />
+                            )}
+                          </div>
+
+                          <div className="text-center mb-3">
+                            <p className="text-xs font-bold text-blue-600 truncate">{asset.id}</p>
+                            <p className="text-xs text-slate-700 font-semibold line-clamp-2">{asset.name}</p>
+                            <p className="text-xs text-slate-500 mt-1">{asset.category}</p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadSingleQR(asset.id, asset.name);
+                            }}
+                            className="w-full px-2 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-semibold rounded-lg hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Download className="w-3 h-3" />
+                            Download
+                          </button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Download Options */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200 p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Download className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900">Bulk Download</h4>
+                        <p className="text-xs text-slate-600 mt-1">Download selected QRs as HTML</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadQR}
+                      disabled={loading || selectedAssets.length === 0}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      {loading ? 'Generating...' : `Download ${selectedAssets.length} QRs`}
+                    </button>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200 p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900">Print Labels</h4>
+                        <p className="text-xs text-slate-600 mt-1">Print selected QR codes</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadQR}
+                      disabled={selectedAssets.length === 0}
+                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
+                    >
+                      🖨️ Print {selectedAssets.length} Labels
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* General Settings Tab */}
+            {activeTab === 'general' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-3xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Company Name</label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Company Email</label>
+                    <input
+                      type="email"
+                      value={companyEmail}
+                      onChange={(e) => setCompanyEmail(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Company Phone</label>
+                    <input
+                      type="tel"
+                      value={companyPhone}
+                      onChange={(e) => setCompanyPhone(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </button>
+              </motion.div>
+            )}
+
+            {/* Other Tabs (simplified) */}
+            {activeTab === 'security' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl">
+                <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
+                  <h3 className="font-bold text-slate-900 mb-4">Security Settings</h3>
+                  <p className="text-slate-600 text-sm">Password policies and session management</p>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'backup' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl space-y-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+                  <h3 className="font-bold text-slate-900 mb-3">Manual Backup</h3>
                   <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
-                      activeSection === section.id
-                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-                        : 'text-slate-700 hover:bg-slate-50 border-l-4 border-transparent'
-                    }`}
+                    type="button"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
                   >
-                    <Icon className="w-5 h-5" />
-                    {section.label}
+                    <Download className="w-4 h-4" />
+                    Backup Now
                   </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
+                </div>
+              </motion.div>
+            )}
 
-        {/* Content Area */}
-        <div className="lg:col-span-3">
-          <div className="bg-white border border-slate-200 p-8">
-            {renderSection()}
+            {activeTab === 'users' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl">
+                <div className="space-y-3">
+                  {[
+                    { name: 'System Administrator', email: 'admin@company.com', role: 'SUPER_ADMIN' },
+                    { name: 'Asset Manager', email: 'manager@company.com', role: 'ADMIN' },
+                  ].map((user, idx) => (
+                    <div key={idx} className="bg-slate-50 rounded-lg p-4 border border-slate-200 flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-900">{user.name}</p>
+                        <p className="text-sm text-slate-600">{user.email}</p>
+                      </div>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">{user.role}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
-      </div>
       </div>
     </DashboardLayout>
   );
 }
 
+const FileText = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);

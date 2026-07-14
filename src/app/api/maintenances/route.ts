@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-options';
+import { requirePermission, createAuditLog } from '@/lib/api-auth';
 import { z } from 'zod';
 
 const maintenanceGetAllSchema = z.object({
@@ -27,10 +26,8 @@ const maintenancePostSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requirePermission('maintenance', 'view');
+    if (authResult instanceof NextResponse) return authResult;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -77,10 +74,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requirePermission('maintenance', 'create');
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const body = await request.json();
 
@@ -126,7 +122,7 @@ export async function POST(request: NextRequest) {
         performedBy: validatedData.performedBy || null,
         nextDueDate: validatedData.nextDueDate ? new Date(validatedData.nextDueDate) : null,
         status: validatedData.status,
-        userId: session.user?.id,
+        userId: user.id,
         odometerReading: validatedData.odometerReading || null,
         workType: validatedData.workType || null,
         vendorName: validatedData.vendorName || null,
@@ -138,7 +134,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user?.id!,
+        userId: user.id,
         action: 'CREATE',
         entity: 'MAINTENANCE',
         entityId: maintenance.id,

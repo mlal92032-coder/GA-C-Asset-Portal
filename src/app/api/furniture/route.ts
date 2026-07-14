@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const where: {
       OR?: Array<{ assetName?: { contains: string } } | { material?: { contains: string } } | { furnitureType?: { contains: string } }>;
       condition?: 'GOOD' | 'REPAIR' | 'DAMAGED';
-      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
       locationId?: string;
       companyId?: string;
     } = {};
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       ];
     }
     if (condition) where.condition = condition as 'GOOD' | 'REPAIR' | 'DAMAGED';
-    if (status) where.status = status as 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+    if (status) where.status = status as 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
     if (locationId) where.locationId = locationId;
     if (companyId) where.companyId = companyId;
 

@@ -1,9 +1,39 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Monitor, DollarSign, Calendar, MapPin, User, AlertCircle, CheckCircle, Cpu, Wrench } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { X, Monitor, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ImageUpload from './ImageUpload';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useToast } from '@/contexts/ToastContext';
+
+const electronicsAssetSchema = z.object({
+  assetName: z.string().min(2, 'Asset name must be at least 2 characters').max(255),
+  assetTag: z.string().min(1, 'Asset tag is required').max(50),
+  deviceType: z.string().min(1, 'Device type is required'),
+  brand: z.string(),
+  model: z.string(),
+  serialNumber: z.string(),
+  purchaseDate: z.string().min(1, 'Purchase date is required'),
+  purchasePrice: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, 'Purchase price must be a positive number'),
+  warrantyEndDate: z.string(),
+  companyId: z.string().min(1, 'Office is required'),
+  manufacturerId: z.string(),
+  locationId: z.string().min(1, 'Location is required'),
+  assignedUserId: z.string(),
+  condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']),
+  status: z.enum(['IN_STORE', 'IN_USE', 'DISPOSED', 'AUCTION']),
+  lastMaintenanceDate: z.string(),
+  remarks: z.string(),
+  usefulLifeYears: z.string(),
+  salvageValue: z.string(),
+  imageUrl: z.string(),
+});
+
+type ElectronicsFormData = z.infer<typeof electronicsAssetSchema>;
 
 interface ModernElectronicsModalProps {
   isOpen: boolean;
@@ -28,36 +58,48 @@ export default function ModernElectronicsModal({
   locations,
   users,
 }: ModernElectronicsModalProps) {
-  const [formData, setFormData] = useState({
-    assetName: '',
-    assetTag: '',
-    deviceType: '',
-    brand: '',
-    model: '',
-    serialNumber: '',
-    purchaseDate: '',
-    purchasePrice: '',
-    warrantyEndDate: '',
-    companyId: '',
-    manufacturerId: '',
-    locationId: '',
-    assignedUserId: '',
-    condition: 'GOOD',
-    status: 'IN_STORE',
-    lastMaintenanceDate: '',
-    remarks: '',
-    usefulLifeYears: '5',
-    salvageValue: '',
-    imageUrl: '',
+  const { success, error } = useToast();
+  const modalRef = useFocusTrap({ isOpen, onClose });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors: formErrors },
+    reset,
+    watch,
+    setValue,
+  } = useForm<ElectronicsFormData>({
+    resolver: zodResolver(electronicsAssetSchema),
+    mode: 'onChange',
+    defaultValues: {
+      assetName: '',
+      assetTag: '',
+      deviceType: '',
+      brand: '',
+      model: '',
+      serialNumber: '',
+      purchaseDate: '',
+      purchasePrice: '',
+      warrantyEndDate: '',
+      companyId: '',
+      manufacturerId: '',
+      locationId: '',
+      assignedUserId: '',
+      condition: 'GOOD',
+      status: 'IN_STORE',
+      lastMaintenanceDate: '',
+      remarks: '',
+      usefulLifeYears: '5',
+      salvageValue: '',
+      imageUrl: '',
+    },
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const modalRef = useFocusTrap({ isOpen, onClose });
+  const imageUrlValue = watch('imageUrl');
 
   useEffect(() => {
     if (editingAsset) {
-      setFormData({
+      reset({
         assetName: editingAsset.assetName || '',
         assetTag: editingAsset.assetTag || '',
         deviceType: editingAsset.deviceType || '',
@@ -80,63 +122,25 @@ export default function ModernElectronicsModal({
         imageUrl: editingAsset.imageUrl || '',
       });
     } else {
-      resetForm();
+      reset();
     }
-  }, [editingAsset, isOpen]);
+  }, [editingAsset, isOpen, reset]);
 
-  const resetForm = () => {
-    setFormData({
-      assetName: '',
-      assetTag: '',
-      deviceType: '',
-      brand: '',
-      model: '',
-      serialNumber: '',
-      purchaseDate: '',
-      purchasePrice: '',
-      warrantyEndDate: '',
-      companyId: '',
-      manufacturerId: '',
-      locationId: '',
-      assignedUserId: '',
-      condition: 'GOOD',
-      status: 'IN_STORE',
-      lastMaintenanceDate: '',
-      remarks: '',
-      usefulLifeYears: '5',
-      salvageValue: '',
-      imageUrl: '',
-    });
-    setErrors({});
-  };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const onSubmit = async (data: ElectronicsFormData) => {
+    try {
+      await onSave(data);
+      success(
+        editingAsset
+          ? 'Electronics asset updated successfully'
+          : 'Electronics asset created successfully'
+      );
+      reset();
+    } catch (err: any) {
+      error(
+        err?.message ||
+        (editingAsset ? 'Failed to update electronics asset' : 'Failed to create electronics asset')
+      );
     }
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.assetName.trim()) newErrors.assetName = 'Asset name is required';
-    if (!formData.assetTag.trim()) newErrors.assetTag = 'Asset tag is required';
-    if (!formData.deviceType.trim()) newErrors.deviceType = 'Device type is required';
-    if (!formData.purchaseDate) newErrors.purchaseDate = 'Purchase date is required';
-    if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
-    if (!formData.companyId) newErrors.companyId = 'Office is required';
-    if (!formData.locationId) newErrors.locationId = 'Location is required';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    await onSave(formData);
   };
 
   if (!isOpen) return null;
@@ -151,7 +155,6 @@ export default function ModernElectronicsModal({
         aria-modal="true"
         aria-labelledby="electronics-modal-title"
       >
-        {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-4 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -170,404 +173,441 @@ export default function ModernElectronicsModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="text-white/70 hover:text-white transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Form Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
           <div className="modal-body space-y-5 overflow-y-auto">
-          {/* Asset Details Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <Monitor className="w-5 h-5 text-blue-600" />
-              Asset Details
-            </h3>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <Monitor className="w-5 h-5 text-blue-600" />
+                Asset Details
+              </h3>
 
-            {/* Image Upload */}
-            <div className="mb-4">
-              <ImageUpload
-                value={formData.imageUrl}
-                onChange={(url) => handleChange('imageUrl', url || '')}
-                label="Asset Image"
-              />
-            </div>
+              <div className="mb-4">
+                <ImageUpload
+                  value={imageUrlValue}
+                  onChange={(url) => setValue('imageUrl', url || '')}
+                  label="Asset Image"
+                />
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label required">Asset Name</label>
-                <div className="relative">
-                  <Monitor className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name *</label>
                   <input
                     type="text"
-                    value={formData.assetName}
-                    onChange={(e) => handleChange('assetName', e.target.value)}
-                    className={`pl-10 ${errors.assetName ? 'error' : ''}`}
+                    {...register('assetName')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.assetName ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="e.g., Dell Laptop"
                     disabled={saving}
                   />
+                  {formErrors.assetName && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.assetName.message}
+                    </motion.p>
+                  )}
                 </div>
-                {errors.assetName && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.assetName}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label required">Asset Tag</label>
-                <div className="relative">
-                  <Cpu className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Tag *</label>
                   <input
                     type="text"
-                    value={formData.assetTag}
-                    onChange={(e) => handleChange('assetTag', e.target.value)}
-                    className={`pl-10 ${errors.assetTag ? 'error' : ''}`}
+                    {...register('assetTag')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm transition-all ${
+                      formErrors.assetTag ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="e.g., ELC-001"
                     disabled={saving}
                   />
+                  {formErrors.assetTag && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.assetTag.message}
+                    </motion.p>
+                  )}
                 </div>
-                {errors.assetTag && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.assetTag}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label required">Device Type</label>
-                <select
-                  value={formData.deviceType}
-                  onChange={(e) => handleChange('deviceType', e.target.value)}
-                  className={errors.deviceType ? 'error' : ''}
-                  disabled={saving}
-                >
-                  <option value="">Select type</option>
-                  <option value="Laptop">Laptop</option>
-                  <option value="Desktop">Desktop</option>
-                  <option value="Monitor">Monitor</option>
-                  <option value="Printer">Printer</option>
-                  <option value="Scanner">Scanner</option>
-                  <option value="Projector">Projector</option>
-                  <option value="Other">Other</option>
-                </select>
-                {errors.deviceType && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.deviceType}
-                  </p>
-                )}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Device Type *</label>
+                  <select
+                    {...register('deviceType')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.deviceType ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  >
+                    <option value="">Select type</option>
+                    <option value="Laptop">Laptop</option>
+                    <option value="Desktop">Desktop</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="Printer">Printer</option>
+                    <option value="Scanner">Scanner</option>
+                    <option value="Projector">Projector</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {formErrors.deviceType && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.deviceType.message}
+                    </motion.p>
+                  )}
+                </div>
 
-              <div>
-                <label className="form-label">Brand</label>
-                <div className="relative">
-                  <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
                   <input
                     type="text"
-                    value={formData.brand}
-                    onChange={(e) => handleChange('brand', e.target.value)}
-                    className="pl-10"
+                    {...register('brand')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     placeholder="e.g., Dell, HP, Lenovo"
                     disabled={saving}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="form-label">Model</label>
-                <input
-                  type="text"
-                  value={formData.model}
-                  onChange={(e) => handleChange('model', e.target.value)}
-                  placeholder="e.g., Latitude 5520"
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Serial Number</label>
-                <input
-                  type="text"
-                  value={formData.serialNumber}
-                  onChange={(e) => handleChange('serialNumber', e.target.value)}
-                  placeholder="e.g., SN123456789"
-                  disabled={saving}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Purchase Information Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <DollarSign className="w-5 h-5 text-blue-600" />
-              Purchase Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label required">Purchase Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
                   <input
-                    type="date"
-                    value={formData.purchaseDate}
-                    onChange={(e) => handleChange('purchaseDate', e.target.value)}
-                    className={`pl-10 ${errors.purchaseDate ? 'error' : ''}`}
+                    type="text"
+                    {...register('model')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="e.g., Latitude 5520"
                     disabled={saving}
                   />
                 </div>
-                {errors.purchaseDate && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.purchaseDate}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label required">Purchase Price (PKR)</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                  <input
+                    type="text"
+                    {...register('serialNumber')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="e.g., SN123456789"
+                    disabled={saving}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-blue-600" />
+                Purchase Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
+                  <input
+                    type="date"
+                    {...register('purchaseDate')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.purchaseDate ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  />
+                  {formErrors.purchaseDate && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.purchaseDate.message}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (PKR) *</label>
                   <input
                     type="number"
-                    value={formData.purchasePrice}
-                    onChange={(e) => handleChange('purchasePrice', e.target.value)}
-                    className={`pl-10 ${errors.purchasePrice ? 'error' : ''}`}
+                    step="0.01"
+                    {...register('purchasePrice')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.purchasePrice ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
                     placeholder="0.00"
                     disabled={saving}
                   />
+                  {formErrors.purchasePrice && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.purchasePrice.message}
+                    </motion.p>
+                  )}
                 </div>
-                {errors.purchasePrice && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.purchasePrice}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="form-label">Warranty End Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Warranty End Date</label>
                   <input
                     type="date"
-                    value={formData.warrantyEndDate}
-                    onChange={(e) => handleChange('warrantyEndDate', e.target.value)}
-                    className="pl-10"
+                    {...register('warrantyEndDate')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     disabled={saving}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="form-label">Manufacturer</label>
-                <select
-                  value={formData.manufacturerId}
-                  onChange={(e) => handleChange('manufacturerId', e.target.value)}
-                  disabled={saving}
-                >
-                  <option value="">Select manufacturer</option>
-                  {manufacturers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.manufacturerName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                  <select
+                    {...register('manufacturerId')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select manufacturer</option>
+                    {manufacturers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.manufacturerName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="form-label">Useful Life (Years)</label>
-                <input
-                  type="number"
-                  value={formData.usefulLifeYears}
-                  onChange={(e) => handleChange('usefulLifeYears', e.target.value)}
-                  placeholder="5"
-                  disabled={saving}
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Useful Life (Years)</label>
+                  <input
+                    type="number"
+                    {...register('usefulLifeYears')}
+                    placeholder="5"
+                    disabled={saving}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.usefulLifeYears ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                  />
+                  {formErrors.usefulLifeYears && (
+                    <motion.p
+                      className="text-red-500 text-xs mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-2 h-2" />
+                      {formErrors.usefulLifeYears.message}
+                    </motion.p>
+                  )}
+                </div>
 
-              <div>
-                <label className="form-label">Salvage Value (PKR)</label>
-                <input
-                  type="number"
-                  value={formData.salvageValue}
-                  onChange={(e) => handleChange('salvageValue', e.target.value)}
-                  placeholder="0.00"
-                  disabled={saving}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Location & Assignment Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <MapPin className="w-5 h-5 text-blue-600" />
-              Location & Assignment
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label required">Office</label>
-                <select
-                  value={formData.companyId}
-                  onChange={(e) => handleChange('companyId', e.target.value)}
-                  className={errors.companyId ? 'error' : ''}
-                  disabled={saving}
-                >
-                  <option value="">Select office</option>
-                  {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.companyName}
-                    </option>
-                  ))}
-                </select>
-                {errors.companyId && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.companyId}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="form-label required">Location</label>
-                <select
-                  value={formData.locationId}
-                  onChange={(e) => handleChange('locationId', e.target.value)}
-                  className={errors.locationId ? 'error' : ''}
-                  disabled={saving}
-                >
-                  <option value="">Select location</option>
-                  {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.locationName}
-                    </option>
-                  ))}
-                </select>
-                {errors.locationId && (
-                  <p className="form-error">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.locationId}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="form-label">Assigned To</label>
-                <select
-                  value={formData.assignedUserId}
-                  onChange={(e) => handleChange('assignedUserId', e.target.value)}
-                  disabled={saving}
-                >
-                  <option value="">Not assigned</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.fullName}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Salvage Value (PKR)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    {...register('salvageValue')}
+                    placeholder="0.00"
+                    disabled={saving}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.salvageValue ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                  />
+                  {formErrors.salvageValue && (
+                    <motion.p
+                      className="text-red-500 text-xs mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-2 h-2" />
+                      {formErrors.salvageValue.message}
+                    </motion.p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Condition & Status Section */}
-          <div className="mb-6">
-            <h3 className="form-section-heading text-lg font-semibold text-slate-700">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
-              Condition & Status
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label required">Condition</label>
-                <select
-                  value={formData.condition}
-                  onChange={(e) => handleChange('condition', e.target.value)}
-                  disabled={saving}
-                >
-                  <option value="GOOD">Good</option>
-                  <option value="REPAIR">Needs Repair</option>
-                  <option value="DAMAGED">Damaged</option>
-                </select>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                Location & Assignment
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Office *</label>
+                  <select
+                    {...register('companyId')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.companyId ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  >
+                    <option value="">Select office</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.companyName}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.companyId && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.companyId.message}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                  <select
+                    {...register('locationId')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      formErrors.locationId ? 'border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                    }`}
+                    disabled={saving}
+                  >
+                    <option value="">Select location</option>
+                    {locations.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.locationName}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.locationId && (
+                    <motion.p
+                      className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.locationId.message}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                  <select
+                    {...register('assignedUserId')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Not assigned</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="form-label required">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleChange('status', e.target.value)}
-                  disabled={saving}
-                >
-                  <option value="IN_STORE">In Store</option>
-                  <option value="IN_USE">In Use</option>
-                  <option value="DISPOSED">Disposed</option>
-                  <option value="AUCTION">Auction</option>
-                </select>
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+                Condition & Status
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                  <select
+                    {...register('condition')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="GOOD">Good</option>
+                    <option value="REPAIR">Needs Repair</option>
+                    <option value="DAMAGED">Damaged</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="form-label">Last Maintenance Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    {...register('status')}
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="IN_STORE">In Store</option>
+                    <option value="IN_USE">In Use</option>
+                    <option value="DISPOSED">Disposed</option>
+                    <option value="AUCTION">Auction</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Maintenance Date</label>
                   <input
                     type="date"
-                    value={formData.lastMaintenanceDate}
-                    onChange={(e) => handleChange('lastMaintenanceDate', e.target.value)}
-                    className="pl-10"
+                    {...register('lastMaintenanceDate')}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     disabled={saving}
                   />
                 </div>
-              </div>
 
-              <div className="md:col-span-2">
-                <label className="form-label">Remarks</label>
-                <textarea
-                  value={formData.remarks}
-                  onChange={(e) => handleChange('remarks', e.target.value)}
-                  rows={3}
-                  placeholder="Additional notes or comments..."
-                  disabled={saving}
-                />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                  <textarea
+                    {...register('remarks')}
+                    rows={3}
+                    placeholder="Additional notes or comments..."
+                    disabled={saving}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
               </div>
             </div>
           </div>
-          </div>
 
-        {/* Footer */}
-        <div className="modal-footer">
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn btn-primary"
-            >
-            {saving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                {editingAsset ? 'Update Asset' : 'Create Asset'}
-              </>
-            )}
-            </button>
+          <div className="modal-footer">
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn btn-primary"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    {editingAsset ? 'Update Asset' : 'Create Asset'}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
         </form>
       </div>
     </div>

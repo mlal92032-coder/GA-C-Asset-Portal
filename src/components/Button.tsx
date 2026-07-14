@@ -1,5 +1,9 @@
+'use client';
+
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { buttonHover, buttonTap } from '@/lib/animations';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info';
@@ -17,6 +21,11 @@ export function Button({
   children,
   disabled,
   className = '',
+  onClick,
+  type = 'button',
+  title,
+  id,
+  name,
   ...props
 }: ButtonProps) {
   const variantClass = {
@@ -35,25 +44,37 @@ export function Button({
   }[size];
 
   return (
-    <button
+    <motion.button
+      type={type}
       className={`btn ${variantClass} ${sizeClass} ${className}`}
       disabled={disabled || loading}
       aria-disabled={disabled || loading}
       aria-busy={loading}
-      {...props}
+      whileHover={!disabled && !loading ? buttonHover : {}}
+      whileTap={!disabled && !loading ? buttonTap : {}}
+      onClick={onClick}
+      title={title}
+      id={id}
+      name={name}
     >
       {loading ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+            <Loader2 className="w-4 h-4" />
+          </motion.div>
           <span>Loading...</span>
         </>
       ) : (
         <>
-          {icon && <span className="flex-shrink-0">{icon}</span>}
+          {icon && (
+            <motion.span className="flex-shrink-0" whileHover={{ scale: 1.1 }}>
+              {icon}
+            </motion.span>
+          )}
           <span>{children}</span>
         </>
       )}
-    </button>
+    </motion.button>
   );
 }
 
@@ -71,6 +92,8 @@ export function IconButton({
   tooltip,
   disabled,
   className = '',
+  onClick,
+  type = 'button',
   ...props
 }: IconButtonProps) {
   const variantClass = {
@@ -83,15 +106,20 @@ export function IconButton({
   }[variant];
 
   return (
-    <button
+    <motion.button
+      type={type}
       className={`btn ${variantClass} ${className}`}
       disabled={disabled}
       aria-disabled={disabled}
       aria-label={tooltip}
       title={tooltip}
-      {...props}
+      whileHover={!disabled ? buttonHover : {}}
+      whileTap={!disabled ? buttonTap : {}}
+      onClick={onClick}
     >
-      {icon}
-    </button>
+      <motion.div whileHover={{ rotate: 5, scale: 1.1 }}>
+        {icon}
+      </motion.div>
+    </motion.button>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -273,10 +274,12 @@ export default function LoginPage() {
                   className="absolute inset-0 bg-gradient-to-br from-blue-600/8 via-transparent to-transparent rounded-3xl pointer-events-none"
                 />
 
-                <img
+                <Image
                   src="/sef-logo.png"
                   alt="SEF Logo"
-                  className="w-28 h-28 object-contain relative z-10 group-hover:scale-115 transition-transform duration-400"
+                  width={112}
+                  height={112}
+                  className="object-contain relative z-10 group-hover:scale-115 transition-transform duration-400"
                 />
 
                 {/* Refined Light Edge */}
@@ -331,10 +334,12 @@ export default function LoginPage() {
                   className="absolute inset-0 bg-gradient-to-br from-green-600/8 via-transparent to-transparent rounded-3xl pointer-events-none"
                 />
 
-                <img
+                <Image
                   src="/sindh-logo.png"
                   alt="Sindh Government Logo"
-                  className="w-28 h-28 object-contain relative z-10 group-hover:scale-115 transition-transform duration-400"
+                  width={112}
+                  height={112}
+                  className="object-contain relative z-10 group-hover:scale-115 transition-transform duration-400"
                 />
 
                 {/* Refined Light Edge */}

@@ -56,24 +56,41 @@ export default function UsersPage() {
   const handleSave = async (userData: any) => {
     setSaving(true);
     try {
-      const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users';
-      const method = editingUser ? 'PUT' : 'POST';
+      // If creating new user, submit a request instead
+      if (!editingUser) {
+        const res = await fetch('/api/user-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData),
+        });
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
+        const json = await res.json();
 
-      const json = await res.json();
-
-      if (json.success) {
-        showToast(`User ${editingUser ? 'updated' : 'created'} successfully`, 'success');
-        fetchUsers();
-        setShowModal(false);
-        setEditingUser(null);
+        if (json.success) {
+          showToast('User request submitted for approval', 'success');
+          setShowModal(false);
+          setEditingUser(null);
+        } else {
+          showToast(json.error || 'Failed to submit request', 'error');
+        }
       } else {
-        showToast(json.error || 'Failed to save user', 'error');
+        // For editing existing users, update directly
+        const res = await fetch(`/api/users/${editingUser.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData),
+        });
+
+        const json = await res.json();
+
+        if (json.success) {
+          showToast('User updated successfully', 'success');
+          fetchUsers();
+          setShowModal(false);
+          setEditingUser(null);
+        } else {
+          showToast(json.error || 'Failed to update user', 'error');
+        }
       }
     } catch {
       showToast('An error occurred', 'error');
@@ -82,17 +99,26 @@ export default function UsersPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+  const handleDelete = async (user: User) => {
+    if (!confirm(`Delete request for ${user.fullName}?\nThis will be sent for approval.`)) return;
 
     try {
-      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      const res = await fetch('/api/user-delete-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          userName: user.fullName,
+          userEmail: user.email,
+          reason: 'User deletion requested',
+        }),
+      });
+
       const json = await res.json();
       if (json.success) {
-        showToast('User deleted successfully', 'success');
-        fetchUsers();
+        showToast('Delete request submitted for approval', 'success');
       } else {
-        showToast(json.error, 'error');
+        showToast(json.error || 'Failed to submit delete request', 'error');
       }
     } catch {
       showToast('An error occurred', 'error');
@@ -244,7 +270,7 @@ export default function UsersPage() {
                             tooltip="Edit User"
                           />
                           <IconButton
-                            onClick={() => handleDelete(user.id)}
+                            onClick={() => handleDelete(user)}
                             variant="danger"
                             size="sm"
                             icon={<Trash2 className="w-4 h-4" />}

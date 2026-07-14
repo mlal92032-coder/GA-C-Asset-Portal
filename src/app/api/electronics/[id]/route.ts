@@ -17,7 +17,7 @@ const electronicSchema = z.object({
   locationId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   assignedUserId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   condition: z.enum(['GOOD', 'REPAIR', 'DAMAGED']).optional(),
-  status: z.enum(['IN_USE', 'IN_STORE', 'DISPOSED']).optional(),
+  status: z.enum(['IN_USE', 'IN_STORE', 'DISPOSED', 'AUCTION']).optional(),
   lastMaintenanceDate: z.union([z.string(), z.null(), z.undefined()]).optional(),
   remarks: z.union([z.string(), z.null(), z.undefined()]).optional(),
 });
@@ -37,7 +37,7 @@ export async function GET(
         company: true,
         manufacturer: true,
         location: true,
-        assignedUser: { select: { id: true, fullName: true, email: true, department: true, designation: true } },
+        assignedUser: { select: { id: true, fullName: true, email: true, department: true, designation: true, status: true } },
       },
     });
 
@@ -99,7 +99,7 @@ export async function PUT(
       locationId?: string | null;
       assignedUserId?: string | null;
       condition?: 'GOOD' | 'REPAIR' | 'DAMAGED';
-      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED';
+      status?: 'IN_USE' | 'IN_STORE' | 'DISPOSED' | 'AUCTION';
       lastMaintenanceDate?: Date | null;
       remarks?: string | null;
     } = {};

@@ -98,61 +98,130 @@ export async function GET() {
       prisma.electronicAsset.groupBy({ by: ['companyId'], _count: true }),
       prisma.vehicleAsset.groupBy({ by: ['companyId'], _count: true }),
     ])).flat();
-    const companyMap = new Map<string, number>();
+    const companyCountMap = new Map<string, number>();
     allAssetsByCompany.forEach((item) => {
-      if (item.companyId) companyMap.set(item.companyId, (companyMap.get(item.companyId) || 0) + item._count);
+      if (item.companyId) companyCountMap.set(item.companyId, (companyCountMap.get(item.companyId) || 0) + item._count);
     });
-    const companyIds = Array.from(companyMap.keys());
-    const companies = await prisma.company.findMany({ where: { id: { in: companyIds } }, select: { id: true, companyName: true } });
-    const assetsByCompany = companies.map((comp) => ({ companyName: comp.companyName, count: companyMap.get(comp.id) || 0 }));
+    const companyIds = Array.from(companyCountMap.keys());
+    const companiesData = await prisma.company.findMany({ where: { id: { in: companyIds } }, select: { id: true, companyName: true } });
+    const assetsByCompany = companiesData.map((comp) => ({ companyName: comp.companyName, count: companyCountMap.get(comp.id) || 0 }));
 
-    // Get recent assets
-    const [recentFurniture, recentElectronic, recentVehicle] = await Promise.all([
+    // Get ALL assets for filtering (not just recent)
+    const [allFurniture, allElectronic, allVehicle] = await Promise.all([
       prisma.furnitureAsset.findMany({
-        take: 10,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true }
+        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true, companyId: true }
       }),
       prisma.electronicAsset.findMany({
-        take: 10,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true }
+        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true, companyId: true }
       }),
       prisma.vehicleAsset.findMany({
-        take: 10,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true }
+        select: { id: true, assetName: true, assetTag: true, condition: true, status: true, createdAt: true, companyId: true }
       }),
     ]);
+
+    // Get all company IDs for asset lookup
+    const allCompanyIds = [
+      ...allFurniture.map(a => a.companyId),
+      ...allElectronic.map(a => a.companyId),
+      ...allVehicle.map(a => a.companyId)
+    ].filter(Boolean) as string[];
+    const uniqueCompanyIds = [...new Set(allCompanyIds)];
+    const companiesLookup = await prisma.company.findMany({ where: { id: { in: uniqueCompanyIds } }, select: { id: true, companyName: true } });
+    const companyNameMap = new Map(companiesLookup.map(c => [c.id, c.companyName]));
+
     const recentAssets = [
-      ...recentFurniture.map((a) => ({
+      ...allFurniture.map((a) => ({
         id: a.id,
         name: a.assetName,
         type: 'FURNITURE',
         date: a.createdAt.toISOString(),
         assetTag: a.assetTag,
         condition: a.condition,
-        status: a.status
+        status: a.status,
+        office: a.companyId ? companyNameMap.get(a.companyId) || 'N/A' : 'N/A'
       })),
-      ...recentElectronic.map((a) => ({
+      ...allElectronic.map((a) => ({
         id: a.id,
         name: a.assetName,
         type: 'ELECTRONIC',
         date: a.createdAt.toISOString(),
         assetTag: a.assetTag,
         condition: a.condition,
-        status: a.status
+        status: a.status,
+        office: a.companyId ? companyNameMap.get(a.companyId) || 'N/A' : 'N/A'
       })),
-      ...recentVehicle.map((a) => ({
+      ...allVehicle.map((a) => ({
         id: a.id,
         name: a.assetName,
         type: 'VEHICLE',
         date: a.createdAt.toISOString(),
         assetTag: a.assetTag,
         condition: a.condition,
-        status: a.status
+        status: a.status,
+        office: a.companyId ? companyNameMap.get(a.companyId) || 'N/A' : 'N/A'
       })),
-    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Get employee assigned assets
+    const [assignedFurniture, assignedElectronic, assignedVehicle] = await Promise.all([
+      prisma.furnitureAsset.findMany({
+        where: { assignedUserId: { not: null } },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+        select: { id: true, assetTag: true, assetName: true, serialNumber: true, assignedUserId: true, assignedUser: { select: { id: true, fullName: true, department: true, designation: true, status: true } } }
+      }),
+      prisma.electronicAsset.findMany({
+        where: { assignedUserId: { not: null } },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+        select: { id: true, assetTag: true, assetName: true, serialNumber: true, assignedUserId: true, assignedUser: { select: { id: true, fullName: true, department: true, designation: true, status: true } } }
+      }),
+      prisma.vehicleAsset.findMany({
+        where: { assignedUserId: { not: null } },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+        select: { id: true, assetTag: true, assetName: true, serialNumber: true, assignedUserId: true, assignedUser: { select: { id: true, fullName: true, department: true, designation: true, status: true } } }
+      }),
+    ]);
+
+    const employeeAssets = [
+      ...assignedFurniture.map(a => ({
+        id: a.id,
+        assetTag: a.assetTag,
+        assetName: a.assetName,
+        serialNumber: a.serialNumber || 'N/A',
+        type: 'FURNITURE',
+        employeeName: a.assignedUser?.fullName || 'Unassigned',
+        department: a.assignedUser?.department || 'N/A',
+        designation: a.assignedUser?.designation || 'N/A',
+        status: a.assignedUser?.status || 'INACTIVE'
+      })),
+      ...assignedElectronic.map(a => ({
+        id: a.id,
+        assetTag: a.assetTag,
+        assetName: a.assetName,
+        serialNumber: a.serialNumber || 'N/A',
+        type: 'ELECTRONIC',
+        employeeName: a.assignedUser?.fullName || 'Unassigned',
+        department: a.assignedUser?.department || 'N/A',
+        designation: a.assignedUser?.designation || 'N/A',
+        status: a.assignedUser?.status || 'INACTIVE'
+      })),
+      ...assignedVehicle.map(a => ({
+        id: a.id,
+        assetTag: a.assetTag,
+        assetName: a.assetName,
+        serialNumber: a.serialNumber || 'N/A',
+        type: 'VEHICLE',
+        employeeName: a.assignedUser?.fullName || 'Unassigned',
+        department: a.assignedUser?.department || 'N/A',
+        designation: a.assignedUser?.designation || 'N/A',
+        status: a.assignedUser?.status || 'INACTIVE'
+      })),
+    ];
 
     const responseData = {
       success: true,
@@ -166,6 +235,7 @@ export async function GET() {
         assetsByLocation,
         assetsByCompany,
         recentAssets,
+        employeeAssets,
         sampleAssetTags: { furniture: furnitureTags, electronic: electronicTags, vehicle: vehicleTags },
       },
     };

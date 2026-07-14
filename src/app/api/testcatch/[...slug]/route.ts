@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { slug: string[] } }) {
-  return NextResponse.json({ slug: params.slug, message: 'Catch-all works' });
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await params;
+  return NextResponse.json({ slug, message: 'Catch-all works' });
 }
