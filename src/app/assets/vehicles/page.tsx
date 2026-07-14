@@ -42,7 +42,7 @@ export default function VehiclesPage() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showCheckin, setShowCheckin] = useState(false);
-  const [checkoutAsset, setCheckoutAsset] = useState<{ id: string; name: string } | null>(null);
+  const [checkoutAsset, setCheckoutAsset] = useState<{ id: string; name: string; location?: string } | null>(null);
   const [checkinCheckout, setCheckinCheckout] = useState<{ id: string; assetName: string } | null>(null);
   const [checkedOutAssets, setCheckedOutAssets] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -236,7 +236,11 @@ export default function VehiclesPage() {
   }, [viewingAsset]);
 
   const openCheckoutModal = (asset: VehicleAsset) => {
-    setCheckoutAsset({ id: asset.id, name: asset.assetName });
+    setCheckoutAsset({
+      id: asset.id,
+      name: asset.assetName,
+      location: asset.location?.locationName || asset.location?.room
+    });
     setShowCheckout(true);
   };
 
@@ -1112,6 +1116,7 @@ const handleFilterChange = (key: string, value: string) => {
           assetId={checkoutAsset.id}
           assetName={checkoutAsset.name}
           assetType="VEHICLE"
+          assetLocation={checkoutAsset.location}
           users={users}
           onClose={() => {
             setShowCheckout(false);

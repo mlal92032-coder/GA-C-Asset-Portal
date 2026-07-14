@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   X,
   Loader2,
@@ -10,8 +11,9 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   AlertTriangle,
+  Info,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -19,6 +21,7 @@ interface CheckoutModalProps {
   assetId: string;
   assetName: string;
   assetType: 'FURNITURE' | 'ELECTRONIC' | 'VEHICLE';
+  assetLocation?: string;
   users: Array<{ id: string; fullName: string; email: string }>;
   onClose: () => void;
   onSuccess: () => void;
@@ -28,18 +31,47 @@ export default function CheckoutModal({
   assetId,
   assetName,
   assetType,
+  assetLocation,
   users,
   onClose,
   onSuccess,
 }: CheckoutModalProps) {
+  const { data: session } = useSession();
   const [userId, setUserId] = useState('');
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showDefaults, setShowDefaults] = useState(false);
   const { success, error: errorToast } = useToast();
 
   const modalRef = useFocusTrap({ isOpen: true, onClose });
+
+  // Apply smart defaults on mount
+  useEffect(() => {
+    // Pre-fill current user if they exist in the users list
+    if (session?.user?.id && !userId) {
+      const currentUserExists = users.find(u => u.id === session.user.id);
+      if (currentUserExists) {
+        setUserId(session.user.id);
+        setShowDefaults(true);
+      }
+    }
+
+    // Pre-fill expected return date (7 days from today)
+    if (!expectedReturnDate) {
+      const defaultDate = addDays(new Date(), 7);
+      setExpectedReturnDate(format(defaultDate, 'yyyy-MM-dd'));
+    }
+
+    // Pre-fill notes with template
+    if (!notes) {
+      const template = assetLocation
+        ? `Checked out from ${assetLocation}`
+        : `Standard checkout`;
+      setNotes(template);
+    }
+  }, [session, userId, expectedReturnDate, notes, users, assetLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +145,13 @@ export default function CheckoutModal({
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               {error}
+            </div>
+          )}
+
+          {showDefaults && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 text-sm flex items-center gap-2 rounded">
+              <Info className="w-4 h-4 flex-shrink-0" />
+              Smart defaults applied - feel free to adjust as needed
             </div>
           )}
 

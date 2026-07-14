@@ -49,7 +49,7 @@ export default function FurniturePage() {
   const [showBulkBarcode, setShowBulkBarcode] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showCheckin, setShowCheckin] = useState(false);
-  const [checkoutAsset, setCheckoutAsset] = useState<{ id: string; name: string } | null>(null);
+  const [checkoutAsset, setCheckoutAsset] = useState<{ id: string; name: string; location?: string } | null>(null);
   const [checkinCheckout, setCheckinCheckout] = useState<{ id: string; assetName: string } | null>(null);
   const [checkedOutAssets, setCheckedOutAssets] = useState<Record<string, string>>({}); // assetId -> checkoutId
   const [saving, setSaving] = useState(false);
@@ -153,7 +153,11 @@ export default function FurniturePage() {
   };
 
   const openCheckoutModal = (asset: FurnitureAsset) => {
-    setCheckoutAsset({ id: asset.id, name: asset.assetName });
+    setCheckoutAsset({
+      id: asset.id,
+      name: asset.assetName,
+      location: asset.location?.locationName || asset.location?.room
+    });
     setShowCheckout(true);
   };
 
@@ -1040,6 +1044,7 @@ export default function FurniturePage() {
           assetId={checkoutAsset.id}
           assetName={checkoutAsset.name}
           assetType="FURNITURE"
+          assetLocation={checkoutAsset.location}
           users={users}
           onClose={() => {
             setShowCheckout(false);
