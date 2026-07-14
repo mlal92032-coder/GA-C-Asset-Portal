@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requirePermission, createAuditLog } from '@/lib/api-auth';
 import { generateAssetTag } from '@/lib/asset-tag';
 import { generateSerialNumber } from '@/lib/serial-number';
+import { getCacheControl } from '@/lib/cache';
 
 const furnitureSchema = z.object({
   assetName: z.string().min(1, 'Asset name is required'),
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: assets,
       pagination: {
@@ -85,6 +86,8 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
+    response.headers.set('Cache-Control', getCacheControl('assets', 30));
+    return response;
   } catch (error) {
     console.error('Error fetching furniture assets:', error);
     return NextResponse.json(

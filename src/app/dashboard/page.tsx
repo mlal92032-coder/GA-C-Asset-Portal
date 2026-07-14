@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,8 +9,10 @@ import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import { NotificationCenter, type Notification } from '@/components/NotificationCenter';
 import { SkeletonCard, SkeletonStats, SkeletonTable } from '@/components/Skeleton';
-import { AdvancedAnalytics } from '@/components/AdvancedAnalytics';
 import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animations';
+
+// Lazy load AdvancedAnalytics - only loaded when dashboard renders
+const AdvancedAnalytics = lazy(() => import('@/components/AdvancedAnalytics').then(mod => ({ default: mod.AdvancedAnalytics })));
 import {
   Package, Armchair, Monitor, Car, AlertTriangle, CheckCircle, XCircle,
   Plus, BarChart3, ArrowUpRight, X, MapPin, TrendingUp, Clock, Building2, Users, Download, Calendar
@@ -706,7 +708,9 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold text-slate-900">Advanced Analytics</h2>
             <p className="text-sm text-slate-500 mt-1">Time Range: {timeRange === '7d' ? 'Last 7 Days' : timeRange === '30d' ? 'Last 30 Days' : timeRange === '90d' ? 'Last 90 Days' : 'Last Year'}</p>
           </div>
-          <AdvancedAnalytics isLoading={analyticsLoading} />
+          <Suspense fallback={<SkeletonStats />}>
+            <AdvancedAnalytics isLoading={analyticsLoading} />
+          </Suspense>
         </motion.div>
 
         {/* Donut Charts */}

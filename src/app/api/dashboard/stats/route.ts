@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { generateAnalyticsReport, type TimeRange } from '@/lib/analytics';
+import { getCacheControl } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -251,7 +252,9 @@ export async function GET(request: NextRequest) {
       },
     };
     console.log('[DASHBOARD API] Returning stats for timeRange:', timeRange);
-    return NextResponse.json(responseData);
+    const response = NextResponse.json(responseData);
+    response.headers.set('Cache-Control', getCacheControl('dashboard', 60));
+    return response;
   } catch (error) {
     console.error('Dashboard API Error:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
