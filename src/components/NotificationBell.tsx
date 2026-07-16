@@ -15,7 +15,11 @@ interface Notification {
   createdAt: string;
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  isDarkMode?: boolean;
+}
+
+export default function NotificationBell({ isDarkMode = false }: NotificationBellProps) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -173,7 +177,11 @@ export default function NotificationBell() {
       {/* Bell Button - Clean minimal style */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 text-slate-600 hover:text-slate-700 transition-all duration-200 rounded-lg min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center"
+        className={`relative p-2.5 transition-all duration-200 rounded-lg min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center ${
+          isDarkMode
+            ? 'text-white hover:bg-white/20'
+            : 'text-slate-600 hover:text-slate-700'
+        }`}
         aria-label="Notifications"
         title={unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications'}
       >
