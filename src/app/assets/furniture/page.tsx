@@ -569,7 +569,7 @@ export default function FurniturePage() {
       onPageChange={setCurrentPage}
       onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
       <PageHeader
         title="Furniture Assets"
         subtitle="Manage furniture and office furnishings"
