@@ -188,12 +188,12 @@ export default function NotificationBell() {
       {/* Dropdown - Absolute positioning below button */}
       {isOpen && (
         <div
-          className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-slate-200 shadow-2xl z-[1000] max-h-[500px] overflow-hidden flex flex-col backdrop-blur-sm"
+          className="absolute top-full left-0 mt-0 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-b-xl border border-slate-200 border-t-0 shadow-2xl z-[1000] max-h-[500px] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header - Clean style matching top bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
-            <h3 className="font-semibold text-slate-700">
+          {/* Header - Solid white, no padding top */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white">
+            <h3 className="font-semibold text-slate-700 text-sm">
               Notifications
               {unreadCount > 0 && (
                 <span className="ml-2 text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
@@ -246,8 +246,8 @@ export default function NotificationBell() {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`group p-4 hover:bg-slate-50/80 transition-all duration-200 cursor-pointer border-l-4 ${
-                      !notification.isRead ? 'bg-blue-50/50 border-l-blue-500 hover:bg-blue-100/30' : 'border-l-transparent hover:border-l-slate-300'
+                    className={`group p-3 hover:bg-slate-50/80 transition-all duration-200 cursor-pointer border-l-4 ${
+                      !notification.isRead ? 'bg-slate-50/50 border-l-slate-400 hover:bg-slate-100/30' : 'border-l-transparent hover:border-l-slate-300'
                     }`}
                     onClick={() => handleClickNotification(notification.id, notification.link || undefined)}
                   >
@@ -299,7 +299,7 @@ export default function NotificationBell() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-slate-100 bg-white text-center">
+            <div className="px-4 py-2 border-t border-slate-100 bg-white text-center">
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-xs text-slate-600 hover:text-slate-700 font-medium"
