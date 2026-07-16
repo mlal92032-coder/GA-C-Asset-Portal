@@ -72,11 +72,11 @@ export default function AppFooter({
   const endItem = totalItems > 0 ? Math.min(currentPage * itemsPerPage, totalItems) : 0;
 
   return (
-    <footer className="bg-white border-t border-slate-200/40 px-4 md:px-6 py-2 md:py-3 shadow-sm">
+    <footer className="bg-white border-t border-slate-200/30 px-3 md:px-4 py-1 md:py-1.5 shadow-none">
       <div className="max-w-full mx-auto">
-        <div className="space-y-2">
+        <div className="space-y-1">
           {/* Top section: Items counter + Page info */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
             {/* Left: Items info */}
             <div className="text-xs text-slate-600">
               {totalItems > 0 ? (
@@ -160,8 +160,8 @@ export default function AppFooter({
         </div>
 
         {/* Bottom section: Items per page + copyright */}
-        <div className="mt-2 pt-2 border-t border-slate-200/30">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div className="mt-1 pt-1 border-t border-slate-200/20">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
             {/* Left: Items per page dropdown */}
             {totalItems > 0 && (
               <div className="flex items-center gap-2">

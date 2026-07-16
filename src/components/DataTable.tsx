@@ -134,11 +134,11 @@ export default function DataTable<T extends { id?: string | number }>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead className="sticky top-0 z-20 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
             <tr>
               {selectable && (
-                <th className="px-4 py-4 text-left font-bold text-slate-700 w-14">
+                <th className="px-2 py-2 text-left font-bold text-slate-700 w-12">
                   <input
                     type="checkbox"
                     checked={areAllSelected}
@@ -154,7 +154,7 @@ export default function DataTable<T extends { id?: string | number }>({
                 </th>
               )}
               {columns.map((col) => (
-                <th key={String(col.key)} className={`px-6 py-4 text-left font-bold text-slate-700 ${col.width || ''}`}>
+                <th key={String(col.key)} className={`px-3 py-2 text-left font-bold text-slate-700 ${col.width || ''}`}>
                   {col.sortable ? (
                     <motion.button
                       onClick={() => handleSort(col.key)}
@@ -180,13 +180,13 @@ export default function DataTable<T extends { id?: string | number }>({
             <AnimatePresence mode="popLayout">
               {isLoading ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={columns.length} className="px-3 py-4 text-center text-slate-500">
                     Loading...
                   </td>
                 </tr>
               ) : sortedAndFiltered.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={columns.length} className="px-3 py-4 text-center text-slate-500">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -214,7 +214,7 @@ export default function DataTable<T extends { id?: string | number }>({
                       whileHover={{ x: onRowClick ? 4 : 0 }}
                     >
                       {selectable && (
-                        <td className="px-4 py-4 w-14">
+                        <td className="px-2 py-2 w-12">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -226,7 +226,7 @@ export default function DataTable<T extends { id?: string | number }>({
                         </td>
                       )}
                       {columns.map((col) => (
-                        <td key={String(col.key)} className="px-6 py-4">
+                        <td key={String(col.key)} className="px-3 py-2">
                           {col.render ? col.render(row[col.key], row) : String(row[col.key] || '-')}
                         </td>
                       ))}
