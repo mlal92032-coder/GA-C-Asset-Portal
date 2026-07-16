@@ -193,11 +193,14 @@ export default function NotificationBell({ isDarkMode = false }: NotificationBel
         )}
       </button>
 
-      {/* Dropdown - Absolute positioning below button */}
+      {/* Dropdown - Fixed positioning on right side */}
       {isOpen && (
         <div
-          className="fixed top-auto left-0 right-0 mx-auto w-96 max-w-[calc(100vw-2rem)] bg-white rounded-b-xl border border-slate-200 border-t-0 shadow-2xl z-[9999] max-h-[500px] overflow-hidden flex flex-col"
-          style={{ top: '70px' }}
+          className="fixed w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-slate-200 shadow-2xl z-[9999] max-h-[500px] overflow-hidden flex flex-col"
+          style={{
+            top: '70px',
+            right: '1rem'
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header - Solid white, no padding top */}
