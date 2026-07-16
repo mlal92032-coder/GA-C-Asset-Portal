@@ -72,13 +72,13 @@ export default function AppFooter({
   const endItem = totalItems > 0 ? Math.min(currentPage * itemsPerPage, totalItems) : 0;
 
   return (
-    <footer className="bg-gradient-to-r from-white via-blue-50/30 to-indigo-50/20 border-t border-slate-200/60 px-4 md:px-6 py-4 md:py-5 shadow-sm backdrop-blur-sm">
+    <footer className="bg-white border-t border-slate-200/40 px-4 md:px-6 py-2 md:py-3 shadow-sm">
       <div className="max-w-full mx-auto">
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Top section: Items counter + Page info */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             {/* Left: Items info */}
-            <div className="text-sm text-slate-600">
+            <div className="text-xs text-slate-600">
               {totalItems > 0 ? (
                 <span>
                   Showing <span className="font-semibold text-slate-900">{startItem}</span> to{' '}
@@ -92,7 +92,7 @@ export default function AppFooter({
 
             {/* Right: Page info */}
             {totalPages > 1 && (
-              <div className="text-sm text-slate-600 text-right md:text-left">
+              <div className="text-xs text-slate-600 text-right md:text-left">
                 Page <span className="font-semibold text-slate-900">{currentPage}</span> of{' '}
                 <span className="font-semibold text-slate-900">{totalPages}</span>
               </div>
@@ -102,8 +102,8 @@ export default function AppFooter({
           {/* Pagination controls - Always show if more than 1 page */}
           {totalPages > 1 && (
             <>
-              <div className="border-t border-slate-200/50"></div>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
+              <div className="border-t border-slate-200/20"></div>
+              <div className="flex items-center justify-center gap-1 flex-wrap my-1">
                 {/* Previous button */}
                 <button
                   onClick={handlePrevious}
@@ -160,8 +160,8 @@ export default function AppFooter({
         </div>
 
         {/* Bottom section: Items per page + copyright */}
-        <div className="mt-4 pt-3 border-t border-slate-200/50">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mt-2 pt-2 border-t border-slate-200/30">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             {/* Left: Items per page dropdown */}
             {totalItems > 0 && (
               <div className="flex items-center gap-2">

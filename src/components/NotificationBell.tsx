@@ -196,7 +196,8 @@ export default function NotificationBell({ isDarkMode = false }: NotificationBel
       {/* Dropdown - Absolute positioning below button */}
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-0 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-b-xl border border-slate-200 border-t-0 shadow-2xl z-[1000] max-h-[500px] overflow-hidden flex flex-col"
+          className="fixed top-auto left-0 right-0 mx-auto w-96 max-w-[calc(100vw-2rem)] bg-white rounded-b-xl border border-slate-200 border-t-0 shadow-2xl z-[9999] max-h-[500px] overflow-hidden flex flex-col"
+          style={{ top: '70px' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header - Solid white, no padding top */}
