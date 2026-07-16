@@ -170,28 +170,29 @@ export default function NotificationBell() {
 
   return (
     <div ref={dropdownRef} className="relative">
-      {/* Bell Button */}
+      {/* Bell Button - Enhanced with new design system */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-white hover:text-blue-100 hover:bg-white/20 transition-all rounded-lg"
+        className="relative p-2.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 transition-all duration-200 rounded-lg min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center"
         aria-label="Notifications"
+        title={unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications'}
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 rounded-full animate-pulse">
+          <span className="absolute top-0 right-0 min-w-[20px] h-[20px] bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1.5 rounded-full animate-pulse shadow-lg">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown - Fixed positioning to prevent overlap */}
+      {/* Dropdown - Absolute positioning below button */}
       {isOpen && (
         <div
-          className="fixed top-16 right-4 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg border border-slate-200 shadow-2xl z-[9999] max-h-[calc(100vh-120px)] overflow-hidden flex flex-col"
+          className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-slate-200 shadow-2xl z-[1000] max-h-[500px] overflow-hidden flex flex-col backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+          {/* Header - Enhanced with gradient */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/30">
             <h3 className="font-semibold text-slate-900">
               Notifications
               {unreadCount > 0 && (
@@ -245,8 +246,8 @@ export default function NotificationBell() {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`group p-4 hover:bg-slate-50 transition-colors cursor-pointer border-l-4 ${
-                      !notification.isRead ? 'bg-blue-50/30 border-l-blue-500' : 'border-l-transparent'
+                    className={`group p-4 hover:bg-slate-50/80 transition-all duration-200 cursor-pointer border-l-4 ${
+                      !notification.isRead ? 'bg-blue-50/50 border-l-blue-500 hover:bg-blue-100/30' : 'border-l-transparent hover:border-l-slate-300'
                     }`}
                     onClick={() => handleClickNotification(notification.id, notification.link || undefined)}
                   >

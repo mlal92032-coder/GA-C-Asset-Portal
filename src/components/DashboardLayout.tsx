@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import AppFooter from '@/components/AppFooter';
+import NotificationBell from '@/components/NotificationBell';
 import { Menu } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -56,8 +57,6 @@ export default function DashboardLayout({
         <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-to-tl from-indigo-500/5 to-blue-500/8 rounded-full blur-3xl" />
       </div>
 
-      {/* Main Layout with Sidebar and Content */}
-      <div className="flex flex-1 min-h-0 relative">
       {/* Mobile backdrop */}
       <AnimatePresence>
         {mobileOpen && (
@@ -69,36 +68,42 @@ export default function DashboardLayout({
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar - LEFT SIDE, STICKY AT TOP */}
-      <motion.div
-        animate={{ width: collapsed ? 72 : 260 }}
-        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="hidden lg:flex lg:flex-shrink-0 lg:z-30 sticky top-0 h-screen overflow-y-auto"
-      >
-        <Sidebar onClose={() => {}} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} setMobileOpen={setMobileOpen} />
-      </motion.div>
+      {/* Main Layout Flex Container */}
+      <div className="flex flex-1 min-h-0">
+        {/* Desktop sidebar - LEFT SIDE */}
+        <motion.div
+          animate={{ width: collapsed ? 72 : 260 }}
+          transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="hidden lg:flex lg:flex-shrink-0 h-screen border-r border-slate-200 flex-col"
+        >
+          <Sidebar onClose={() => {}} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} setMobileOpen={setMobileOpen} />
+        </motion.div>
 
-      {/* Mobile sidebar */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="fixed top-0 left-0 h-full z-50 lg:hidden"
-          >
-            <Sidebar onClose={() => setMobileOpen(false)} collapsed={false} onToggleCollapse={() => {}} setMobileOpen={setMobileOpen} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Mobile sidebar */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="fixed top-0 left-0 h-full z-50 lg:hidden"
+            >
+              <Sidebar onClose={() => setMobileOpen(false)} collapsed={false} onToggleCollapse={() => {}} setMobileOpen={setMobileOpen} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* RIGHT SIDE - Content */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-10">
-        {/* Mobile Header Bar */}
-        <header className="sticky top-0 z-20 h-16 bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/40 border-b border-slate-200/60 flex items-center px-4 sm:px-6 gap-3 overflow-visible shadow-md backdrop-blur-sm relative lg:hidden">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button onClick={() => setMobileOpen(true)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg" aria-label="Open navigation menu">
-              <Menu className="w-5 h-5" />
-            </button>
+        {/* RIGHT SIDE - Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 h-screen">
+        {/* Header Bar - Single Header for All Screens */}
+        <header className="sticky top-0 z-20 h-16 bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/40 border-b border-slate-200/60 flex items-center px-4 sm:px-6 gap-3 overflow-visible shadow-md backdrop-blur-sm relative justify-between">
+          {/* Left - Menu Button (Mobile Only) */}
+          <button onClick={() => setMobileOpen(true)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg lg:hidden" aria-label="Open navigation menu">
+            <Menu className="w-5 h-5" />
+          </button>
+
+          {/* Right - Notifications (All Screens) */}
+          <div className="flex items-center gap-2">
+            <NotificationBell />
           </div>
         </header>
 
@@ -114,7 +119,7 @@ export default function DashboardLayout({
           onPageChange={onPageChange}
           onItemsPerPageChange={onItemsPerPageChange}
         />
-      </div>
+        </div>
       </div>
     </div>
   );
