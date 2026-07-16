@@ -170,10 +170,10 @@ export default function NotificationBell() {
 
   return (
     <div ref={dropdownRef} className="relative">
-      {/* Bell Button - Enhanced with new design system */}
+      {/* Bell Button - Clean minimal style */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 transition-all duration-200 rounded-lg min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center"
+        className="relative p-2.5 text-slate-600 hover:text-slate-700 transition-all duration-200 rounded-lg min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center"
         aria-label="Notifications"
         title={unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications'}
       >
@@ -191,12 +191,12 @@ export default function NotificationBell() {
           className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-slate-200 shadow-2xl z-[1000] max-h-[500px] overflow-hidden flex flex-col backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header - Enhanced with gradient */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/30">
-            <h3 className="font-semibold text-slate-900">
+          {/* Header - Clean style matching top bar */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
+            <h3 className="font-semibold text-slate-700">
               Notifications
               {unreadCount > 0 && (
-                <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="ml-2 text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
                   {unreadCount} new
                 </span>
               )}
@@ -205,7 +205,7 @@ export default function NotificationBell() {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded"
+                  className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors rounded"
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-4 h-4" />
@@ -214,7 +214,7 @@ export default function NotificationBell() {
               {notifications.length > 0 && (
                 <button
                   onClick={deleteAllNotifications}
-                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors rounded"
+                  className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors rounded"
                   title="Clear all"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -283,7 +283,7 @@ export default function NotificationBell() {
                                 e.stopPropagation();
                                 markAsRead(notification.id);
                               }}
-                              className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
+                              className="text-[10px] text-slate-600 hover:text-slate-700 font-medium"
                             >
                               Mark as read
                             </button>
@@ -299,10 +299,10 @@ export default function NotificationBell() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 text-center">
+            <div className="px-4 py-3 border-t border-slate-100 bg-white text-center">
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs text-slate-600 hover:text-slate-700 font-medium"
               >
                 Close
               </button>
