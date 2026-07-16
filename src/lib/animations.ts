@@ -154,23 +154,26 @@ export const scaleOut = {
 // ========================================
 
 export const buttonHover = {
-  scale: 1.02,
-  transition: transitions.fast,
+  scale: 1.04,
+  y: -3,
+  transition: { ...transitions.fast, ...easings.springLight },
 };
 
 export const buttonTap = {
-  scale: 0.98,
+  scale: 0.96,
+  y: -1,
   transition: transitions.fast,
 };
 
 export const cardHover = {
-  y: -4,
-  transition: transitions.base,
+  y: -6,
+  transition: { ...transitions.base, ...easings.springLight },
 };
 
 export const lift = {
-  y: -4,
-  transition: transitions.base,
+  y: -6,
+  scale: 1.01,
+  transition: { ...transitions.base, ...easings.springLight },
 };
 
 // ========================================
