@@ -1,21 +1,16 @@
 'use client';
 
-import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
-import PageHeader from '@/components/PageHeader';
-import { NotificationCenter, type Notification } from '@/components/NotificationCenter';
 import { SkeletonCard, SkeletonStats, SkeletonTable } from '@/components/Skeleton';
 import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animations';
-
-// Lazy load AdvancedAnalytics - only loaded when dashboard renders
-const AdvancedAnalytics = lazy(() => import('@/components/AdvancedAnalytics').then(mod => ({ default: mod.AdvancedAnalytics })));
 import {
   Package, Armchair, Monitor, Car, AlertTriangle, CheckCircle, XCircle,
-  Plus, BarChart3, ArrowUpRight, X, MapPin, TrendingUp, Clock, Building2, Users, Download, Calendar
+  Plus, BarChart3, ArrowUpRight, X, MapPin, TrendingUp, Clock, Building2, Users
 } from 'lucide-react';
 
 interface Asset {
@@ -236,18 +231,13 @@ export default function DashboardPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
-  // Fetch dashboard data with time range
+  // Fetch dashboard data
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        setAnalyticsLoading(true);
-        const res = await fetch(`/api/dashboard/stats?timeRange=${timeRange}`, { credentials: 'include' });
+        const res = await fetch(`/api/dashboard/stats`, { credentials: 'include' });
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
         setDashboardData(json.data);
@@ -256,7 +246,6 @@ export default function DashboardPage() {
         setError(err.message || 'Failed to load dashboard');
       } finally {
         setLoading(false);
-        setAnalyticsLoading(false);
       }
     }
 
@@ -275,93 +264,8 @@ export default function DashboardPage() {
 
     fetchData();
     runAutomationChecks();
-
-    const interval = setInterval(() => {
-      fetchData();
-      runAutomationChecks();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [timeRange]);
-
-  // Fetch notifications
-  useEffect(() => {
-    async function fetchNotifications() {
-      try {
-        const res = await fetch('/api/notifications?unreadOnly=false', { credentials: 'include' });
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          // Convert API notifications to NotificationCenter format
-          const convertedNotifications: Notification[] = json.data.map((notif: any) => ({
-            id: notif.id,
-            type: notif.type?.toLowerCase() === 'asset' ? 'asset'
-              : notif.type?.toLowerCase() === 'checkout' ? 'checkout'
-              : notif.type?.toLowerCase() === 'maintenance' ? 'maintenance'
-              : notif.type?.toLowerCase() === 'alert' ? 'alert'
-              : 'system',
-            title: notif.title,
-            message: notif.message,
-            read: notif.isRead,
-            timestamp: new Date(notif.createdAt),
-            actionUrl: notif.link,
-          }));
-          setNotifications(convertedNotifications);
-        }
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      }
-    }
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
   }, []);
 
-  // Handle notification read
-  const handleNotificationRead = async (id: string) => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-        credentials: 'include',
-      });
-      setNotifications(prev =>
-        prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
-      );
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
-  };
-
-  // Handle notification delete
-  const handleNotificationDelete = async (id: string) => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-        credentials: 'include',
-      });
-      setNotifications(prev => prev.filter(notif => notif.id !== id));
-    } catch (error) {
-      console.error('Failed to delete notification:', error);
-    }
-  };
-
-  // Handle mark all as read
-  const handleMarkAllRead = async () => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAllAsRead: true }),
-        credentials: 'include',
-      });
-      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-    }
-  };
 
   const filteredAssets = useMemo(() => {
     if (!dashboardData) return [];
@@ -437,81 +341,9 @@ export default function DashboardPage() {
 
   const hasFilters = selectedType || selectedCondition || selectedStatus;
 
-  const exportToCSV = () => {
-    if (!dashboardData?.analytics) return;
-
-    setExporting(true);
-    try {
-      const { analytics } = dashboardData;
-
-      // Prepare CSV data
-      const csvContent = [
-        ['Analytics Report', `Time Range: ${timeRange}`, `Generated: ${new Date().toISOString()}`],
-        [],
-        ['Asset Distribution'],
-        ['Type', 'Count'],
-        ...analytics.assetDistribution.map(d => [d.type, d.count.toString()]),
-        [],
-        ['Utilization Rate'],
-        ['Total Assets', 'In Use', 'Percentage'],
-        [analytics.utilizationRate.total.toString(), analytics.utilizationRate.inUse.toString(), `${analytics.utilizationRate.percentage}%`],
-        [],
-        ['Checkout Trends'],
-        ['Date', 'Checkouts', 'Checkins'],
-        ...analytics.checkoutTrends.map(d => [d.date, d.checkouts.toString(), d.checkins.toString()]),
-        [],
-        ['Maintenance Trends'],
-        ['Date', 'Cost', 'Count'],
-        ...analytics.maintenanceTrends.map(d => [d.date, d.cost.toString(), d.count.toString()]),
-        [],
-        ['Condition Distribution'],
-        ['Condition', 'Count'],
-        ...analytics.conditionDistribution.map(d => [d.condition, d.count.toString()]),
-        [],
-        ['Location Distribution'],
-        ['Location', 'Count'],
-        ...analytics.locationDistribution.map(d => [d.location, d.count.toString()])
-      ];
-
-      const csvString = csvContent.map(row => row.join(',')).join('\n');
-      const blob = new Blob([csvString], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export failed:', error);
-    } finally {
-      setExporting(false);
-    }
-  };
-
   if (loading) {
     return (
       <DashboardLayout>
-        <PageHeader
-          title="GA&C Asset Portal"
-          subtitle="General Administration & Coordination Department"
-          icon={Package}
-          badge="Dashboard"
-          gradientFrom="from-blue-600"
-          gradientTo="to-blue-800"
-          iconColor="text-white"
-          actions={
-            <div className="flex items-center gap-4">
-              <NotificationCenter
-                notifications={notifications}
-                onNotificationRead={handleNotificationRead}
-                onNotificationDelete={handleNotificationDelete}
-                onMarkAllRead={handleMarkAllRead}
-              />
-            </div>
-          }
-        />
         <div className="w-full max-w-7xl mx-auto px-4 py-6">
           <div className="mb-12">
             <SkeletonStats />
@@ -532,29 +364,6 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <PageHeader
-        title="GA&C Asset Portal"
-        subtitle="General Administration & Coordination Department"
-        icon={Package}
-        badge="Dashboard"
-        gradientFrom="from-blue-600"
-        gradientTo="to-blue-800"
-        iconColor="text-white"
-        actions={
-          <div className="flex items-center gap-4">
-            <NotificationCenter
-              notifications={notifications}
-              onNotificationRead={handleNotificationRead}
-              onNotificationDelete={handleNotificationDelete}
-              onMarkAllRead={handleMarkAllRead}
-            />
-            <Link href="/admin/users" className="btn btn-primary btn-sm">
-              <Plus className="w-4 h-4" /> Manage
-            </Link>
-          </div>
-        }
-      />
-
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* Stat Cards with Stagger Animation - Compact & Professional */}
         <motion.div
@@ -652,37 +461,6 @@ export default function DashboardPage() {
           </motion.div>
         </motion.div>
 
-        {/* Time Range & Export Section */}
-        <motion.div
-          className="mb-8 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg flex items-center justify-between flex-wrap gap-4 shadow-sm"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-indigo-600" />
-              <label className="text-xs text-indigo-900 font-semibold">Time Range:</label>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d' | '1y')}
-                className="px-3 py-2 text-xs font-semibold bg-white border-2 border-indigo-300 rounded-lg text-indigo-900 hover:border-indigo-400 transition-colors cursor-pointer"
-              >
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="90d">Last 90 Days</option>
-                <option value="1y">Last Year</option>
-              </select>
-            </div>
-          </div>
-          <button
-            onClick={exportToCSV}
-            disabled={exporting || !dashboardData?.analytics}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            {exporting ? 'Exporting...' : 'Export to CSV'}
-          </button>
-        </motion.div>
 
         {/* Filter Indicator */}
         {hasFilters && (
@@ -696,22 +474,6 @@ export default function DashboardPage() {
             <button onClick={clearFilters} className="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 bg-white px-3 py-1 rounded-full hover:bg-blue-50 transition-colors"><X className="w-3.5 h-3.5" /> Clear</button>
           </motion.div>
         )}
-
-        {/* Advanced Analytics Section */}
-        <motion.div
-          className="mb-12 p-8 bg-white rounded-xl border-2 border-slate-200 shadow-lg"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Advanced Analytics</h2>
-            <p className="text-sm text-slate-500 mt-1">Time Range: {timeRange === '7d' ? 'Last 7 Days' : timeRange === '30d' ? 'Last 30 Days' : timeRange === '90d' ? 'Last 90 Days' : 'Last Year'}</p>
-          </div>
-          <Suspense fallback={<SkeletonStats />}>
-            <AdvancedAnalytics isLoading={analyticsLoading} />
-          </Suspense>
-        </motion.div>
 
         {/* Donut Charts */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-12">
