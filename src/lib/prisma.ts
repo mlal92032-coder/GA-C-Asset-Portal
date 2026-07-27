@@ -1,14 +1,17 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import path from 'path';
 
-const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-const dbUrl = `file:${dbPath.replace(/\\/g, '/')}`;
+// Use DATABASE_URL environment variable for PostgreSQL (Vercel) or local development
+const dbUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/asset_management';
 
-console.log('[PRISMA] Initializing with DB:', dbUrl);
+console.log('[PRISMA] Initializing with DB:', dbUrl.split('@')[0] + '@...');
 
-const adapter = new PrismaBetterSqlite3({ url: dbUrl });
-export const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: dbUrl,
+    },
+  },
+});
 
 export default prisma;
 
