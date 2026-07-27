@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Too many login attempts. Please try again later.');
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
           where: { email: credentials.email },
         });
 
