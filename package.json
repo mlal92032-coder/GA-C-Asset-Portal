@@ -25,6 +25,7 @@
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.0.0",
     "chart.js": "^4.4.1",
+    "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "date-fns": "^4.4.0",
     "decimal.js": "^10.4.3",

@@ -53,7 +53,7 @@ function verifySlackRequest(
  * Handle button click actions
  */
 async function handleButtonAction(
-  action: SlackInteraction['actions']?.[0],
+  action: SlackInteraction['actions'][0] | undefined,
   userId: string,
   responseUrl: string | undefined
 ): Promise<{ text: string; success: boolean }> {
