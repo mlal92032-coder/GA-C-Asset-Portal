@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     const validatedData = createUserSchema.parse(body);
 
     // Check if email already exists in the same tenant
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { email: validatedData.email },
     });
 
