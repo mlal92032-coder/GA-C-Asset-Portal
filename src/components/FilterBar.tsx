@@ -22,12 +22,12 @@ export default function FilterBar({
   const isVisible = alwaysExpanded || isExpanded;
 
   return (
-    <div className="card p-4 sm:p-3 mb-6">
+    <div className="card p-2 sm:p-3 mb-1.5">
       {/* Header with toggle and clear button */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 mb-1.5">
         <button
           onClick={() => !alwaysExpanded && setIsExpanded(!isExpanded)}
-          className={`flex items-center gap-2 font-medium text-gray-700 ${
+          className={`flex items-center gap-1.5 font-medium text-gray-700 ${
             shouldShowCollapse ? 'hover:text-gray-900 transition-colors' : 'cursor-default'
           }`}
           disabled={alwaysExpanded}

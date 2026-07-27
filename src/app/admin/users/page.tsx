@@ -6,7 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import ModernUserModal from '@/components/ModernUserModal';
-import { Button, IconButton } from '@/components/Button';
+import { Button, IconButton } from '@/components/ui';
 import { Plus, Search, Edit, Trash2, Users as UsersIcon, Shield } from 'lucide-react';
 
 interface User {
@@ -52,9 +52,9 @@ export default function UsersPage() {
 const handleSave = async (userData: any) => {
     setSaving(true);
     try {
-      // If creating new user, submit a request instead
       if (!editingUser) {
-        const res = await fetch('/api/user-requests', {
+        // Create new user directly (Super Admin only)
+        const res = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData),
@@ -63,11 +63,12 @@ const handleSave = async (userData: any) => {
         const json = await res.json();
 
         if (json.success) {
-          success('User request submitted for approval');
+          success('User created successfully');
+          fetchUsers();
           setShowModal(false);
           setEditingUser(null);
         } else {
-          error(json.error || 'Failed to submit request');
+          error(json.error || 'Failed to create user');
         }
       } else {
         // For editing existing users, update directly
@@ -162,7 +163,7 @@ const handleSave = async (userData: any) => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
       <PageHeader
         title="User Management"
         subtitle="Manage system users and permissions"
@@ -190,7 +191,7 @@ const handleSave = async (userData: any) => {
       />
 
       {/* Search */}
-      <div className="mb-6">
+      <div className="mb-2">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
@@ -198,7 +199,7 @@ const handleSave = async (userData: any) => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users by name or email..."
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
       </div>
@@ -221,7 +222,7 @@ const handleSave = async (userData: any) => {
               {filteredUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white font-semibold">
                         {user.fullName.charAt(0).toUpperCase()}
                       </div>
@@ -238,7 +239,7 @@ const handleSave = async (userData: any) => {
                   <td className="text-slate-600">{user.department || '-'}</td>
                   <td>{getStatusBadge(user.status)}</td>
                   <td>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       {canManageUsers ? (
                         <>
                           <IconButton
@@ -283,5 +284,6 @@ const handleSave = async (userData: any) => {
     </DashboardLayout>
   );
 }
+
 
 

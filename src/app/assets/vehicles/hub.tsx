@@ -10,7 +10,7 @@ import { Pagination } from '@/components/Pagination';
 import { SortableHeader } from '@/components/SortableHeader';
 import ModernVehiclesModal from '@/components/ModernVehiclesModal';
 import VehicleMaintenanceModal from '@/components/VehicleMaintenanceModal';
-import { Button, IconButton } from '@/components/Button';
+import { Button, IconButton } from '@/components/ui';
 import { buildImageUrl } from '@/lib/image-upload';
 import type { VehicleAsset, Company, Manufacturer, Location, User, VehicleFormData } from '@/types';
 import {
@@ -706,4 +706,5 @@ const handleSaveVehicle = async (vehicleData: any) => {
     </DashboardLayout>
   );
 }
+
 

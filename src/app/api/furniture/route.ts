@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { requirePermission, createAuditLog, getCurrentUser } from '@/lib/api-auth';
 import { generateAssetTag } from '@/lib/asset-tag';
 import { generateSerialNumber } from '@/lib/serial-number';
 import { getCacheControl } from '@/lib/cache';
@@ -99,11 +99,23 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await requirePermission('furniture', 'create');
-    if (authResult instanceof NextResponse) return authResult;
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // VIEW_USER cannot create
+    if (currentUser.role === 'VIEW_USER') {
+      return NextResponse.json(
+        { success: false, error: 'You do not have permission to create assets' },
+        { status: 403 }
+      );
+    }
 
     const body = await req.json();
-
     const validatedData = furnitureSchema.parse(body);
 
     // Check if asset tag already exists
@@ -117,42 +129,89 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const asset = await prisma.furnitureAsset.create({
+    // SUPER_ADMIN creates directly, USER creates approval request
+    if (currentUser.role === 'SUPER_ADMIN') {
+      const asset = await prisma.furnitureAsset.create({
+        data: {
+          assetTag: validatedData.assetTag,
+          assetName: validatedData.assetName,
+          imageUrl: validatedData.imageUrl || null,
+          furnitureType: validatedData.furnitureType || null,
+          material: validatedData.material || null,
+          purchaseDate: validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null,
+          purchasePrice: validatedData.purchasePrice ? (typeof validatedData.purchasePrice === 'string' ? parseFloat(validatedData.purchasePrice) : validatedData.purchasePrice) : null,
+          companyId: validatedData.companyId || null,
+          manufacturerId: validatedData.manufacturerId || null,
+          locationId: validatedData.locationId || null,
+          assignedUserId: validatedData.assignedUserId || null,
+          condition: validatedData.condition,
+          status: validatedData.status,
+          remarks: validatedData.remarks || null,
+          usefulLifeYears: validatedData.usefulLifeYears ? (typeof validatedData.usefulLifeYears === 'string' ? parseInt(validatedData.usefulLifeYears) : validatedData.usefulLifeYears) : null,
+          salvageValue: validatedData.salvageValue ? (typeof validatedData.salvageValue === 'string' ? parseFloat(validatedData.salvageValue) : validatedData.salvageValue) : null,
+          depreciationMethod: validatedData.depreciationMethod || null,
+        },
+        include: {
+          company: { select: { id: true, companyName: true } },
+          manufacturer: { select: { id: true, manufacturerName: true } },
+          location: { select: { id: true, locationName: true } },
+          assignedUser: { select: { id: true, fullName: true } },
+        },
+      });
+
+      await createAuditLog({
+        action: 'CREATE',
+        entity: 'FURNITURE',
+        entityId: asset.id,
+        details: validatedData,
+      });
+
+      return NextResponse.json({ success: true, data: asset, message: 'Furniture asset created successfully' }, { status: 201 });
+    }
+
+    // Regular USER - create approval request instead
+    const addRequest = await prisma.assetAddRequest.create({
       data: {
-        assetTag: validatedData.assetTag,
-        assetName: validatedData.assetName,
-        imageUrl: validatedData.imageUrl || null,
-        furnitureType: validatedData.furnitureType || null,
-        material: validatedData.material || null,
-        purchaseDate: validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null,
-        purchasePrice: validatedData.purchasePrice ? (typeof validatedData.purchasePrice === 'string' ? parseFloat(validatedData.purchasePrice) : validatedData.purchasePrice) : null,
-        companyId: validatedData.companyId || null,
-        manufacturerId: validatedData.manufacturerId || null,
-        locationId: validatedData.locationId || null,
-        assignedUserId: validatedData.assignedUserId || null,
-        condition: validatedData.condition,
-        status: validatedData.status,
-        remarks: validatedData.remarks || null,
-        usefulLifeYears: validatedData.usefulLifeYears ? (typeof validatedData.usefulLifeYears === 'string' ? parseInt(validatedData.usefulLifeYears) : validatedData.usefulLifeYears) : null,
-        salvageValue: validatedData.salvageValue ? (typeof validatedData.salvageValue === 'string' ? parseFloat(validatedData.salvageValue) : validatedData.salvageValue) : null,
-        depreciationMethod: validatedData.depreciationMethod || null,
+        assetType: 'FURNITURE',
+        assetData: JSON.stringify(validatedData),
+        requestedById: currentUser.id,
+        status: 'PENDING',
       },
       include: {
-        company: { select: { id: true, companyName: true } },
-        manufacturer: { select: { id: true, manufacturerName: true } },
-        location: { select: { id: true, locationName: true } },
-        assignedUser: { select: { id: true, fullName: true } },
+        requestedBy: {
+          select: { id: true, fullName: true, email: true, role: true },
+        },
       },
     });
+
+    // Notify super admin
+    const superAdmin = await prisma.user.findFirst({
+      where: { role: 'SUPER_ADMIN' },
+    });
+
+    if (superAdmin) {
+      await prisma.notification.create({
+        data: {
+          userId: superAdmin.id,
+          title: 'New Furniture Asset Request',
+          message: `${currentUser.fullName} requested to add: ${validatedData.assetName}`,
+          type: 'INFO',
+          link: `/admin/requests`,
+        },
+      });
+    }
 
     await createAuditLog({
       action: 'CREATE',
-      entity: 'FURNITURE',
-      entityId: asset.id,
-      details: validatedData,
+      entity: 'ASSET_ADD_REQUEST',
+      entityId: addRequest.id,
+      details: { assetType: 'FURNITURE', assetName: validatedData.assetName },
     });
 
-    return NextResponse.json({ success: true, data: asset, message: 'Furniture asset created successfully' }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: addRequest, message: 'Asset request submitted. Awaiting admin approval.' },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

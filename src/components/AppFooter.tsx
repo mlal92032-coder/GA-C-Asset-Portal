@@ -20,174 +20,71 @@ export default function AppFooter({
   onItemsPerPageChange,
 }: AppFooterProps) {
   const handlePrevious = () => {
-    if (currentPage > 1 && onPageChange) {
-      onPageChange(currentPage - 1);
-    }
+    if (currentPage > 1 && onPageChange) onPageChange(currentPage - 1);
   };
 
   const handleNext = () => {
-    if (currentPage < totalPages && onPageChange) {
-      onPageChange(currentPage + 1);
-    }
-  };
-
-  const handlePageJump = (page: number) => {
-    if (page >= 1 && page <= totalPages && onPageChange) {
-      onPageChange(page);
-    }
-  };
-
-  // Generate page numbers to display (max 7 pages)
-  const getPageNumbers = () => {
-    const pages: (number | undefined)[] = [];
-    const maxVisible = 7;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const startPage = Math.max(1, currentPage - 3);
-      const endPage = Math.min(totalPages, currentPage + 3);
-
-      if (startPage > 1) {
-        pages.push(1);
-        if (startPage > 2) pages.push(-1);
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) pages.push(-1);
-        pages.push(totalPages);
-      }
-    }
-
-    return pages;
+    if (currentPage < totalPages && onPageChange) onPageChange(currentPage + 1);
   };
 
   const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = totalItems > 0 ? Math.min(currentPage * itemsPerPage, totalItems) : 0;
 
   return (
-    <footer className="bg-white border-t border-slate-200/30 px-3 md:px-4 py-1 md:py-1.5 shadow-none">
-      <div className="max-w-full mx-auto">
-        <div className="space-y-1">
-          {/* Top section: Items counter + Page info */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
-            {/* Left: Items info */}
-            <div className="text-xs text-slate-600">
-              {totalItems > 0 ? (
-                <span>
-                  Showing <span className="font-semibold text-slate-900">{startItem}</span> to{' '}
-                  <span className="font-semibold text-slate-900">{endItem}</span> of{' '}
-                  <span className="font-semibold text-slate-900">{totalItems}</span> items
-                </span>
-              ) : (
-                <span className="text-slate-500">No items to display</span>
-              )}
-            </div>
-
-            {/* Right: Page info */}
-            {totalPages > 1 && (
-              <div className="text-xs text-slate-600 text-right md:text-left">
-                Page <span className="font-semibold text-slate-900">{currentPage}</span> of{' '}
-                <span className="font-semibold text-slate-900">{totalPages}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Pagination controls - Always show if more than 1 page */}
-          {totalPages > 1 && (
-            <>
-              <div className="border-t border-slate-200/20"></div>
-              <div className="flex items-center justify-center gap-1 flex-wrap my-1">
-                {/* Previous button */}
-                <button
-                  onClick={handlePrevious}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-300 transition-all font-medium"
-                  title="Previous page"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                {/* Page numbers */}
-                <div className="flex items-center gap-1">
-                  {getPageNumbers().map((page, idx) => {
-                    if (page === -1) {
-                      return (
-                        <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400">
-                          ...
-                        </span>
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => page !== undefined && handlePageJump(page)}
-                        className={`w-9 h-9 rounded-lg font-semibold text-sm transition-all ${
-                          currentPage === page
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md hover:shadow-lg'
-                            : 'border border-slate-300 text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-400'
-                        }`}
-                        aria-label={`Go to page ${page}`}
-                        aria-current={currentPage === page ? 'page' : undefined}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Next button */}
-                <button
-                  onClick={handleNext}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-300 transition-all font-medium"
-                  title="Next page"
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </>
+    <footer className="bg-white border-t border-slate-200 px-3 py-0.5 shadow-none text-xs">
+      <div className="flex items-center justify-between gap-1.5">
+        {/* Left: Items info */}
+        <div className="text-slate-600">
+          {totalItems > 0 ? (
+            <span>
+              {startItem}-{endItem} of {totalItems}
+            </span>
+          ) : (
+            <span className="text-slate-500">No items</span>
           )}
         </div>
 
-        {/* Bottom section: Items per page + copyright */}
-        <div className="mt-1 pt-1 border-t border-slate-200/20">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
-            {/* Left: Items per page dropdown */}
-            {totalItems > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-slate-600">Items per page:</label>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => onItemsPerPageChange?.(parseInt(e.target.value, 10))}
-                  className="px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white text-slate-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                >
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="30">30</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-              </div>
-            )}
-
-            {/* Right: Copyright info */}
-            <div className="flex flex-col md:flex-row gap-2 text-xs text-slate-500">
-              <p>© 2024-2026 SEF Asset Management System</p>
-              <p className="hidden md:inline">|</p>
-              <p>v2.0 Professional | {new Date().toLocaleDateString()}</p>
-            </div>
+        {/* Center: Page controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className="p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed rounded transition-all"
+              title="Previous"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-slate-600 font-medium px-1.5 min-w-fit">
+              {currentPage}/{totalPages}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className="p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed rounded transition-all"
+              title="Next"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-        </div>
+        )}
+
+        {/* Right: Items per page */}
+        {totalItems > 0 && (
+          <div className="flex items-center gap-1">
+            <label className="text-slate-600">Per page:</label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => onItemsPerPageChange?.(parseInt(e.target.value, 10))}
+              className="px-1.5 py-0.5 text-xs border border-slate-300 rounded bg-white text-slate-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option>10</option>
+              <option>20</option>
+              <option>30</option>
+              <option>50</option>
+            </select>
+          </div>
+        )}
       </div>
     </footer>
   );

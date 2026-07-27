@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { requirePermission, createAuditLog, getCurrentUser } from '@/lib/api-auth';
 
 const electronicSchema = z.object({
   assetName: z.string().min(1, 'Asset name is required'),
@@ -95,8 +95,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await requirePermission('electronics', 'create');
-    if (authResult instanceof NextResponse) return authResult;
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // VIEW_USER cannot create
+    if (currentUser.role === 'VIEW_USER') {
+      return NextResponse.json(
+        { success: false, error: 'You do not have permission to create assets' },
+        { status: 403 }
+      );
+    }
 
     const body = await req.json();
     const validatedData = electronicSchema.parse(body);
@@ -125,42 +138,89 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const asset = await prisma.electronicAsset.create({
+    // SUPER_ADMIN creates directly, USER creates approval request
+    if (currentUser.role === 'SUPER_ADMIN') {
+      const asset = await prisma.electronicAsset.create({
+        data: {
+          assetTag: validatedData.assetTag,
+          assetName: validatedData.assetName,
+          imageUrl: validatedData.imageUrl || null,
+          deviceType: validatedData.deviceType || null,
+          brand: validatedData.brand || null,
+          model: validatedData.model || null,
+          serialNumber: validatedData.serialNumber || null,
+          purchaseDate: validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null,
+          companyId: validatedData.companyId || null,
+          manufacturerId: validatedData.manufacturerId || null,
+          locationId: validatedData.locationId || null,
+          assignedUserId: validatedData.assignedUserId || null,
+          condition: validatedData.condition,
+          status: validatedData.status,
+          warrantyEndDate: validatedData.warrantyEndDate ? new Date(validatedData.warrantyEndDate) : null,
+          lastMaintenanceDate: validatedData.lastMaintenanceDate ? new Date(validatedData.lastMaintenanceDate) : null,
+          remarks: validatedData.remarks || null,
+        },
+        include: {
+          company: { select: { id: true, companyName: true } },
+          manufacturer: { select: { id: true, manufacturerName: true } },
+          location: { select: { id: true, locationName: true } },
+          assignedUser: { select: { id: true, fullName: true } },
+        },
+      });
+
+      await createAuditLog({
+        action: 'CREATE',
+        entity: 'ELECTRONIC',
+        entityId: asset.id,
+        details: validatedData,
+      });
+
+      return NextResponse.json({ success: true, data: asset, message: 'Electronic asset created successfully' }, { status: 201 });
+    }
+
+    // Regular USER - create approval request instead
+    const addRequest = await prisma.assetAddRequest.create({
       data: {
-        assetTag: validatedData.assetTag,
-        assetName: validatedData.assetName,
-        imageUrl: validatedData.imageUrl || null,
-        deviceType: validatedData.deviceType || null,
-        brand: validatedData.brand || null,
-        model: validatedData.model || null,
-        serialNumber: validatedData.serialNumber || null,
-        purchaseDate: validatedData.purchaseDate ? new Date(validatedData.purchaseDate) : null,
-        companyId: validatedData.companyId || null,
-        manufacturerId: validatedData.manufacturerId || null,
-        locationId: validatedData.locationId || null,
-        assignedUserId: validatedData.assignedUserId || null,
-        condition: validatedData.condition,
-        status: validatedData.status,
-        warrantyEndDate: validatedData.warrantyEndDate ? new Date(validatedData.warrantyEndDate) : null,
-        lastMaintenanceDate: validatedData.lastMaintenanceDate ? new Date(validatedData.lastMaintenanceDate) : null,
-        remarks: validatedData.remarks || null,
+        assetType: 'ELECTRONIC',
+        assetData: JSON.stringify(validatedData),
+        requestedById: currentUser.id,
+        status: 'PENDING',
       },
       include: {
-        company: { select: { id: true, companyName: true } },
-        manufacturer: { select: { id: true, manufacturerName: true } },
-        location: { select: { id: true, locationName: true } },
-        assignedUser: { select: { id: true, fullName: true } },
+        requestedBy: {
+          select: { id: true, fullName: true, email: true, role: true },
+        },
       },
     });
+
+    // Notify super admin
+    const superAdmin = await prisma.user.findFirst({
+      where: { role: 'SUPER_ADMIN' },
+    });
+
+    if (superAdmin) {
+      await prisma.notification.create({
+        data: {
+          userId: superAdmin.id,
+          title: 'New Electronic Asset Request',
+          message: `${currentUser.fullName} requested to add: ${validatedData.assetName}`,
+          type: 'INFO',
+          link: `/admin/requests`,
+        },
+      });
+    }
 
     await createAuditLog({
       action: 'CREATE',
-      entity: 'ELECTRONIC',
-      entityId: asset.id,
-      details: validatedData,
+      entity: 'ASSET_ADD_REQUEST',
+      entityId: addRequest.id,
+      details: { assetType: 'ELECTRONIC', assetName: validatedData.assetName },
     });
 
-    return NextResponse.json({ success: true, data: asset, message: 'Electronic asset created successfully' }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: addRequest, message: 'Asset request submitted. Awaiting admin approval.' },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

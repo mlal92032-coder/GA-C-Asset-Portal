@@ -418,7 +418,7 @@ export default function FurnitureDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-pulse">
+        <div className="space-y-2 animate-pulse">
           <div className="h-8 bg-slate-200 w-1/4" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
@@ -434,12 +434,12 @@ export default function FurnitureDetailPage() {
   if (error || !asset) {
     return (
       <DashboardLayout>
-        <div className="flex flex-col items-center justify-center py-24">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mb-6 shadow-lg">
+        <div className="flex flex-col items-center justify-center py-14">
+          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mb-2 shadow-lg">
             <AlertTriangle className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Asset Not Found</h2>
-          <p className="text-slate-500 mb-6 text-center max-w-md">
+          <p className="text-slate-500 mb-2 text-center max-w-md">
             {error || 'The asset you\'re looking for doesn\'t exist or has been removed.'}
           </p>
           <button
@@ -456,10 +456,10 @@ export default function FurnitureDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
       {/* Toast Message */}
       {qrMessage && (
-        <div className={`mb-6 p-4 rounded-lg border font-semibold flex items-center gap-3 ${
+        <div className={`mb-2 p-4 rounded-lg border font-semibold flex items-center gap-2 ${
           qrMessage.type === 'success'
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
             : 'bg-red-50 border-red-200 text-red-800'
@@ -468,10 +468,10 @@ export default function FurnitureDetailPage() {
         </div>
       )}
       {/* Header with Image */}
-      <div className="mb-8">
+      <div className="mb-2">
         {/* Asset Image */}
         {(buildImageUrl(asset.imageUrl) && !imageError) && (
-          <div className="mb-4">
+          <div className="mb-2">
             <img
               src={buildImageUrl(asset.imageUrl)!}
               alt={asset.assetName}
@@ -481,7 +481,7 @@ export default function FurnitureDetailPage() {
           </div>
         )}
         {(!buildImageUrl(asset.imageUrl) || imageError) && (
-          <div className="mb-4">
+          <div className="mb-2">
             <div className="w-40 h-40 bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 shadow-lg rounded-lg flex items-center justify-center">
               <Package className="w-16 h-16 text-slate-400" />
             </div>
@@ -497,7 +497,7 @@ export default function FurnitureDetailPage() {
             </button>
             <div>
               <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{asset.assetName}</h1>
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-2 mt-1">
                 <span className="font-mono text-sm text-slate-600 bg-slate-100 px-3 py-1">
                   {asset.assetTag || 'No tag assigned'}
                 </span>
@@ -511,7 +511,7 @@ export default function FurnitureDetailPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {isCheckedOut && checkoutId ? (
               <button
                 onClick={() => setShowCheckin(true)}
@@ -541,10 +541,10 @@ export default function FurnitureDetailPage() {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-2">
         {/* Status */}
         <div className="bg-white border border-slate-200 p-6 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div className={`w-10 h-10 bg-gradient-to-br ${getStatusColor(asset.status)} flex items-center justify-center`}>
               <Clock className="w-5 h-5 text-white" />
             </div>
@@ -555,7 +555,7 @@ export default function FurnitureDetailPage() {
 
         {/* Condition */}
         <div className="bg-white border border-slate-200 p-6 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div className={`w-10 h-10 bg-gradient-to-br ${getConditionColor(asset.condition)} flex items-center justify-center`}>
               {getConditionIcon(asset.condition)}
             </div>
@@ -566,7 +566,7 @@ export default function FurnitureDetailPage() {
 
         {/* Current Value */}
         <div className="bg-white border border-slate-200 p-6 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
               <TrendingDown className="w-5 h-5 text-white" />
             </div>
@@ -579,7 +579,7 @@ export default function FurnitureDetailPage() {
 
         {/* Purchase Price */}
         <div className="bg-white border border-slate-200 p-6 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
@@ -595,7 +595,7 @@ export default function FurnitureDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Details */}
         <div className="lg:col-span-3 bg-white border border-slate-200 p-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Asset Details</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Asset Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="text-xs text-slate-500 mb-1 block">Furniture Type</label>
@@ -606,35 +606,35 @@ export default function FurnitureDetailPage() {
               <p className="font-semibold text-slate-900">{asset.material || '-'}</p>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1.5">
                 <Building2 className="w-3 h-3" />
                 Office
               </label>
               <p className="font-semibold text-slate-900">{asset.company?.companyName || '-'}</p>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1.5">
                 <Shield className="w-3 h-3" />
                 Manufacturer
               </label>
               <p className="font-semibold text-slate-900">{asset.manufacturer?.manufacturerName || '-'}</p>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1.5">
                 <MapPin className="w-3 h-3" />
                 Location
               </label>
               <p className="font-semibold text-slate-900">{asset.location?.locationName || '-'}</p>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1.5">
                 <Package className="w-3 h-3" />
                 Serial Number
               </label>
               <p className="font-semibold text-slate-900 font-mono">{asset.serialNumber || '-'}</p>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1.5">
                 <Calendar className="w-3 h-3" />
                 Purchase Date
               </label>
@@ -660,12 +660,12 @@ export default function FurnitureDetailPage() {
           {/* Employee Assignment Card */}
           {asset.assignedUser ? (
             <div className="mt-6 pt-6 border-t border-slate-200">
-              <label className="text-xs text-slate-500 mb-3 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-2 block flex items-center gap-1.5">
                 <User className="w-3 h-3" />
                 Assigned Employee
               </label>
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4">
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs text-slate-600 mb-1">Name</p>
@@ -676,7 +676,7 @@ export default function FurnitureDetailPage() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-xs text-slate-600 mb-1">Email</p>
                       <p className="text-sm font-medium text-slate-800">{asset.assignedUser.email}</p>
@@ -699,7 +699,7 @@ export default function FurnitureDetailPage() {
             </div>
           ) : (
             <div className="mt-6 pt-6 border-t border-slate-200">
-              <label className="text-xs text-slate-500 mb-3 block flex items-center gap-2">
+              <label className="text-xs text-slate-500 mb-2 block flex items-center gap-1.5">
                 <User className="w-3 h-3" />
                 Assigned Employee
               </label>
@@ -712,13 +712,13 @@ export default function FurnitureDetailPage() {
 
         {/* QR Code */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 flex flex-col items-center justify-center">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-1.5 mb-2">
             <QrCode className="w-5 h-5 text-blue-600" />
             <h3 className="text-sm font-bold text-slate-900">QR Code</h3>
           </div>
           {asset.assetTag ? (
             <>
-              <div className="bg-white p-4 rounded border border-slate-200 mb-4">
+              <div className="bg-white p-4 rounded border border-slate-200 mb-2">
                 <QRCode
                   asset={{
                     id: asset.id,
@@ -732,17 +732,17 @@ export default function FurnitureDetailPage() {
                   size={150}
                 />
               </div>
-              <div className="flex gap-2 w-full">
+              <div className="flex gap-1.5 w-full">
                 <button
                   onClick={handleDownloadQR}
-                  className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-700 transition-all flex items-center justify-center gap-1.5"
                 >
                   <Download className="w-4 h-4" />
                   Download
                 </button>
                 <button
                   onClick={handlePrintQR}
-                  className="flex-1 px-3 py-2 bg-slate-600 text-white text-xs font-semibold rounded hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-3 py-1 bg-slate-600 text-white text-xs font-semibold rounded hover:bg-slate-700 transition-all flex items-center justify-center gap-1.5"
                 >
                   🖨️ Print
                 </button>

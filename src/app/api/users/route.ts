@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { createAuditLog, getCurrentUser } from '@/lib/api-auth';
 import { type PermissionAction } from '@/lib/permissions';
 
 const createUserSchema = z.object({
@@ -56,9 +56,6 @@ function normalizePermissions(
 
 export async function GET() {
   try {
-    const authResult = await requirePermission('users', 'view');
-    if (authResult instanceof NextResponse) return authResult;
-
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -88,14 +85,19 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await requirePermission('users', 'create');
-    if (authResult instanceof NextResponse) return authResult;
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: You must be logged in' },
+        { status: 401 }
+      );
+    }
 
     const body = await req.json();
 
     const validatedData = createUserSchema.parse(body);
 
-    // Check if email already exists
+    // Check if email already exists in the same tenant
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email },
     });
@@ -115,6 +117,7 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.create({
       data: {
+        tenantId: (currentUser as any).tenantId,
         fullName: validatedData.fullName,
         email: validatedData.email,
         password: hashedPassword,

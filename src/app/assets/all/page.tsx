@@ -238,7 +238,7 @@ export default function AllAssetsPage() {
       onPageChange={setCurrentPage}
       onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 py-1 overflow-x-hidden">
       <PageHeader
         title="All Assets"
         subtitle="View and manage all assets across all categories"
@@ -257,7 +257,7 @@ export default function AllAssetsPage() {
           setCurrentPage(1);
         }}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-0.5">Type</label>
             <select
@@ -399,7 +399,7 @@ export default function AllAssetsPage() {
 
         {filteredAssets.length === 0 && (
           <div className="empty-state border-t border-slate-100">
-            <Package className="w-20 h-20 text-slate-300 mb-4" />
+            <Package className="w-20 h-20 text-slate-300 mb-2" />
             <p className="empty-state-title text-lg font-semibold text-slate-600">No assets found</p>
             <p className="empty-state-text mt-1">Add assets from their respective pages</p>
           </div>
@@ -409,3 +409,4 @@ export default function AllAssetsPage() {
     </DashboardLayout>
   );
 }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AlertCircle, Package } from 'lucide-react';
@@ -362,3 +362,4 @@ export default function SparePartsModal({
     </div>
   );
 }
+

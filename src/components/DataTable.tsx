@@ -133,8 +133,8 @@ export default function DataTable<T extends { id?: string | number }>({
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full text-xs whitespace-nowrap">
           <thead className="sticky top-0 z-20 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
             <tr>
               {selectable && (

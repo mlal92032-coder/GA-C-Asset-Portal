@@ -80,40 +80,25 @@ export default function PageHeader({
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 shadow-2xl border border-white/50 relative overflow-visible backdrop-blur-xl" style={gradientStyle}>
-      {/* Premium background blur layers */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/8 to-white/15 backdrop-blur-lg" />
+    <div className="w-full max-w-full px-1.5 sm:px-3 lg:px-4 shadow-md border-b border-white/20 relative overflow-hidden" style={gradientStyle}>
 
-      {/* Sophisticated depth layers */}
-      {!isLightGradient && (
-        <>
-          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-400/12 to-transparent rounded-full blur-3xl -translate-x-32 -translate-y-32" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-indigo-400/12 to-transparent rounded-full blur-3xl translate-x-32 translate-y-32" />
-          <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-br from-blue-500/8 via-indigo-500/5 to-transparent rounded-full blur-3xl" />
-        </>
-      )}
-
-      {/* Premium accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-
-      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5">
+      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 px-1.5 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-3">
           <div className="flex-1">
-            <div className="flex items-start gap-4 mb-2">
-              <div className="w-14 h-14 bg-white/20 shadow-lg flex items-center justify-center rounded-xl flex-shrink-0 border border-white/30 backdrop-blur-md">
-                <Icon className={`w-7 h-7 ${iconColor}`} />
+            <div className="flex items-start gap-1.5 mb-1">
+              <div className="w-10 h-10 bg-white/20 shadow-lg flex items-center justify-center rounded-lg flex-shrink-0 border border-white/30 backdrop-blur-md">
+                <Icon className={`w-5 h-5 ${iconColor}`} />
               </div>
               <div className="flex-1 min-w-0">
                 {badge && (
-                  <span className={`inline-block px-3 py-1 text-xs font-bold ${badgeBackground} ${badgeTextColor} rounded-full mb-2 tracking-wider shadow-md backdrop-blur-sm`}>
+                  <span className={`inline-block px-1.5 py-0.5 text-xs font-bold ${badgeBackground} ${badgeTextColor} rounded-full mb-1 tracking-wider shadow-md backdrop-blur-sm`}>
                     {badge}
                   </span>
                 )}
-                <h1 className={`text-3xl sm:text-4xl font-black ${titleTextColor} tracking-tight drop-shadow-lg`}>
+                <h1 className={`text-xl sm:text-2xl font-black ${titleTextColor} tracking-tight drop-shadow-lg`}>
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className={`${subtitleTextColor} text-sm mt-2 font-semibold`}>
+                  <p className={`${subtitleTextColor} text-xs mt-1 font-semibold`}>
                     {subtitle}
                   </p>
                 )}
@@ -121,15 +106,15 @@ export default function PageHeader({
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5">
             {stats && stats.length > 0 && (
-              <div className="flex gap-6">
+              <div className="flex gap-2">
                 {stats.map((stat, index) => (
                   <div key={index} className="text-right">
-                    <p className={`text-3xl sm:text-4xl font-bold ${statValueColor}`}>
+                    <p className={`text-xl sm:text-2xl font-bold ${statValueColor}`}>
                       {stat.value}
                     </p>
-                    <p className={`text-xs sm:text-sm ${statLabelColor}`}>
+                    <p className={`text-xs ${statLabelColor}`}>
                       {stat.label}
                     </p>
                   </div>
@@ -138,7 +123,7 @@ export default function PageHeader({
             )}
 
             {actions && (
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {actions}
               </div>
             )}

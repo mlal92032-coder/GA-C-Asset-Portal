@@ -131,6 +131,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Create notification if nextDueDate is set
+    if (validatedData.nextDueDate) {
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          title: 'Maintenance Scheduled',
+          message: `Maintenance for asset has been scheduled for ${new Date(validatedData.nextDueDate).toLocaleDateString()}. ${validatedData.description}`,
+          type: 'INFO',
+        },
+      }).catch(err => {
+        console.warn('Failed to create maintenance notification:', err);
+      });
+    }
+
     // Create audit log
     await prisma.auditLog.create({
       data: {

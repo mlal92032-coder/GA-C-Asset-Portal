@@ -14,7 +14,7 @@ const formFields: FormField[] = [
 export default function OfficesPage() {
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
       <CrudPage
         title="Offices"
         subtitle="Manage office records"

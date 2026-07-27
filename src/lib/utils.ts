@@ -5,17 +5,15 @@
  */
 
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
 /**
- * Merge Tailwind CSS class names intelligently
- * Handles conflicts and removes duplicates
+ * Merge class names
  *
  * @example
- * cn('px-2 py-1', 'px-3') => 'py-1 px-3'
+ * cn('px-2 py-1', 'px-3') => 'px-2 py-1 px-3'
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return clsx(inputs);
 }
 
 /**

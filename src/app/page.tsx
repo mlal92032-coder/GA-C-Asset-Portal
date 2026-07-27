@@ -26,7 +26,7 @@ export default function HomePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="text-center">
-          <div className="spinner mx-auto mb-4" />
+          <div className="spinner mx-auto mb-2" />
           <p className="text-sm text-slate-500 font-medium">Loading...</p>
         </div>
       </div>

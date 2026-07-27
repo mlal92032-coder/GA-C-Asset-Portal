@@ -92,7 +92,7 @@ export default function EmployeesPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center"><div className="spinner mx-auto mb-3" /><p className="text-sm text-slate-500">Loading employees...</p></div>
+          <div className="text-center"><div className="spinner mx-auto mb-2" /><p className="text-sm text-slate-500">Loading employees...</p></div>
         </div>
       </DashboardLayout>
     );
@@ -100,7 +100,7 @@ export default function EmployeesPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
       <PageHeader
         title="Employees & Assets"
         subtitle="View employees and their assigned assets"
@@ -120,7 +120,7 @@ export default function EmployeesPage() {
         hasActiveFilters={!!(search || filterStatus || filterDepartment || filterOffice)}
         onClearFilters={() => { setSearch(''); setFilterStatus(''); setFilterDepartment(''); setFilterOffice(''); }}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-0.5">Search</label>
             <div className="relative">
@@ -158,22 +158,22 @@ export default function EmployeesPage() {
         {employees.map((employee, empIdx) => (
           <div key={employee.id} className="card overflow-hidden">
             <div className="p-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors" onClick={() => toggleEmployee(employee.id)}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5.5 flex-1 min-w-0">
                   <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-xs flex-shrink-0">{empIdx + 1}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-bold text-slate-900 truncate">{empIdx + 1}. {employee.fullName}</span>
                       <span className={`badge text-xs ${employee.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}`}>{employee.status === 'ACTIVE' ? '✓ Active' : '✗ Inactive'}</span>
                       {employee.role === 'SUPER_ADMIN' && <span className="badge badge-blue text-xs">Admin</span>}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-600 mt-1">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 mt-1">
                       <span><strong>Dept:</strong> {employee.department || '-'}</span>
                       <span><strong>Designation:</strong> {employee.designation || '-'}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <div className="text-right">
                     <p className="text-lg font-bold text-blue-600">{employee.totalAssets}</p>
                     <p className="text-xs text-slate-400">Assets</p>
@@ -186,12 +186,12 @@ export default function EmployeesPage() {
             {expandedEmployee === employee.id && (
               <div className="border-t-2 border-blue-200 bg-gradient-to-b from-blue-50/50 to-white p-6">
                 {employee.totalAssets === 0 ? (
-                  <div className="text-center py-8"><AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-sm text-slate-500">No assets assigned</p></div>
+                  <div className="text-center py-8"><AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">No assets assigned</p></div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-2">
                     {employee.furnitureAssets.length > 0 && (
                       <div>
-                        <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-purple-300">
+                        <div className="flex items-center gap-1.5 mb-2 pb-3 border-b-2 border-purple-300">
                           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <Armchair className="w-4 h-4 text-white" />
                           </div>
@@ -201,15 +201,15 @@ export default function EmployeesPage() {
                         <div className="space-y-2.5">
                           {employee.furnitureAssets.map((a) => (
                             <div key={a.id} onClick={() => router.push(`/assets/furniture/${a.id}`)} className="bg-gradient-to-r from-white to-purple-50 p-4 rounded-lg border-2 border-purple-200 hover:border-purple-500 hover:shadow-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all cursor-pointer">
-                              <div className="flex items-start gap-3">
+                              <div className="flex items-start gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2 mb-3">
+                                  <div className="flex items-start justify-between gap-1.5 mb-2">
                                     <div>
                                       <p className="text-sm font-bold text-slate-900">{a.assetName}</p>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">{getConditionBadge(a.condition)}{getStatusBadge(a.status)}</div>
                                   </div>
-                                  <div className="grid grid-cols-3 gap-3 text-xs mb-2">
+                                  <div className="grid grid-cols-3 gap-2 text-xs mb-2">
                                     <div>
                                       <p className="text-slate-500 font-semibold">Serial No.</p>
                                       <p className="text-slate-800 font-mono font-bold">{a.serialNumber || '-'}</p>
@@ -233,7 +233,7 @@ export default function EmployeesPage() {
                     )}
                     {employee.electronicAssets.length > 0 && (
                       <div>
-                        <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-blue-300">
+                        <div className="flex items-center gap-1.5 mb-2 pb-3 border-b-2 border-blue-300">
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                             <Monitor className="w-4 h-4 text-white" />
                           </div>
@@ -243,16 +243,16 @@ export default function EmployeesPage() {
                         <div className="space-y-2.5">
                           {employee.electronicAssets.map((a) => (
                             <div key={a.id} onClick={() => router.push(`/assets/electronics/${a.id}`)} className="bg-gradient-to-r from-white to-blue-50 p-4 rounded-lg border-2 border-blue-200 hover:border-blue-500 hover:shadow-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all cursor-pointer">
-                              <div className="flex items-start gap-3">
+                              <div className="flex items-start gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2 mb-3">
+                                  <div className="flex items-start justify-between gap-1.5 mb-2">
                                     <div>
                                       <p className="text-sm font-bold text-slate-900">{a.assetName}</p>
                                       {(a.brand || a.model) && <p className="text-xs text-slate-500 mt-0.5">{a.brand} {a.model}</p>}
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">{getConditionBadge(a.condition)}{getStatusBadge(a.status)}</div>
                                   </div>
-                                  <div className="grid grid-cols-3 gap-3 text-xs mb-2">
+                                  <div className="grid grid-cols-3 gap-2 text-xs mb-2">
                                     <div>
                                       <p className="text-slate-500 font-semibold">Serial No.</p>
                                       <p className="text-slate-800 font-mono font-bold">{a.serialNumber || '-'}</p>
@@ -276,7 +276,7 @@ export default function EmployeesPage() {
                     )}
                     {employee.vehicleAssets.length > 0 && (
                       <div>
-                        <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-emerald-300">
+                        <div className="flex items-center gap-1.5 mb-2 pb-3 border-b-2 border-emerald-300">
                           <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
                             <Car className="w-4 h-4 text-white" />
                           </div>
@@ -286,16 +286,16 @@ export default function EmployeesPage() {
                         <div className="space-y-2.5">
                           {employee.vehicleAssets.map((a) => (
                             <div key={a.id} onClick={() => router.push(`/assets/vehicles/${a.id}`)} className="bg-gradient-to-r from-white to-emerald-50 p-4 rounded-lg border-2 border-emerald-200 hover:border-emerald-500 hover:shadow-lg hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100 transition-all cursor-pointer">
-                              <div className="flex items-start gap-3">
+                              <div className="flex items-start gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2 mb-3">
+                                  <div className="flex items-start justify-between gap-1.5 mb-2">
                                     <div>
                                       <p className="text-sm font-bold text-slate-900">{a.assetName}</p>
                                       {(a.brand || a.model) && <p className="text-xs text-slate-500 mt-0.5">{a.brand} {a.model}</p>}
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">{getConditionBadge(a.condition)}{getStatusBadge(a.status)}</div>
                                   </div>
-                                  <div className="grid grid-cols-4 gap-3 text-xs mb-2">
+                                  <div className="grid grid-cols-4 gap-2 text-xs mb-2">
                                     <div>
                                       <p className="text-slate-500 font-semibold">Serial No.</p>
                                       <p className="text-slate-800 font-mono font-bold">{a.serialNumber || '-'}</p>
@@ -331,7 +331,7 @@ export default function EmployeesPage() {
 
       {employees.length === 0 && (
         <div className="card p-12 text-center">
-          <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
           <p className="text-base font-medium text-slate-600 mb-1">No employees found</p>
           <p className="text-sm text-slate-400">Try adjusting your search or filters</p>
         </div>

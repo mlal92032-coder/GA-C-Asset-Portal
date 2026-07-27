@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import AppFooter from '@/components/AppFooter';
-import DashboardHeader from '@/components/DashboardHeader';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -92,13 +91,7 @@ export default function DashboardLayout({
         </AnimatePresence>
 
         {/* RIGHT SIDE - Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0 h-screen">
-          {/* Dashboard Header - Blue gradient with title and actions */}
-          <DashboardHeader
-            onMenuClick={() => setMobileOpen(true)}
-            onManageClick={() => {}}
-          />
-
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 h-screen w-full overflow-x-hidden">
           {/* Main Content */}
           <main className="flex-1 overflow-auto">{children}</main>
 

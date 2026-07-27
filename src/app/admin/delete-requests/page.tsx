@@ -86,30 +86,27 @@ export default function DeleteRequestsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-      <PageHeader
-        title="Delete Requests"
-        subtitle="Review and manage asset deletion requests"
-        icon={Trash2}
-        badge="Administration"
-        gradientFrom="from-rose-100"
-        gradientTo="to-red-100"
-        iconColor="text-rose-600"
-        stats={[
-          { label: 'Total Requests', value: requests.length },
-          { label: 'Pending', value: pendingCount },
-        ]}
-      />
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
+        <PageHeader
+          title="Delete Requests"
+          subtitle="Review and approve asset deletion requests"
+          icon={Trash2}
+          badge="Administration"
+          gradientFrom="from-red-100"
+          gradientTo="to-pink-100"
+          iconColor="text-red-600"
+          stats={[{ label: 'Pending', value: requests.filter(r => r.status === 'PENDING').length }]}
+        />
 
       {/* Table */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-24">
+          <div className="flex items-center justify-center py-14">
             <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent" />
           </div>
         ) : requests.length === 0 ? (
-          <div className="empty-state py-24">
-            <AlertTriangle className="w-20 h-20 text-slate-300 mb-4 mx-auto" />
+          <div className="empty-state py-14">
+            <AlertTriangle className="w-20 h-20 text-slate-300 mb-2 mx-auto" />
             <p className="empty-state-title text-lg font-semibold text-slate-600">No delete requests</p>
             <p className="empty-state-text mt-1">All assets are in good standing</p>
           </div>
@@ -135,7 +132,7 @@ export default function DeleteRequestsPage() {
                       <span className="badge badge-blue">{request.assetType}</span>
                     </td>
                     <td>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <User className="w-4 h-4 text-slate-400" />
                         <div>
                           <p className="font-medium text-sm">{request.requestedBy.fullName}</p>
@@ -155,7 +152,7 @@ export default function DeleteRequestsPage() {
                     </td>
                     <td>
                       {request.status === 'PENDING' ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleReview(request.id, 'APPROVE')}
                             disabled={processing === request.id}

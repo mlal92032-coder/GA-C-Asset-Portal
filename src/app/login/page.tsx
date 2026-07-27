@@ -131,7 +131,7 @@ export default function LoginPage() {
                         scale: [1, 1.1, 1]
                       }}
                       transition={{ duration: 3, repeat: Infinity }}
-                      className="text-8xl mb-6 drop-shadow-lg"
+                      className="text-8xl mb-2 drop-shadow-lg"
                     >
                       {slides[currentSlide].icon === 'student' && '📚'}
                       {slides[currentSlide].icon === 'shield' && '🛡️'}
@@ -149,7 +149,7 @@ export default function LoginPage() {
                   transition={{ delay: 0.4, duration: 0.6 }}
                 >
                   <motion.h2
-                    className="text-4xl font-black text-transparent bg-clip-text mb-3"
+                    className="text-4xl font-black text-transparent bg-clip-text mb-2"
                     style={{
                       backgroundImage: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #6366F1 100%)',
                       letterSpacing: '-0.5px'
@@ -187,7 +187,7 @@ export default function LoginPage() {
             </motion.button>
 
             {/* Slide Indicators */}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {slides.map((_, index) => (
                 <motion.button
                   key={index}
@@ -355,10 +355,10 @@ export default function LoginPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-10 text-center"
           >
-            <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight whitespace-nowrap">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight whitespace-nowrap">
               Sindh Education Foundation
             </h1>
-            <div className="mb-6">
+            <div className="mb-2">
               <p className="text-lg font-semibold text-gray-600 mb-2">Government of Sindh</p>
               <p className="text-2xl font-bold text-blue-700">GA&C Asset Portal</p>
             </div>
@@ -371,9 +371,9 @@ export default function LoginPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mb-6"
+                className="mb-2"
               >
-                <div className="flex items-center gap-2.5 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-lg text-sm">
+                <div className="flex items-center gap-1.5.5 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-lg text-sm">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -382,7 +382,7 @@ export default function LoginPage() {
           </AnimatePresence>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-2">
             {/* Email Field */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -451,7 +451,7 @@ export default function LoginPage() {
                 className="w-full py-3 px-6 bg-blue-600 text-white font-bold text-base rounded-lg
                            transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed
                            hover:bg-blue-700 shadow-lg hover:shadow-xl
-                           flex items-center justify-center gap-2"
+                           flex items-center justify-center gap-1.5"
               >
                 {loading ? (
                   <>

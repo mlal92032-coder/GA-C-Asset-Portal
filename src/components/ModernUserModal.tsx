@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -126,7 +126,6 @@ export default function ModernUserModal({ isOpen, onClose, onSave, editingUser, 
         phone: validatedData.phone || null,
         permissions: Object.keys(modulePermissions).length > 0 ? modulePermissions : null,
       });
-      success(editingUser ? 'User updated successfully' : 'User created successfully');
       reset();
     } catch (err: any) {
       if (err instanceof z.ZodError) {

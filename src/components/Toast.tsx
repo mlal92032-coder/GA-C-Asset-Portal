@@ -1,128 +1,94 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertCircle, XCircle, Info, X } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface ToastProps {
+  id: string;
+  type: ToastType;
+  message: string;
+  duration?: number;
+  onClose?: () => void;
+  action?: { label: string; onClick: () => void };
+}
 
 export interface Toast {
   id: string;
   type: ToastType;
   message: string;
   duration?: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
+  action?: { label: string; onClick: () => void };
 }
 
-interface ToastProps extends Toast {
-  onClose: (id: string) => void;
-}
-
-const toastConfig = {
-  success: {
-    icon: CheckCircle,
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    text: 'text-emerald-900',
-    progress: 'bg-emerald-500',
-  },
-  error: {
-    icon: XCircle,
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    text: 'text-red-900',
-    progress: 'bg-red-500',
-  },
-  warning: {
-    icon: AlertCircle,
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    text: 'text-amber-900',
-    progress: 'bg-amber-500',
-  },
-  info: {
-    icon: Info,
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    text: 'text-blue-900',
-    progress: 'bg-blue-500',
-  },
+const iconMap = {
+  success: CheckCircle,
+  error: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
 };
 
-export function ToastItem({ id, type, message, duration = 4000, onClose, action }: ToastProps) {
-  const config = toastConfig[type];
-  const Icon = config.icon;
+const colorMap = {
+  success: 'bg-green-50 border-green-200 text-green-800',
+  error: 'bg-red-50 border-red-200 text-red-800',
+  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+  info: 'bg-blue-50 border-blue-200 text-blue-800',
+};
+
+export const Toast: React.FC<ToastProps & { onClose: () => void }> = ({
+  id,
+  type,
+  message,
+  duration = 4000,
+  action,
+  onClose,
+}) => {
+  useEffect(() => {
+    if (duration > 0) {
+      const timer = setTimeout(onClose, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [duration, onClose]);
+
+  const Icon = iconMap[type];
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, x: 400, y: 0 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      exit={{ opacity: 0, x: 400, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`${config.bg} ${config.border} ${config.text} border rounded-lg shadow-lg p-4 mb-3 max-w-md`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${colorMap[type]} shadow-sm`}
     >
-      <div className="flex items-start gap-3">
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring' }}>
-          <Icon size={20} className="flex-shrink-0 mt-0.5" />
-        </motion.div>
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">{message}</p>
-          {action && (
-            <motion.button
-              onClick={action.onClick}
-              className="text-xs font-semibold mt-2 underline hover:opacity-80 transition-opacity"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {action.label}
-            </motion.button>
-          )}
-        </div>
-
-        <motion.button
-          onClick={() => onClose(id)}
-          className="text-slate-400 hover:text-slate-600 flex-shrink-0 transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          aria-label="Dismiss notification"
+      <Icon className="w-5 h-5 flex-shrink-0" />
+      <span className="flex-1">{message}</span>
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="text-sm font-semibold underline hover:opacity-75"
         >
-          <X size={18} />
-        </motion.button>
-      </div>
-
-      {/* Progress bar */}
-      {duration && (
-        <motion.div
-          className={`${config.progress} h-0.5 mt-3 rounded-full`}
-          initial={{ width: '100%' }}
-          animate={{ width: '0%' }}
-          transition={{ duration: duration / 1000, ease: 'linear' }}
-          onAnimationComplete={() => onClose(id)}
-        />
+          {action.label}
+        </button>
       )}
+      <button
+        onClick={onClose}
+        className="flex-shrink-0 opacity-50 hover:opacity-100"
+      >
+        <X className="w-5 h-5" />
+      </button>
     </motion.div>
   );
-}
+};
 
-interface ToastContainerProps {
-  toasts: Toast[];
-  onClose: (id: string) => void;
-}
-
-export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
-  return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-[9999] pointer-events-none">
-      <div className="pointer-events-auto">
-        <AnimatePresence>
-          {toasts.map((toast) => (
-            <ToastItem key={toast.id} {...toast} onClose={onClose} />
-          ))}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
+export const ToastContainer: React.FC<{ toasts: ToastProps[] }> = ({ toasts }) => (
+  <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+    <AnimatePresence>
+      {toasts.map((toast) => (
+        <div key={toast.id} className="pointer-events-auto">
+          {/* Toasts are rendered through context */}
+        </div>
+      ))}
+    </AnimatePresence>
+  </div>
+);

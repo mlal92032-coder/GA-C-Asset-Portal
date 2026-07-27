@@ -20,40 +20,9 @@
 
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const modalVariants = cva(
-  cn(
-    'relative bg-white rounded-2xl shadow-2xl',
-    'border border-slate-100',
-    'max-w-lg mx-auto w-full max-h-[90vh] overflow-hidden',
-    'flex flex-col'
-  ),
-  {
-    variants: {
-      variant: {
-        dialog: 'max-w-2xl',
-        alert: 'max-w-sm',
-        confirm: 'max-w-sm',
-        drawer: 'fixed inset-y-0 right-0 max-w-md rounded-none max-h-screen',
-      },
-      size: {
-        sm: 'max-w-sm',
-        md: 'max-w-md',
-        lg: 'max-w-lg',
-        xl: 'max-w-2xl',
-        full: 'max-w-4xl',
-      },
-    },
-    defaultVariants: {
-      variant: 'dialog',
-      size: 'md',
-    },
-  }
-);
-
-interface ModalProps extends VariantProps<typeof modalVariants> {
+interface ModalProps {
   /** Whether modal is open */
   isOpen: boolean;
   /** Callback when modal should close */
@@ -76,6 +45,10 @@ interface ModalProps extends VariantProps<typeof modalVariants> {
   backdropClassName?: string;
   /** On animation complete */
   onAnimationComplete?: () => void;
+  /** Modal variant */
+  variant?: 'dialog' | 'alert' | 'confirm' | 'drawer';
+  /** Modal size */
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
 /**
@@ -172,8 +145,16 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
                 key="modal"
                 ref={modalRef}
                 className={cn(
-                  modalVariants({ variant, size }),
-                  'pointer-events-auto',
+                  'relative bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-h-[90vh] overflow-hidden flex flex-col mx-auto pointer-events-auto',
+                  variant === 'dialog' && 'max-w-2xl',
+                  variant === 'alert' && 'max-w-sm',
+                  variant === 'confirm' && 'max-w-sm',
+                  variant === 'drawer' && 'fixed inset-y-0 right-0 max-w-md rounded-none max-h-screen',
+                  size === 'sm' && 'max-w-sm',
+                  size === 'md' && 'max-w-md',
+                  size === 'lg' && 'max-w-lg',
+                  size === 'xl' && 'max-w-2xl',
+                  size === 'full' && 'max-w-4xl',
                   className
                 )}
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}

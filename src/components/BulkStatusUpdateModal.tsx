@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import Modal from './Modal';
-import { Button } from './Button';
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
 import type { Location, User } from '@/types';
 
 interface BulkStatusUpdateModalProps {
@@ -156,3 +156,4 @@ export default function BulkStatusUpdateModal({
     </Modal>
   );
 }
+

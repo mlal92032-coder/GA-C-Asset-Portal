@@ -1,11 +1,11 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import axios from 'axios'
-import { Button } from '@/components/Button'
+import { Button } from '@/components/ui'
 import { toast } from 'sonner'
 import {
   Loader2,
@@ -146,15 +146,15 @@ export default function RolesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
             <Shield className="h-8 w-8 text-blue-600" />
             <h1 className="text-4xl font-bold">Role Management</h1>
           </div>
           {!showCreateForm && (
             <Button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
               Create Role
@@ -164,8 +164,8 @@ export default function RolesPage() {
 
         {/* Create Role Form */}
         {showCreateForm && (
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 mb-8 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 mb-2 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Create New Role</h2>
               <button
                 onClick={() => {
@@ -179,7 +179,7 @@ export default function RolesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onCreateRole)} className="space-y-6">
+            <form onSubmit={handleSubmit(onCreateRole)} className="space-y-2">
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   Role Name *
@@ -187,7 +187,7 @@ export default function RolesPage() {
                 <input
                   {...register('name')}
                   placeholder="e.g., Asset Manager, Finance Officer"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {errors.name && (
                   <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -201,17 +201,17 @@ export default function RolesPage() {
                 <textarea
                   {...register('description')}
                   placeholder="Describe the purpose of this role..."
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                  className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                 />
               </div>
 
               {/* Permissions */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
                   Permissions
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {Object.entries(permissionGroups).map(([groupKey, group]) => {
                     const groupPermissions = group.permissions.filter(p => typeof p === 'string')
                     const allSelected = groupPermissions.every(p => selectedPermissions.includes(p))
@@ -221,11 +221,11 @@ export default function RolesPage() {
                         key={groupKey}
                         className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
                       >
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-2 mb-2">
                           <button
                             type="button"
                             onClick={() => toggleAllPermissionsInGroup(groupPermissions)}
-                            className="flex items-center gap-2 hover:opacity-80"
+                            className="flex items-center gap-1.5 hover:opacity-80"
                           >
                             {allSelected ? (
                               <CheckCircle2 className="h-5 w-5 text-blue-600" />
@@ -238,11 +238,11 @@ export default function RolesPage() {
                           </label>
                         </div>
 
-                        <div className="ml-8 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="ml-8 grid grid-cols-1 md:grid-cols-2 gap-2">
                           {groupPermissions.map(permission => (
                             <label
                               key={permission}
-                              className="flex items-center gap-3 cursor-pointer"
+                              className="flex items-center gap-2 cursor-pointer"
                             >
                               <input
                                 type="checkbox"
@@ -266,7 +266,7 @@ export default function RolesPage() {
                 <Button
                   type="submit"
                   disabled={loading || selectedPermissions.length === 0}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700"
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   <Save className="h-4 w-4" />
@@ -296,8 +296,8 @@ export default function RolesPage() {
           </div>
         ) : roles.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-12 text-center border border-gray-200 dark:border-gray-700">
-            <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4">No custom roles created yet</p>
+            <Shield className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-600 dark:text-gray-400 mb-2">No custom roles created yet</p>
             <Button
               onClick={() => setShowCreateForm(true)}
               className="bg-blue-600 hover:bg-blue-700"
@@ -312,7 +312,7 @@ export default function RolesPage() {
                 key={role.id}
                 className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
               >
-                <div className="mb-4">
+                <div className="mb-2">
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">
                     {role.name}
                   </h3>
@@ -323,18 +323,18 @@ export default function RolesPage() {
                   )}
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="space-y-2 mb-2">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
                     <Users className="h-4 w-4" />
                     <span>{role.userCount} user(s) assigned</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
                     <Shield className="h-4 w-4" />
                     <span>{role.permissions.length} permission(s)</span>
                   </div>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-2">
                   <p className="text-xs text-gray-500 dark:text-gray-500">
                     Created by: {role.createdBy.fullName}
                   </p>
@@ -343,10 +343,10 @@ export default function RolesPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Button
                     disabled={true}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 cursor-not-allowed opacity-50"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 cursor-not-allowed opacity-50"
                     size="sm"
                   >
                     <Edit2 className="h-4 w-4" />
@@ -368,7 +368,7 @@ export default function RolesPage() {
                 </div>
 
                 {role.userCount > 0 && (
-                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
                     Cannot delete while users are assigned
                   </p>
                 )}
@@ -380,3 +380,4 @@ export default function RolesPage() {
     </div>
   )
 }
+

@@ -136,7 +136,7 @@ export default function Sidebar({ onClose, collapsed, onToggleCollapse, setMobil
       </div>
 
       {/* Nav - scrollable middle section */}
-      <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+      <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100/50 pr-1">
         {renderSection('Overview', overviewItems)}
         {renderSection('Assets', [...allAssetsItem, ...assetItems])}
         {renderSection('Administration', [...adminItems, ...requestsItems])}

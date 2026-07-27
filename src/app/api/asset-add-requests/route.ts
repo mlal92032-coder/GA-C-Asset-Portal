@@ -66,23 +66,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create notification for Super Admin
-    const superAdmin = await prisma.user.findFirst({
-      where: { role: 'SUPER_ADMIN' },
-    });
-
-    if (superAdmin) {
-      await prisma.notification.create({
-        data: {
-          userId: superAdmin.id,
-          title: 'Asset Add Request Pending',
-          message: `${authResult.user.fullName} requested to add a new ${assetType} asset: ${assetData.assetName || 'Unnamed'}`,
-          type: 'INFO',
-          link: `/admin/requests`,
-        },
-      });
-    }
-
     return NextResponse.json({ success: true, data: addRequest });
   } catch (error) {
     console.error('Error creating asset add request:', error);

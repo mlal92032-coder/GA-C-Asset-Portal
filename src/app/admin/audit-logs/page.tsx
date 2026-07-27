@@ -221,28 +221,22 @@ export default function AuditLogsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-      <PageHeader
-        title="Audit Logs"
-        subtitle="Track all system activities and changes"
-        icon={FileText}
-        badge="Administration"
-        gradientFrom="from-indigo-100"
-        gradientTo="to-blue-100"
-        iconColor="text-indigo-600"
-        actions={
-          <button onClick={exportToCSV} className="btn btn-primary">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
-        }
-        stats={[
-          { label: 'Total Logs', value: totalItems },
-        ]}
-      />
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
+        <PageHeader
+          title="Audit Logs"
+          subtitle="Track all system activities and user actions"
+          icon={FileText}
+          badge="Administration"
+          gradientFrom="from-slate-100"
+          gradientTo="to-gray-100"
+          iconColor="text-slate-600"
+          stats={[
+            { label: 'Total Logs', value: totalItems },
+          ]}
+        />
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-1.5 mb-2">
         <div className="relative w-48">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
@@ -267,7 +261,7 @@ export default function AuditLogsPage() {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="flex flex-wrap items-center gap-1.5 mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
           <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setCurrentPage(1); }} className="py-1 text-sm w-28">
             {ACTION_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
           </select>
@@ -286,7 +280,7 @@ export default function AuditLogsPage() {
       {/* Table Card */}
       <div className="card overflow-hidden">
         {loading && (
-          <div className="flex items-center justify-center py-4 bg-gray-50">
+          <div className="flex items-center justify-center py-2 bg-gray-50">
             <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
             <span className="ml-2 text-sm text-gray-600">Loading logs...</span>
           </div>
@@ -329,7 +323,7 @@ export default function AuditLogsPage() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className="badge badge-secondary">{log.entity}</span>
                         {log.entityId && (
                           <span className="text-xs text-gray-500 font-mono">
@@ -352,7 +346,7 @@ export default function AuditLogsPage() {
                     <tr>
                       <td colSpan={6} className="bg-gray-50 p-4">
                         <div className="bg-white border border-gray-200 p-4">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-1.5 mb-2">
                             <FileText className="w-4 h-4 text-gray-500" />
                             <span className="text-sm font-medium text-gray-700">Details</span>
                           </div>
@@ -370,7 +364,7 @@ export default function AuditLogsPage() {
         </div>
         {logs.length === 0 && !loading && (
           <div className="text-center py-12 text-gray-400">
-            <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>No audit logs found</p>
           </div>
         )}

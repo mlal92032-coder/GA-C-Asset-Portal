@@ -80,6 +80,7 @@ export async function middleware(request: NextRequest) {
  */
 function shouldSkipMiddleware(pathname: string): boolean {
   const publicRoutes = [
+    '/',
     '/api/auth',
     '/login',
     '/register',
@@ -87,6 +88,7 @@ function shouldSkipMiddleware(pathname: string): boolean {
     '/reset-password',
     '/public',
     '/healthz',
+    '/settings',
     '/_next',
     '/favicon.ico',
     '/.well-known',

@@ -1,11 +1,11 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import axios from 'axios'
-import { Button } from '@/components/Button'
+import { Button } from '@/components/ui'
 import { toast } from 'sonner'
 import { Loader2, Download, Trash2, Plus, Calendar, FileText, TrendingUp } from 'lucide-react'
 
@@ -218,8 +218,8 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="mb-2">
+          <div className="flex items-center gap-2 mb-2">
             <FileText className="h-8 w-8 text-blue-600" />
             <h1 className="text-4xl font-bold">Reports</h1>
           </div>
@@ -227,11 +227,11 @@ export default function ReportsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="mb-2 border-b border-gray-200 dark:border-gray-700">
           <div className="flex gap-6">
             <button
               onClick={() => setActiveTab('generate')}
-              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              className={`px-4 py-1 font-medium border-b-2 transition-colors ${
                 activeTab === 'generate'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -241,7 +241,7 @@ export default function ReportsPage() {
             </button>
             <button
               onClick={() => setActiveTab('saved')}
-              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              className={`px-4 py-1 font-medium border-b-2 transition-colors ${
                 activeTab === 'saved'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -254,14 +254,14 @@ export default function ReportsPage() {
 
         {/* Generate Report Tab */}
         {activeTab === 'generate' && (
-          <div className="space-y-6">
+          <div className="space-y-2">
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-2">Create New Report</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-2">
                 Generate a custom report with filters applied
               </p>
 
-              <form onSubmit={handleSubmit(onGenerateReport)} className="space-y-6">
+              <form onSubmit={handleSubmit(onGenerateReport)} className="space-y-2">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -270,7 +270,7 @@ export default function ReportsPage() {
                     <input
                       {...register('name')}
                       placeholder="e.g., September Asset Inventory"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     {errors.name && (
                       <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -283,7 +283,7 @@ export default function ReportsPage() {
                     </label>
                     <select
                       {...register('reportType')}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {reportTypes.map(type => (
                         <option key={type.value} value={type.value}>
@@ -303,7 +303,7 @@ export default function ReportsPage() {
                       </label>
                       <select
                         {...register('status')}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">All statuses</option>
                         {reportStatuses.map(status => (
@@ -320,7 +320,7 @@ export default function ReportsPage() {
                       </label>
                       <select
                         {...register('condition')}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">All conditions</option>
                         {reportConditions.map(cond => (
@@ -342,7 +342,7 @@ export default function ReportsPage() {
                       <input
                         {...register('startDate')}
                         type="date"
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
 
@@ -353,7 +353,7 @@ export default function ReportsPage() {
                       <input
                         {...register('endDate')}
                         type="date"
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -365,7 +365,7 @@ export default function ReportsPage() {
                   </label>
                   <select
                     {...register('schedule')}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Don't schedule</option>
                     <option value="DAILY">Daily</option>
@@ -378,7 +378,7 @@ export default function ReportsPage() {
                   <Button
                     type="submit"
                     disabled={generatingReport || loading}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700"
                   >
                     {generatingReport && <Loader2 className="h-4 w-4 animate-spin" />}
                     <Download className="h-4 w-4" />
@@ -389,7 +389,7 @@ export default function ReportsPage() {
                     type="button"
                     onClick={handleSubmit(onSaveTemplate)}
                     disabled={loading || !watch('name')}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                    className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700"
                   >
                     <Plus className="h-4 w-4" />
                     Save as Template
@@ -405,7 +405,7 @@ export default function ReportsPage() {
                   key={type.value}
                   className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2">
                     <TrendingUp className="h-5 w-5 text-blue-600 mt-1" />
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">{type.label}</h3>
@@ -420,15 +420,15 @@ export default function ReportsPage() {
 
         {/* Saved Templates Tab */}
         {activeTab === 'saved' && (
-          <div className="space-y-6">
+          <div className="space-y-2">
             {loading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
             ) : templates.length === 0 ? (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-8 text-center">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">No saved report templates yet</p>
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600 dark:text-gray-400 mb-2">No saved report templates yet</p>
                 <Button
                   onClick={() => setActiveTab('generate')}
                   className="bg-blue-600 hover:bg-blue-700"
@@ -443,7 +443,7 @@ export default function ReportsPage() {
                     key={template.id}
                     className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
                   >
-                    <div className="mb-4">
+                    <div className="mb-2">
                       <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                         {template.reportName}
                       </h3>
@@ -453,17 +453,17 @@ export default function ReportsPage() {
                     </div>
 
                     {template.isScheduled && (
-                      <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded mb-4">
+                      <div className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded mb-2">
                         <Calendar className="h-4 w-4" />
                         Scheduled: {template.schedule}
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <Button
                         onClick={() => generateFromTemplate(template)}
                         disabled={generatingReport}
-                        className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700"
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700"
                         size="sm"
                       >
                         {generatingReport && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -498,3 +498,4 @@ export default function ReportsPage() {
     </div>
   )
 }
+

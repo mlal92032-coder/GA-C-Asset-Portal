@@ -14,7 +14,7 @@ import BulkImportExport from '@/components/BulkImportExport';
 import ModernVehiclesModal from '@/components/ModernVehiclesModal';
 import { BulkActionBar } from '@/components/BulkActionBar';
 import BulkStatusUpdateModal, { type BulkStatusUpdateData } from '@/components/BulkStatusUpdateModal';
-import { Button, IconButton } from '@/components/Button';
+import { Button, IconButton } from '@/components/ui';
 import { uploadImage, resolveImageUrl, buildImageUrl } from '@/lib/image-upload';
 import type { VehicleAsset, Company, Manufacturer, Location, User, VehicleFormData } from '@/types';
 import {
@@ -618,19 +618,19 @@ const handleFilterChange = (key: string, value: string) => {
     return (
       <DashboardLayout>
         {/* Skeleton page header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <div className="w-48 h-9 bg-slate-200 skeleton mb-2" />
             <div className="w-64 h-5 bg-slate-200 skeleton" />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="w-36 h-10 bg-slate-200 skeleton" />
             <div className="w-28 h-10 bg-slate-200 skeleton" />
           </div>
         </div>
 
         {/* Skeleton search and filters */}
-        <div className="card p-4 mb-6">
+        <div className="card p-4 mb-2">
           <div className="flex items-center gap-4">
             <div className="w-64 h-10 bg-slate-200 skeleton" />
             <div className="w-24 h-10 bg-slate-200 skeleton" />
@@ -640,7 +640,7 @@ const handleFilterChange = (key: string, value: string) => {
         {/* Skeleton table */}
         <div className="card overflow-hidden">
           <div className="table-container p-4">
-            <div className="h-10 bg-slate-200 skeleton mb-4" />
+            <div className="h-10 bg-slate-200 skeleton mb-2" />
             <div className="skeleton-table">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="skeleton-table-row" style={{ animationDelay: `${i * 100}ms` }} />
@@ -661,7 +661,7 @@ const handleFilterChange = (key: string, value: string) => {
       onPageChange={setCurrentPage}
       onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 py-1 overflow-x-hidden">
       <PageHeader
         title="Vehicle Assets"
         subtitle="Manage company vehicles and transport"
@@ -700,7 +700,7 @@ const handleFilterChange = (key: string, value: string) => {
         hasActiveFilters={!!(filters.condition || filters.status || filters.locationId || filters.companyId)}
         onClearFilters={clearFilters}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-0.5">Condition</label>
             <select
@@ -828,7 +828,7 @@ const handleFilterChange = (key: string, value: string) => {
             label: 'Registration',
             sortable: true,
             render: (value, row) => (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {value}
                 {row.insuranceExpiryDate && isInsuranceExpired(row.insuranceExpiryDate) && (
                   <AlertTriangle className="w-4 h-4 text-red-500" aria-label="Insurance expired" />
@@ -924,7 +924,7 @@ const handleFilterChange = (key: string, value: string) => {
             <div className="modal-header">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">Vehicle Asset Details</h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {viewingAsset.assetTag && (
                     <button
                       onClick={() => setViewingQRCode(viewingAsset)}
@@ -939,7 +939,7 @@ const handleFilterChange = (key: string, value: string) => {
             </div>
             <div className="modal-body">
               {/* Display Image */}
-              <div className="mb-6 flex justify-center">
+              <div className="mb-2 flex justify-center">
                 {buildImageUrl(viewingAsset.imageUrl) ? (
                   <img
                     src={buildImageUrl(viewingAsset.imageUrl)!}
@@ -954,7 +954,7 @@ const handleFilterChange = (key: string, value: string) => {
               </div>
 
               {viewingAsset.assetTag && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-sm text-gray-500">Asset Tag</p>
                   <p className="font-mono text-lg font-semibold text-green-900">{viewingAsset.assetTag}</p>
                 </div>
@@ -985,10 +985,10 @@ const handleFilterChange = (key: string, value: string) => {
 
               {/* Attachments Section */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Attachments</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Attachments</h3>
 
                 {/* Upload Area */}
-                <div className="mb-4">
+                <div className="mb-2">
                   <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 transition-all">
                     <input
                       type="file"
@@ -1003,12 +1003,12 @@ const handleFilterChange = (key: string, value: string) => {
                       disabled={uploadingFile}
                     />
                     {uploadingFile ? (
-                      <div className="flex items-center gap-2 text-blue-600">
+                      <div className="flex items-center gap-1.5 text-blue-600">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span className="text-sm font-medium">Uploading...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center gap-1.5 text-gray-600">
                         <Download className="w-5 h-5" />
                         <span className="text-sm font-medium">Click to upload file (Max 10MB)</span>
                       </div>
@@ -1021,14 +1021,14 @@ const handleFilterChange = (key: string, value: string) => {
                   <div className="space-y-2">
                     {attachments.map((att) => (
                       <div key={att.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Download className="w-5 h-5 text-gray-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{att.fileName}</p>
                             <p className="text-xs text-gray-500">{(att.fileSize / 1024).toFixed(1)} KB</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
                           <a
                             href={`/uploads/attachments/${att.fileName}`}
                             download
@@ -1051,7 +1051,7 @@ const handleFilterChange = (key: string, value: string) => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">No attachments</p>
+                  <p className="text-sm text-gray-500 text-center py-2">No attachments</p>
                 )}
               </div>
             </div>
@@ -1216,9 +1216,9 @@ function BulkBarcodeModal({
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-gray-500">{assets.length} asset(s) found</p>
-                <button onClick={handlePrintAll} className="btn btn-primary flex items-center gap-2">
+                <button onClick={handlePrintAll} className="btn btn-primary flex items-center gap-1.5">
                   <Download className="w-4 h-4" />Print All Barcodes
                 </button>
               </div>
@@ -1239,4 +1239,6 @@ function BulkBarcodeModal({
     </div>
   );
 }
+
+
 

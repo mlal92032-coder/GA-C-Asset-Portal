@@ -139,27 +139,26 @@ export default function RequestsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">
         <PageHeader
-          title="Asset Approvals"
-          subtitle="Approve or reject asset additions and deletions"
-          icon={AlertTriangle}
+          title="Approval Requests"
+          subtitle="Review pending asset creation and deletion requests"
+          icon={CheckCircle}
           badge="Administration"
-          gradientFrom="from-amber-100"
-          gradientTo="to-orange-100"
-          iconColor="text-amber-600"
+          gradientFrom="from-green-100"
+          gradientTo="to-emerald-100"
+          iconColor="text-green-600"
           stats={[
-            { label: 'Total Pending', value: pendingAdds + pendingDeletes },
-            { label: 'Add Requests', value: pendingAdds },
-            { label: 'Delete Requests', value: pendingDeletes },
+            { label: 'Add Requests', value: addRequests.filter(r => r.status === 'PENDING').length },
+            { label: 'Delete Requests', value: deleteRequests.filter(r => r.status === 'PENDING').length },
           ]}
         />
 
-        <div className="mb-4 flex justify-end gap-2">
+        <div className="mb-2 flex justify-end gap-1.5">
           <button
             onClick={() => setRefreshCount(prev => prev + 1)}
             disabled={loading}
-            className="btn btn-secondary btn-sm flex items-center gap-2"
+            className="btn btn-secondary btn-sm flex items-center gap-1.5"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -172,7 +171,7 @@ export default function RequestsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* ADD ASSET REQUESTS (LEFT) */}
             <div className="card overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-b-2 border-emerald-200 p-4 flex items-center gap-2">
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-b-2 border-emerald-200 p-4 flex items-center gap-1.5">
                 <Plus className="w-5 h-5 text-emerald-600" />
                 <h2 className="text-lg font-bold text-slate-900">Add Asset Approvals</h2>
                 <span className="ml-auto badge badge-warning">{pendingAdds}</span>
@@ -195,7 +194,7 @@ export default function RequestsPage() {
                           {getStatusBadge(req.status)}
                         </div>
                         {req.status === 'PENDING' && (
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex gap-1.5 mt-3">
                             <button
                               onClick={() => handleReview(req.id, 'add', 'APPROVE')}
                               disabled={processing === req.id}
@@ -223,7 +222,7 @@ export default function RequestsPage() {
 
             {/* DELETE ASSET REQUESTS (RIGHT) */}
             <div className="card overflow-hidden">
-              <div className="bg-gradient-to-r from-rose-50 to-red-50 border-b-2 border-rose-200 p-4 flex items-center gap-2">
+              <div className="bg-gradient-to-r from-rose-50 to-red-50 border-b-2 border-rose-200 p-4 flex items-center gap-1.5">
                 <Trash2 className="w-5 h-5 text-rose-600" />
                 <h2 className="text-lg font-bold text-slate-900">Delete Asset Approvals</h2>
                 <span className="ml-auto badge badge-warning">{pendingDeletes}</span>
@@ -247,7 +246,7 @@ export default function RequestsPage() {
                         <p className="text-xs text-slate-600 mb-2">Reason: {req.reason}</p>
                       )}
                       {req.status === 'PENDING' && (
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-1.5 mt-3">
                           <button
                             onClick={() => handleReview(req.id, 'delete', 'APPROVE')}
                             disabled={processing === req.id}

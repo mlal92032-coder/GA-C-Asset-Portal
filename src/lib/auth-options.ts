@@ -63,6 +63,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           status: user.status,
           permissions: user.permissions,
+          tenantId: user.tenantId,
         };
       },
     }),
@@ -85,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role as string;
         token.status = user.status as string;
         token.permissions = user.permissions as string | null;
+        token.tenantId = (user as any).tenantId;
       }
       console.log('[JWT] Returning token:', JSON.stringify({ sub: token.sub, id: token.id, role: token.role }));
       return token;
@@ -97,6 +99,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.status = token.status as string;
         session.user.permissions = token.permissions as string | null;
+        (session.user as any).tenantId = token.tenantId;
       }
       console.log('[SESSION] Session user after:', session.user ? JSON.stringify({ id: session.user.id, role: session.user.role }) : 'null');
       return session;

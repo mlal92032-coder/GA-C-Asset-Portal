@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
-import { SkeletonCard, SkeletonStats, SkeletonTable } from '@/components/Skeleton';
+import DashboardHeader from '@/components/DashboardHeader';
+import { SkeletonCard, SkeletonStats, SkeletonTable } from '@/components/ui';
 import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animations';
 import {
   Package, Armchair, Monitor, Car, AlertTriangle, CheckCircle, XCircle,
@@ -91,7 +92,7 @@ function DonutChart({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h3 className="font-bold text-2xl text-slate-800 mb-6">{title}</h3>
+        <h3 className="font-bold text-2xl text-slate-800 mb-2">{title}</h3>
         <div className="flex items-center justify-center h-40 text-slate-400">No data</div>
       </motion.div>
     );
@@ -104,11 +105,11 @@ function DonutChart({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
     >
-      <h3 className="font-bold text-2xl text-slate-900 mb-8">{title}</h3>
+      <h3 className="font-bold text-2xl text-slate-900 mb-2">{title}</h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
         {/* Legend - Left Side */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {data.map((item, idx) => {
             const color = item.fill || colors[idx] || '#64748b';
             const isSelected = selectedSegment === item.name;
@@ -118,7 +119,7 @@ function DonutChart({
                 key={item.name}
                 onClick={() => onSegmentClick?.(item.name)}
                 whileHover={{ x: 4 }}
-                className={`w-full text-left p-3 rounded-lg transition-all flex items-center gap-3 ${
+                className={`w-full text-left p-3 rounded-lg transition-all flex items-center gap-2 ${
                   isSelected
                     ? 'bg-blue-50'
                     : 'hover:bg-slate-50'
@@ -344,7 +345,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="w-full max-w-7xl mx-auto px-4 py-6">
+        <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 py-1 overflow-x-hidden">
           <div className="mb-12">
             <SkeletonStats />
           </div>
@@ -364,10 +365,14 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        {/* Stat Cards with Stagger Animation - Compact & Professional */}
+      <DashboardHeader
+        onMenuClick={() => {}}
+        onManageClick={() => {}}
+      />
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 py-1 overflow-x-hidden">
+        {/* Stat Cards with Stagger Animation - Responsive */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8"
+          className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 mb-2"
           variants={staggerContainer}
           initial="hidden"
           animate="show"
@@ -378,7 +383,7 @@ export default function DashboardPage() {
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-600 to-blue-400" />
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-8 -mt-8 transition-opacity" />
                 <div className="relative z-10 p-5">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="stat-card-icon bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
                       <Package className="w-6 h-6 text-blue-600 font-bold" />
                     </div>
@@ -400,7 +405,7 @@ export default function DashboardPage() {
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-600 to-purple-400" />
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -mr-8 -mt-8 transition-opacity" />
                 <div className="relative z-10 p-5">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="stat-card-icon bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200">
                       <Armchair className="w-6 h-6 text-purple-600 font-bold" />
                     </div>
@@ -422,7 +427,7 @@ export default function DashboardPage() {
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-emerald-600 to-emerald-400" />
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-8 -mt-8 transition-opacity" />
                 <div className="relative z-10 p-5">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="stat-card-icon bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-200">
                       <Monitor className="w-6 h-6 text-emerald-600 font-bold" />
                     </div>
@@ -444,7 +449,7 @@ export default function DashboardPage() {
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-orange-600 to-orange-400" />
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl -mr-8 -mt-8 transition-opacity" />
                 <div className="relative z-10 p-5">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="stat-card-icon bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200">
                       <Car className="w-6 h-6 text-orange-600 font-bold" />
                     </div>
@@ -464,8 +469,8 @@ export default function DashboardPage() {
 
         {/* Filter Indicator */}
         {hasFilters && (
-          <motion.div className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg flex items-center justify-between shadow-sm" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex items-center gap-2 flex-wrap">
+          <motion.div className="mb-2 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg flex items-center justify-between shadow-sm" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-blue-900 font-semibold">Filtered: {filteredAssets.length}/{dashboardData.totalAssets}</span>
               {selectedType && <span className="bg-blue-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">{selectedType}</span>}
               {selectedCondition && <span className="bg-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">{selectedCondition}</span>}
@@ -495,7 +500,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10 px-0">
           {/* Offices */}
           <motion.div className="card border-2 border-slate-200 shadow-lg p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-slate-200">
+            <div className="flex items-center justify-between mb-2 pb-4 border-b-2 border-slate-200">
               <div>
                 <h3 className="font-bold text-lg text-slate-900">Offices</h3>
                 <p className="text-xs text-slate-500 font-medium">Organization Locations</p>
@@ -504,11 +509,11 @@ export default function DashboardPage() {
                 <Building2 className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {dashboardData.assetsByCompany && dashboardData.assetsByCompany.length > 0 ? (
                 dashboardData.assetsByCompany.map((office, idx) => (
                   <motion.div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className="w-3 h-3 rounded-full bg-blue-600 flex-shrink-0"></div>
                       <span className="font-semibold text-slate-800 text-sm">{office.companyName}</span>
                     </div>
@@ -523,7 +528,7 @@ export default function DashboardPage() {
 
           {/* Departments/Locations */}
           <motion.div className="card border-2 border-slate-200 shadow-lg p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-slate-200">
+            <div className="flex items-center justify-between mb-2 pb-4 border-b-2 border-slate-200">
               <div>
                 <h3 className="font-bold text-lg text-slate-900">Departments</h3>
                 <p className="text-xs text-slate-500 font-medium">Organization Departments</p>
@@ -532,11 +537,11 @@ export default function DashboardPage() {
                 <MapPin className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {dashboardData.assetsByLocation && dashboardData.assetsByLocation.length > 0 ? (
                 dashboardData.assetsByLocation.map((dept, idx) => (
                   <motion.div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className="w-3 h-3 rounded-full bg-emerald-600 flex-shrink-0"></div>
                       <span className="font-semibold text-slate-800 text-sm">{dept.locationName}</span>
                     </div>
@@ -565,12 +570,12 @@ export default function DashboardPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b-2 border-slate-200">
                 <tr>
-                  <th className="px-5 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Asset Name</th>
-                  <th className="px-5 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Tag</th>
-                  <th className="px-5 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Office</th>
-                  <th className="px-5 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Type</th>
-                  <th className="px-5 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Condition</th>
-                  <th className="px-5 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Status</th>
+                  <th className="px-5 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Asset Name</th>
+                  <th className="px-5 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Tag</th>
+                  <th className="px-5 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Office</th>
+                  <th className="px-5 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Type</th>
+                  <th className="px-5 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Condition</th>
+                  <th className="px-5 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -579,12 +584,12 @@ export default function DashboardPage() {
 
                   return (
                     <motion.tr key={asset.id} className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }} onClick={() => router.push(assetPath)}>
-                      <td className="px-5 py-4 text-slate-800 font-medium">{asset.name}</td>
-                      <td className="px-5 py-4 font-mono text-xs text-slate-600 font-semibold">{asset.assetTag || '-'}</td>
-                      <td className="px-5 py-4"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">{asset.office || '-'}</span></td>
-                      <td className="px-5 py-4"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: asset.type === 'FURNITURE' ? '#f3e8ff' : asset.type === 'ELECTRONIC' ? '#d1fae5' : '#fed7aa', color: asset.type === 'FURNITURE' ? '#7e22ce' : asset.type === 'ELECTRONIC' ? '#059669' : '#ea580c' }}>{asset.type === 'FURNITURE' ? 'Furniture' : asset.type === 'ELECTRONIC' ? 'Electronics' : 'Vehicle'}</span></td>
-                      <td className="px-5 py-4"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: asset.condition === 'GOOD' ? '#d1fae5' : asset.condition === 'REPAIR' ? '#fef08a' : '#fee2e2', color: asset.condition === 'GOOD' ? '#059669' : asset.condition === 'REPAIR' ? '#b45309' : '#dc2626' }}>{asset.condition || '-'}</span></td>
-                      <td className="px-5 py-4"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: asset.status === 'IN_USE' ? '#dbeafe' : asset.status === 'IN_STORE' ? '#d1fae5' : '#e2e8f0', color: asset.status === 'IN_USE' ? '#0369a1' : asset.status === 'IN_STORE' ? '#059669' : '#475569' }}>{asset.status?.replace('_', ' ') || '-'}</span></td>
+                      <td className="px-5 py-2 text-slate-800 font-medium">{asset.name}</td>
+                      <td className="px-5 py-2 font-mono text-xs text-slate-600 font-semibold">{asset.assetTag || '-'}</td>
+                      <td className="px-5 py-2"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">{asset.office || '-'}</span></td>
+                      <td className="px-5 py-2"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: asset.type === 'FURNITURE' ? '#f3e8ff' : asset.type === 'ELECTRONIC' ? '#d1fae5' : '#fed7aa', color: asset.type === 'FURNITURE' ? '#7e22ce' : asset.type === 'ELECTRONIC' ? '#059669' : '#ea580c' }}>{asset.type === 'FURNITURE' ? 'Furniture' : asset.type === 'ELECTRONIC' ? 'Electronics' : 'Vehicle'}</span></td>
+                      <td className="px-5 py-2"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: asset.condition === 'GOOD' ? '#d1fae5' : asset.condition === 'REPAIR' ? '#fef08a' : '#fee2e2', color: asset.condition === 'GOOD' ? '#059669' : asset.condition === 'REPAIR' ? '#b45309' : '#dc2626' }}>{asset.condition || '-'}</span></td>
+                      <td className="px-5 py-2"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: asset.status === 'IN_USE' ? '#dbeafe' : asset.status === 'IN_STORE' ? '#d1fae5' : '#e2e8f0', color: asset.status === 'IN_USE' ? '#0369a1' : asset.status === 'IN_STORE' ? '#059669' : '#475569' }}>{asset.status?.replace('_', ' ') || '-'}</span></td>
                     </motion.tr>
                   );
                 })}
@@ -608,26 +613,26 @@ export default function DashboardPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b-2 border-slate-200">
                 <tr>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Serial Number</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Asset Name</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Employee Name</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Office</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Department</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Designation</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Status</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Serial Number</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Asset Name</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Employee Name</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Office</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Department</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Designation</th>
+                  <th className="px-6 py-2 text-left font-bold text-slate-600 text-xs uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {dashboardData.employeeAssets && dashboardData.employeeAssets.length > 0 ? (
                   dashboardData.employeeAssets.slice(0, 15).map((asset, idx) => (
                     <motion.tr key={asset.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02 }}>
-                      <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-600">{asset.serialNumber}</td>
-                      <td className="px-6 py-4 text-slate-800 font-medium">{asset.assetName}</td>
-                      <td className="px-6 py-4 text-slate-800 font-medium">{asset.employeeName}</td>
-                      <td className="px-6 py-4"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Office</span></td>
-                      <td className="px-6 py-4"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">{asset.department || '-'}</span></td>
-                      <td className="px-6 py-4"><span className="text-slate-700 font-medium text-sm">{asset.designation || '-'}</span></td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-2 font-mono text-xs font-semibold text-slate-600">{asset.serialNumber}</td>
+                      <td className="px-6 py-2 text-slate-800 font-medium">{asset.assetName}</td>
+                      <td className="px-6 py-2 text-slate-800 font-medium">{asset.employeeName}</td>
+                      <td className="px-6 py-2"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Office</span></td>
+                      <td className="px-6 py-2"><span className="inline-block px-3 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">{asset.department || '-'}</span></td>
+                      <td className="px-6 py-2"><span className="text-slate-700 font-medium text-sm">{asset.designation || '-'}</span></td>
+                      <td className="px-6 py-2">
                         <span className={`inline-block px-3 py-1 rounded-md text-xs font-semibold border ${asset.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                           {asset.status === 'ACTIVE' ? '✓ Active' : '✗ Inactive'}
                         </span>
@@ -647,3 +652,4 @@ export default function DashboardPage() {
     </DashboardLayout>
   );
 }
+

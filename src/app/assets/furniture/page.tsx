@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
@@ -14,7 +14,7 @@ import BulkImportExport from '@/components/BulkImportExport';
 import ModernFurnitureModal from '@/components/ModernFurnitureModal';
 import { BulkActionBar } from '@/components/BulkActionBar';
 import BulkStatusUpdateModal, { type BulkStatusUpdateData } from '@/components/BulkStatusUpdateModal';
-import { Button, IconButton } from '@/components/Button';
+import { Button, IconButton } from '@/components/ui';
 import { uploadImage, resolveImageUrl, buildImageUrl } from '@/lib/image-upload';
 import { formatCurrency } from '@/lib/depreciation';
 import type { FurnitureAsset, Company, Manufacturer, Location, User, FurnitureFormData } from '@/types';
@@ -526,19 +526,19 @@ export default function FurniturePage() {
     return (
       <DashboardLayout>
         {/* Skeleton page header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <div className="w-48 h-9 bg-slate-200 skeleton mb-2" />
             <div className="w-64 h-5 bg-slate-200 skeleton" />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="w-36 h-10 bg-slate-200 skeleton" />
             <div className="w-28 h-10 bg-slate-200 skeleton" />
           </div>
         </div>
 
         {/* Skeleton search and filters */}
-        <div className="card p-4 mb-6">
+        <div className="card p-4 mb-2">
           <div className="flex items-center gap-4">
             <div className="w-64 h-10 bg-slate-200 skeleton" />
             <div className="w-24 h-10 bg-slate-200 skeleton" />
@@ -548,7 +548,7 @@ export default function FurniturePage() {
         {/* Skeleton table */}
         <div className="card overflow-hidden">
           <div className="table-container p-4">
-            <div className="h-10 bg-slate-200 skeleton mb-4" />
+            <div className="h-10 bg-slate-200 skeleton mb-2" />
             <div className="skeleton-table">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="skeleton-table-row" style={{ animationDelay: `${i * 100}ms` }} />
@@ -569,7 +569,7 @@ export default function FurniturePage() {
       onPageChange={setCurrentPage}
       onItemsPerPageChange={(perPage) => { setItemsPerPage(perPage); setCurrentPage(1); }}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 py-1 overflow-x-hidden">
       <PageHeader
         title="Furniture Assets"
         subtitle="Manage furniture and office furnishings"
@@ -599,7 +599,7 @@ export default function FurniturePage() {
         hasActiveFilters={!!(filters.condition || filters.status || filters.locationId || filters.companyId)}
         onClearFilters={clearFilters}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-0.5">Condition</label>
             <select
@@ -828,7 +828,7 @@ export default function FurniturePage() {
             <div className="modal-header">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">Furniture Asset Details</h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {viewingAsset.assetTag && (
                     <button
                       onClick={() => setViewingQRCode(viewingAsset)}
@@ -845,7 +845,7 @@ export default function FurniturePage() {
             </div>
             <div className="modal-body">
               {/* Display Image */}
-              <div className="mb-6 flex justify-center">
+              <div className="mb-2 flex justify-center">
                 {buildImageUrl(viewingAsset.imageUrl) ? (
                   <img
                     src={buildImageUrl(viewingAsset.imageUrl)!}
@@ -860,7 +860,7 @@ export default function FurniturePage() {
               </div>
 
               {viewingAsset.assetTag && (
-                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="mb-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-sm text-gray-500">Asset Tag</p>
                   <p className="font-mono text-lg font-semibold text-purple-900">{viewingAsset.assetTag}</p>
                 </div>
@@ -919,10 +919,10 @@ export default function FurniturePage() {
 
               {/* Attachments Section */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Attachments</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Attachments</h3>
 
                 {/* Upload Area */}
-                <div className="mb-4">
+                <div className="mb-2">
                   <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 transition-all">
                     <input
                       type="file"
@@ -936,12 +936,12 @@ export default function FurniturePage() {
                       disabled={uploadingFile}
                     />
                     {uploadingFile ? (
-                      <div className="flex items-center gap-2 text-blue-600">
+                      <div className="flex items-center gap-1.5 text-blue-600">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span className="text-sm font-medium">Uploading...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center gap-1.5 text-gray-600">
                         <Download className="w-5 h-5" />
                         <span className="text-sm font-medium">Click to upload file (Max 10MB)</span>
                       </div>
@@ -954,7 +954,7 @@ export default function FurniturePage() {
                   <div className="space-y-2">
                     {attachments.map((att) => (
                       <div key={att.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
                             <Download className="w-4 h-4 text-blue-600" />
                           </div>
@@ -963,7 +963,7 @@ export default function FurniturePage() {
                             <p className="text-xs text-gray-500">{(att.fileSize / 1024).toFixed(1)} KB</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
                           <a
                             href={`/uploads/attachments/${att.fileName}`}
                             download
@@ -986,7 +986,7 @@ export default function FurniturePage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">No attachments</p>
+                  <p className="text-sm text-gray-500 text-center py-2">No attachments</p>
                 )}
               </div>
             </div>
@@ -1144,9 +1144,9 @@ function BulkBarcodeModal({
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-gray-500">{assets.length} asset(s) found</p>
-                <button onClick={handlePrintAll} className="btn btn-primary flex items-center gap-2">
+                <button onClick={handlePrintAll} className="btn btn-primary flex items-center gap-1.5">
                   <Download className="w-4 h-4" />Print All Barcodes
                 </button>
               </div>
@@ -1167,3 +1167,4 @@ function BulkBarcodeModal({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AlertCircle, Wrench } from 'lucide-react';
@@ -321,3 +321,4 @@ export default function VehicleMaintenanceModal({
     </div>
   );
 }
+

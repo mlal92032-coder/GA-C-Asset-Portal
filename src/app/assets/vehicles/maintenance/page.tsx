@@ -1,19 +1,19 @@
-'use client';
+﻿'use client';
 
 import { Suspense } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/contexts/ToastContext';
 import DashboardLayout from '@/components/DashboardLayout';
-import PageHeader from '@/components/PageHeader';
 import MaintenanceHistoryModal from '@/components/MaintenanceHistoryModal';
 import SparePartsModal from '@/components/SparePartsModal';
-import { Button, IconButton } from '@/components/Button';
+import PageHeader from '@/components/PageHeader';
+import { Button, IconButton } from '@/components/ui';
 import type { VehicleAsset } from '@/types';
 import {
-  Plus, Edit2, Trash2, Wrench, Package, TrendingUp, Calendar, DollarSign, AlertCircle, ChevronLeft, Download, Upload, Loader2
+  Plus, Edit2, Trash2, Wrench, Package, TrendingUp, Calendar, DollarSign, AlertCircle, ChevronLeft, Download, Upload, Loader2, FileText, X
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import {
   formatCurrency, formatDate, getStatusColor, getWorkTypeColor
 } from '@/lib/vehicleCalculations';
@@ -96,6 +96,8 @@ function VehicleMaintenanceContent() {
   const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState<'ALL' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL');
   const [maintenanceDepartmentFilter, setMaintenanceDepartmentFilter] = useState('ALL');
   const [maintenanceVehicleFilter, setMaintenanceVehicleFilter] = useState('ALL');
+  const [maintenanceDateFrom, setMaintenanceDateFrom] = useState('');
+  const [maintenanceDateTo, setMaintenanceDateTo] = useState('');
   const [sparePartsSearch, setSparePartsSearch] = useState('');
   const [sparePartsVehicleFilter, setSparePartsVehicleFilter] = useState('ALL');
   const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
@@ -158,11 +160,11 @@ function VehicleMaintenanceContent() {
     const fetchSpareParts = async () => {
       try {
         const response = await fetch(`/api/spare-parts?page=1&limit=10000`);
+        const data = await response.json();
         if (!response.ok) {
-          console.error('API response error:', response.status);
+          console.error('API response error:', response.status, data.error || data);
           return;
         }
-        const data = await response.json();
         if (data.success) {
           setSpareParts(data.data || []);
         } else {
@@ -192,6 +194,14 @@ function VehicleMaintenanceContent() {
       }
     };
     fetchSummary();
+  }, [selectedVehicle]);
+
+  // Sync filters with selected vehicle
+  useEffect(() => {
+    if (selectedVehicle) {
+      setMaintenanceVehicleFilter(selectedVehicle);
+      setSparePartsVehicleFilter(selectedVehicle);
+    }
   }, [selectedVehicle]);
 
   const handleSaveMaintenance = async (data: any) => {
@@ -468,13 +478,187 @@ function VehicleMaintenanceContent() {
 
   const currentVehicle = vehicles.find((v) => v.id === selectedVehicle);
 
+  // PDF Export handler
+  const generateMaintenancePDF = () => {
+    if (maintenances.length === 0) {
+      toastError('No maintenance records to export');
+      return;
+    }
+
+    const filteredMaintenances = maintenances.filter((m) => {
+      const matchesSearch = maintenanceSearch === '' ||
+        m.description.toLowerCase().includes(maintenanceSearch.toLowerCase()) ||
+        m.remarks?.toLowerCase().includes(maintenanceSearch.toLowerCase());
+
+      const matchesVehicle = maintenanceVehicleFilter === 'ALL' || m.assetId === maintenanceVehicleFilter;
+      const matchesStatus = maintenanceStatusFilter === 'ALL' || m.status === maintenanceStatusFilter;
+      const matchesDepartment = maintenanceDepartmentFilter === 'ALL' ||
+        (maintenanceDepartmentFilter === 'MAINTENANCE' && m.workType === 'MAINTENANCE') ||
+        (maintenanceDepartmentFilter === 'REPAIR' && m.workType === 'REPAIR') ||
+        (maintenanceDepartmentFilter === 'SERVICE' && m.workType === 'SERVICE') ||
+        (maintenanceDepartmentFilter === 'OTHER' && !['MAINTENANCE', 'REPAIR', 'SERVICE'].includes(m.workType || ''));
+
+      let matchesDateRange = true;
+      if (maintenanceDateFrom || maintenanceDateTo) {
+        const mainDate = parseISO(m.maintenanceDate);
+        if (maintenanceDateFrom && isBefore(mainDate, startOfDay(parseISO(maintenanceDateFrom)))) {
+          matchesDateRange = false;
+        }
+        if (maintenanceDateTo && isAfter(mainDate, endOfDay(parseISO(maintenanceDateTo)))) {
+          matchesDateRange = false;
+        }
+      }
+
+      return matchesSearch && matchesVehicle && matchesStatus && matchesDepartment && matchesDateRange;
+    });
+
+    if (filteredMaintenances.length === 0) {
+      toastError('No records match the applied filters');
+      return;
+    }
+
+    // Create HTML content for PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; }
+          .container { max-width: 1000px; margin: 0 auto; padding: 40px; }
+          .header { background: linear-gradient(135deg, #1e40af 0%, #0284c7 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
+          .header h1 { font-size: 28px; margin-bottom: 10px; }
+          .header-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px; font-size: 13px; }
+          .header-item { background: rgba(255,255,255,0.1); padding: 12px; border-radius: 5px; }
+          .header-item strong { display: block; font-size: 11px; opacity: 0.9; margin-bottom: 4px; }
+          .filter-summary { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 15px; margin-bottom: 25px; border-radius: 4px; font-size: 13px; }
+          .filter-summary strong { color: #0284c7; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          table thead { background-color: #f3f4f6; }
+          table th { padding: 12px; text-align: left; font-weight: 600; font-size: 12px; color: #374151; border-bottom: 2px solid #d1d5db; text-transform: uppercase; letter-spacing: 0.5px; }
+          table td { padding: 11px 12px; border-bottom: 1px solid #e5e7eb; font-size: 12px; }
+          table tbody tr:nth-child(even) { background-color: #f9fafb; }
+          table tbody tr:hover { background-color: #f3f4f6; }
+          .status { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+          .status-completed { background-color: #dcfce7; color: #166534; }
+          .status-scheduled { background-color: #fef3c7; color: #92400e; }
+          .status-in_progress { background-color: #dbeafe; color: #0c4a6e; }
+          .status-cancelled { background-color: #fee2e2; color: #7f1d1d; }
+          .worktype { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+          .worktype-maintenance { background-color: #e0e7ff; color: #3730a3; }
+          .worktype-repair { background-color: #fed7aa; color: #92400e; }
+          .worktype-service { background-color: #c7d2fe; color: #3730a3; }
+          .worktype-other { background-color: #e5e7eb; color: #374151; }
+          .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 30px; }
+          .summary-card { background: #f3f4f6; padding: 20px; border-radius: 6px; border-left: 4px solid #0284c7; }
+          .summary-card strong { display: block; font-size: 11px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
+          .summary-card .value { font-size: 24px; font-weight: 700; color: #1f2937; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #6b7280; text-align: center; }
+          .page-break { page-break-after: always; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Maintenance Report</h1>
+            <p style="font-size: 14px; opacity: 0.95;">Asset Management System</p>
+            <div class="header-info">
+              <div class="header-item">
+                <strong>Vehicle:</strong>
+                ${currentVehicle?.assetName || 'N/A'}
+              </div>
+              <div class="header-item">
+                <strong>Registration:</strong>
+                ${currentVehicle?.registrationNumber || 'N/A'}
+              </div>
+              <div class="header-item">
+                <strong>Type:</strong>
+                ${currentVehicle?.assetType || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          ${maintenanceDateFrom || maintenanceDateTo ? `
+          <div class="filter-summary">
+            <strong>Date Range Applied:</strong> ${maintenanceDateFrom ? format(parseISO(maintenanceDateFrom), 'dd MMM yyyy') : 'From beginning'} to ${maintenanceDateTo ? format(parseISO(maintenanceDateTo), 'dd MMM yyyy') : 'Present'}
+            ${maintenanceStatusFilter !== 'ALL' ? `<br><strong>Status:</strong> ${maintenanceStatusFilter}` : ''}
+            ${maintenanceDepartmentFilter !== 'ALL' ? `<br><strong>Department:</strong> ${maintenanceDepartmentFilter}` : ''}
+          </div>
+          ` : ''}
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 8%;">SN</th>
+                <th style="width: 12%;">Date</th>
+                <th style="width: 12%;">Type</th>
+                <th style="width: 20%;">Description</th>
+                <th style="width: 12%;">Cost</th>
+                <th style="width: 10%;">Odometer</th>
+                <th style="width: 12%;">Status</th>
+                <th style="width: 14%;">Next Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredMaintenances.map((m, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${format(parseISO(m.maintenanceDate), 'dd MMM yyyy')}</td>
+                <td><span class="worktype worktype-${(m.workType || 'other').toLowerCase().replace(/_/g, '-')}">${m.workType || 'Other'}</span></td>
+                <td>${m.description.substring(0, 50)}</td>
+                <td style="font-weight: 600;">PKR ${(m.cost || 0).toLocaleString('en-PK')}</td>
+                <td>${m.odometerReading ? `${m.odometerReading} km` : '-'}</td>
+                <td><span class="status status-${m.status.toLowerCase().replace(/_/g, '-')}">${m.status}</span></td>
+                <td>${m.nextDueDate ? format(parseISO(m.nextDueDate), 'dd MMM yyyy') : '-'}</td>
+              </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="summary">
+            <div class="summary-card">
+              <strong>Total Records</strong>
+              <div class="value">${filteredMaintenances.length}</div>
+            </div>
+            <div class="summary-card">
+              <strong>Total Cost</strong>
+              <div class="value">PKR ${filteredMaintenances.reduce((sum, m) => sum + (m.cost || 0), 0).toLocaleString('en-PK')}</div>
+            </div>
+            <div class="summary-card">
+              <strong>Average Cost/Record</strong>
+              <div class="value">PKR ${(filteredMaintenances.reduce((sum, m) => sum + (m.cost || 0), 0) / filteredMaintenances.length).toLocaleString('en-PK', { maximumFractionDigits: 0 })}</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Generated on ${format(new Date(), 'dd MMM yyyy HH:mm:ss')}</p>
+            <p style="margin-top: 8px;">This is an official maintenance report from the Asset Management System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '', 'width=1200,height=800');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+    toastSuccess('PDF exported successfully');
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
               <p className="text-slate-600">Loading vehicles...</p>
             </div>
           </div>
@@ -486,9 +670,9 @@ function VehicleMaintenanceContent() {
   if (vehicles.length === 0) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden px-4 sm:px-6 lg:px-8">
           <div className="text-center py-12">
-            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-2" />
             <p className="text-slate-600">No vehicles found. Please add vehicles first.</p>
           </div>
         </div>
@@ -499,7 +683,7 @@ function VehicleMaintenanceContent() {
   if (!selectedVehicle) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden px-4 sm:px-6 lg:px-8">
           <PageHeader
             title="Vehicle Maintenance Management"
             subtitle="Manage maintenance records, spare parts, and lifecycle costs"
@@ -510,12 +694,12 @@ function VehicleMaintenanceContent() {
             iconColor="text-blue-600"
           />
           <div className="card p-8 text-center">
-            <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-600 mb-6">Please select a vehicle to view maintenance details</p>
+            <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-slate-600 mb-2">Please select a vehicle to view maintenance details</p>
             <div className="inline-block">
               <select
                 onChange={(e) => setSelectedVehicle(e.target.value)}
-                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-1 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoComplete="off"
               >
                 <option value="">Select a vehicle...</option>
@@ -597,9 +781,9 @@ function VehicleMaintenanceContent() {
         // For now, keeping fixed itemsPerPage
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden px-4 sm:px-6 lg:px-8">
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2">
+          <div className="mb-2 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-1.5">
             <AlertCircle className="w-5 h-5" />
             {error}
           </div>
@@ -615,10 +799,108 @@ function VehicleMaintenanceContent() {
           iconColor="text-blue-600"
         />
 
+        {/* Vehicle Selector and Search Card */}
+        <div className="bg-gradient-to-r from-blue-50 via-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6 mb-6 shadow-md">
+          <div>
+            <label className="block text-xs font-bold text-blue-700 mb-3 uppercase tracking-widest">📍 SELECT VEHICLE FOR DETAILED RECORDS</label>
+
+            {/* Search by vehicle name or registration */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-slate-600 mb-2">SEARCH VEHICLES</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by vehicle name or registration number..."
+                  value={vehicleSearch}
+                  onChange={(e) => {
+                    setVehicleSearch(e.target.value);
+                    setShowVehicleSuggestions(true);
+                  }}
+                  onFocus={() => setShowVehicleSuggestions(true)}
+                  className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-slate-900 hover:border-blue-400 transition-colors"
+                />
+                {vehicleSearch && (
+                  <button
+                    onClick={() => setVehicleSearch('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                {showVehicleSuggestions && vehicleSearch && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {vehicles
+                      .filter(v =>
+                        v.assetName.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                        v.registrationNumber.toLowerCase().includes(vehicleSearch.toLowerCase())
+                      )
+                      .map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => {
+                            setSelectedVehicle(v.id);
+                            setVehicleSearch('');
+                            setShowVehicleSuggestions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 border-b border-slate-100 text-sm text-slate-900"
+                        >
+                          <span className="font-semibold">{v.assetName}</span>
+                          <span className="text-xs text-slate-500 ml-2">({v.registrationNumber})</span>
+                        </button>
+                      ))}
+                    {vehicles.filter(v =>
+                      v.assetName.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                      v.registrationNumber.toLowerCase().includes(vehicleSearch.toLowerCase())
+                    ).length === 0 && (
+                      <div className="px-4 py-2 text-sm text-slate-500">No vehicles found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Direct selection dropdown */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">OR SELECT FROM LIST</label>
+                <select
+                  value={selectedVehicle}
+                  onChange={(e) => setSelectedVehicle(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-slate-900 hover:border-blue-400 transition-colors"
+                >
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.assetName} ({v.registrationNumber})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedVehicle && vehicles.find(v => v.id === selectedVehicle) && (
+                <>
+                  <div className="bg-white rounded-lg p-3 border-2 border-blue-200 shadow-sm">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">REGISTRATION</p>
+                    <p className="text-base font-bold text-blue-700">{vehicles.find(v => v.id === selectedVehicle)?.registrationNumber}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border-2 border-blue-200 shadow-sm">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">ASSET TYPE</p>
+                    <p className="text-base font-bold text-slate-900">{vehicles.find(v => v.id === selectedVehicle)?.assetType || 'N/A'}</p>
+                  </div>
+                </>
+              )}
+            </div>
+            {selectedVehicle && vehicles.find(v => v.id === selectedVehicle) && (
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg border border-blue-300">
+                <p className="text-xs text-blue-800">
+                  ✓ <span className="font-semibold">Now viewing all records for:</span> {vehicles.find(v => v.id === selectedVehicle)?.assetName}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="flex border-b border-slate-200">
+          <div className="flex border-b-2 border-slate-100">
             {[
               { id: 'maintenance', label: 'Maintenance History', icon: Wrench },
               { id: 'spareparts', label: 'Spare Parts', icon: Package },
@@ -627,10 +909,10 @@ function VehicleMaintenanceContent() {
               <button
                 key={id}
                 onClick={() => setActiveTab(id as Tab)}
-                className={`flex-1 px-6 py-4 font-medium flex items-center justify-center gap-2 transition-all ${
+                className={`flex-1 px-6 py-4 font-semibold flex items-center justify-center gap-2 transition-all text-sm ${
                   activeTab === id
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'border-b-3 border-blue-600 text-blue-700 bg-blue-50'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -653,46 +935,30 @@ function VehicleMaintenanceContent() {
               {!dataLoading && (
               <div>
               {/* Maintenance Filters */}
-              <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-slate-200 rounded-lg p-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border-2 border-blue-200 rounded-lg p-5 mb-4 shadow-sm">
+                <h4 className="text-xs font-bold text-slate-700 mb-4 uppercase tracking-wider">Filter Maintenance Records</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   {/* Search Description */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">SEARCH</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">Search Description</label>
                     <input
                       type="text"
                       placeholder="Description..."
                       value={maintenanceSearch}
                       onChange={(e) => setMaintenanceSearch(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-400 transition-colors"
                     />
-                  </div>
-
-                  {/* Vehicle Filter */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">VEHICLE</label>
-                    <select
-                      value={maintenanceVehicleFilter}
-                      onChange={(e) => setMaintenanceVehicleFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                      <option value="ALL">All Vehicles</option>
-                      {vehicles.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.assetName}
-                        </option>
-                      ))}
-                    </select>
                   </div>
 
                   {/* Status Filter */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">STATUS</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">Status</label>
                     <select
                       value={maintenanceStatusFilter}
                       onChange={(e) => setMaintenanceStatusFilter(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-400 transition-colors"
                     >
-                      <option value="ALL">All</option>
+                      <option value="ALL">All Status</option>
                       <option value="SCHEDULED">Scheduled</option>
                       <option value="IN_PROGRESS">In Progress</option>
                       <option value="COMPLETED">Completed</option>
@@ -702,18 +968,40 @@ function VehicleMaintenanceContent() {
 
                   {/* Department Filter */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">DEPT</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">Department</label>
                     <select
                       value={maintenanceDepartmentFilter}
                       onChange={(e) => setMaintenanceDepartmentFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-400 transition-colors"
                     >
-                      <option value="ALL">All</option>
+                      <option value="ALL">All Departments</option>
                       <option value="MAINTENANCE">Maintenance</option>
                       <option value="REPAIR">Repair</option>
                       <option value="SERVICE">Service</option>
                       <option value="OTHER">Other</option>
                     </select>
+                  </div>
+
+                  {/* From Date */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">From Date</label>
+                    <input
+                      type="date"
+                      value={maintenanceDateFrom}
+                      onChange={(e) => setMaintenanceDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-400 transition-colors"
+                    />
+                  </div>
+
+                  {/* To Date */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">To Date</label>
+                    <input
+                      type="date"
+                      value={maintenanceDateTo}
+                      onChange={(e) => setMaintenanceDateTo(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-400 transition-colors"
+                    />
                   </div>
 
                   {/* Clear Button */}
@@ -723,19 +1011,50 @@ function VehicleMaintenanceContent() {
                         setMaintenanceSearch('');
                         setMaintenanceStatusFilter('ALL');
                         setMaintenanceDepartmentFilter('ALL');
-                        setMaintenanceVehicleFilter('ALL');
+                        setMaintenanceDateFrom('');
+                        setMaintenanceDateTo('');
                       }}
-                      className="w-full px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all font-medium"
+                      className="w-full px-3 py-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-all font-medium border border-red-300"
                     >
-                      Clear
+                      Clear All
                     </button>
                   </div>
                 </div>
+
+                {/* Active Filters Display */}
+                {(maintenanceSearch || maintenanceStatusFilter !== 'ALL' || maintenanceDepartmentFilter !== 'ALL' || maintenanceDateFrom || maintenanceDateTo) && (
+                  <div className="mt-3 flex flex-wrap gap-2 items-center">
+                    <span className="text-xs font-semibold text-slate-600">Active filters:</span>
+                    {maintenanceSearch && (
+                      <span className="px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded-full">
+                        Search: "{maintenanceSearch}"
+                      </span>
+                    )}
+                    {maintenanceStatusFilter !== 'ALL' && (
+                      <span className="px-2 py-1 bg-emerald-200 text-emerald-800 text-xs rounded-full">
+                        Status: {maintenanceStatusFilter}
+                      </span>
+                    )}
+                    {maintenanceDepartmentFilter !== 'ALL' && (
+                      <span className="px-2 py-1 bg-amber-200 text-amber-800 text-xs rounded-full">
+                        Dept: {maintenanceDepartmentFilter}
+                      </span>
+                    )}
+                    {(maintenanceDateFrom || maintenanceDateTo) && (
+                      <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded-full">
+                        {maintenanceDateFrom ? format(parseISO(maintenanceDateFrom), 'dd MMM') : 'Start'} - {maintenanceDateTo ? format(parseISO(maintenanceDateTo), 'dd MMM') : 'End'}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-slate-900">Maintenance Records</h3>
-                <div className="flex gap-3">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Maintenance Records</h3>
+                  <p className="text-xs text-slate-500 mt-1">{selectedVehicle && vehicles.find(v => v.id === selectedVehicle)?.assetName || 'No vehicle selected'}</p>
+                </div>
+                <div className="flex gap-2 flex-wrap justify-end">
                   <input
                     ref={maintenanceFileInputRef}
                     type="file"
@@ -756,6 +1075,14 @@ function VehicleMaintenanceContent() {
                     icon={<Download className="w-4 h-4" />}
                   >
                     Export CSV
+                  </Button>
+                  <Button
+                    onClick={generateMaintenancePDF}
+                    variant="secondary"
+                    icon={<FileText className="w-4 h-4" />}
+                    style={{ backgroundColor: '#1f2937', color: '#ffffff', borderColor: '#1f2937' }}
+                  >
+                    Export PDF
                   </Button>
                   <Button
                     onClick={() => {
@@ -786,12 +1113,23 @@ function VehicleMaintenanceContent() {
                     (maintenanceDepartmentFilter === 'SERVICE' && m.workType === 'SERVICE') ||
                     (maintenanceDepartmentFilter === 'OTHER' && !['MAINTENANCE', 'REPAIR', 'SERVICE'].includes(m.workType || ''));
 
-                  return matchesSearch && matchesVehicle && matchesStatus && matchesDepartment;
+                  let matchesDateRange = true;
+                  if (maintenanceDateFrom || maintenanceDateTo) {
+                    const mainDate = parseISO(m.maintenanceDate);
+                    if (maintenanceDateFrom && isBefore(mainDate, startOfDay(parseISO(maintenanceDateFrom)))) {
+                      matchesDateRange = false;
+                    }
+                    if (maintenanceDateTo && isAfter(mainDate, endOfDay(parseISO(maintenanceDateTo)))) {
+                      matchesDateRange = false;
+                    }
+                  }
+
+                  return matchesSearch && matchesVehicle && matchesStatus && matchesDepartment && matchesDateRange;
                 });
 
                 return filteredMaintenances.length === 0 ? (
                   <div className="text-center py-12">
-                    <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-2" />
                     <p className="text-slate-500">No maintenance records found</p>
                   </div>
                 ) : (
@@ -835,7 +1173,7 @@ function VehicleMaintenanceContent() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-sm text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1.5">
                               <IconButton
                                 onClick={() => {
                                   setEditingMaintenance(m);
@@ -871,35 +1209,18 @@ function VehicleMaintenanceContent() {
           {activeTab === 'spareparts' && (
             <div className="p-6">
               {/* Spare Parts Filters */}
-              <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-slate-200 rounded-lg p-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-slate-200 rounded-lg p-4 mb-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {/* Search */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1">SEARCH</label>
                     <input
                       type="text"
-                      placeholder="Part name..."
+                      placeholder="Search part name or supplier..."
                       value={sparePartsSearch}
                       onChange={(e) => setSparePartsSearch(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
-                  </div>
-
-                  {/* Vehicle Filter */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">VEHICLE</label>
-                    <select
-                      value={sparePartsVehicleFilter}
-                      onChange={(e) => setSparePartsVehicleFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                      <option value="ALL">All Vehicles</option>
-                      {vehicles.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.assetName}
-                        </option>
-                      ))}
-                    </select>
                   </div>
 
                   {/* Clear */}
@@ -907,19 +1228,21 @@ function VehicleMaintenanceContent() {
                     <button
                       onClick={() => {
                         setSparePartsSearch('');
-                        setSparePartsVehicleFilter('ALL');
                       }}
                       className="w-full px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all font-medium"
                     >
-                      Clear
+                      Clear Search
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-slate-900">Spare Parts & Purchases</h3>
-                <div className="flex gap-3">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Spare Parts & Purchases</h3>
+                  <p className="text-xs text-slate-500 mt-1">{selectedVehicle && vehicles.find(v => v.id === selectedVehicle)?.assetName || 'No vehicle selected'}</p>
+                </div>
+                <div className="flex gap-2">
                   <input
                     ref={sparePartsFileInputRef}
                     type="file"
@@ -968,7 +1291,7 @@ function VehicleMaintenanceContent() {
 
                 return filteredSpareParts.length === 0 ? (
                   <div className="text-center py-12">
-                    <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <Package className="w-12 h-12 text-slate-300 mx-auto mb-2" />
                     <p className="text-slate-500">No spare parts records found</p>
                   </div>
                 ) : (
@@ -1001,7 +1324,7 @@ function VehicleMaintenanceContent() {
                           <td className="px-4 py-3 text-sm font-medium text-slate-900">{formatCurrency(p.totalCost)}</td>
                           <td className="px-4 py-3 text-sm text-slate-700">{p.supplierName}</td>
                           <td className="px-4 py-3 text-sm text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1.5">
                               <IconButton
                                 onClick={() => {
                                   setEditingSparePart(p);
@@ -1034,27 +1357,32 @@ function VehicleMaintenanceContent() {
           {/* TAB: Summary */}
           {activeTab === 'summary' && vehicleSummary && (
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Financial Summary</h3>
+                <p className="text-sm text-slate-500 mt-1">Complete maintenance and lifecycle cost analysis for {selectedVehicle && vehicles.find(v => v.id === selectedVehicle)?.assetName}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
                   { label: 'Total Maintenance Cost', value: formatCurrency(vehicleSummary.totalMaintenanceCost), icon: DollarSign, color: 'bg-blue-100 text-blue-600' },
                   { label: 'Service Count', value: vehicleSummary.numberOfServices, icon: Wrench, color: 'bg-emerald-100 text-emerald-600' },
                   { label: 'Last Service', value: vehicleSummary.lastServiceDate ? format(new Date(vehicleSummary.lastServiceDate), 'MMM d, yyyy') : 'N/A', icon: Calendar, color: 'bg-amber-100 text-amber-600' },
                   { label: 'Avg Cost/Service', value: formatCurrency(vehicleSummary.averageCostPerService), icon: DollarSign, color: 'bg-purple-100 text-purple-600' },
                 ].map(({ label, value, icon: Icon, color }) => (
-                  <div key={label} className="card p-4">
+                  <div key={label} className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
-                        <Icon className="w-5 h-5" />
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
+                        <Icon className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500">{label}</p>
-                        <p className="text-lg font-bold text-slate-900">{value}</p>
+                        <p className="text-xs text-slate-500 font-medium">{label}</p>
+                        <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
+              <h3 className="text-lg font-semibold text-slate-900 mt-8 mb-4">Additional Metrics</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { label: 'Highest Repair Cost', value: formatCurrency(vehicleSummary.highestSingleRepairCost) },
@@ -1064,9 +1392,9 @@ function VehicleMaintenanceContent() {
                   { label: 'Next Service Due', value: vehicleSummary.nextServiceDue ? format(new Date(vehicleSummary.nextServiceDue), 'MMM d, yyyy') : 'N/A' },
                   { label: 'Total w/ Spare Parts', value: formatCurrency(vehicleSummary.totalLifecycleCostWithSpares) },
                 ].map(({ label, value }) => (
-                  <div key={label} className="card p-4">
-                    <p className="text-xs text-slate-500 mb-1">{label}</p>
-                    <p className="text-xl font-bold text-slate-900">{value}</p>
+                  <div key={label} className="bg-white rounded-lg border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <p className="text-xs text-slate-600 font-medium mb-2 uppercase tracking-wider">{label}</p>
+                    <p className="text-2xl font-bold text-slate-900">{value}</p>
                   </div>
                 ))}
               </div>
@@ -1113,3 +1441,4 @@ export default function VehicleMaintenancePage() {
     </Suspense>
   );
 }
+

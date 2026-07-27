@@ -24,11 +24,11 @@ export default function DashboardHeader({
       {/* Blue Gradient Header - Full width, extends to top, no gaps */}
       <header className="sticky top-0 z-20 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 shadow-lg border-b border-blue-700/30">
         {/* Container - Full padding for proper spacing */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="px-2 sm:px-3 lg:px-3 py-1 sm:py-1.5">
           {/* Main Header Row - Icon, Title, Actions */}
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-2">
             {/* Left Section - Mobile Menu + Icon + Title */}
-            <div className="flex items-start gap-4 flex-1 min-w-0">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
               {/* Mobile menu button */}
               <button
                 onClick={onMenuClick}
@@ -39,7 +39,7 @@ export default function DashboardHeader({
               </button>
 
               {/* Icon - Desktop only, hidden on mobile */}
-              <div className="w-12 h-12 bg-white/20 shadow-lg flex items-center justify-center rounded-xl flex-shrink-0 border border-white/30 backdrop-blur-md hidden sm:flex">
+              <div className="w-12 h-10 bg-white/20 shadow-lg flex items-center justify-center rounded-xl flex-shrink-0 border border-white/30 backdrop-blur-md hidden sm:flex">
                 <Package className="w-6 h-6 text-white" />
               </div>
 
@@ -63,14 +63,14 @@ export default function DashboardHeader({
             </div>
 
             {/* Right Section - Notification Bell + Manage Button */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 mt-2 sm:mt-0">
+            <div className="flex items-center gap-2 sm:gap-2 flex-shrink-0 mt-2 sm:mt-0">
               {/* Notification Bell */}
               <NotificationBell isDarkMode={true} />
 
               {/* Manage Assets Button */}
               <Link
                 href="/admin/users"
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 whitespace-nowrap text-sm sm:text-base"
+                className="flex items-center gap-2 px-3 sm:px-3 py-1 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 whitespace-nowrap text-sm sm:text-base"
                 title="Manage Assets"
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
