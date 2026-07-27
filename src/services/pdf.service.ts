@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, rgb } from 'pdfkit'
+import PDFDocument from 'pdfkit'
 import { Readable } from 'stream'
 import prisma from '@/lib/prisma'
 
