@@ -27,10 +27,6 @@ export async function POST(req: NextRequest) {
   return new Response('Socket.io endpoint', { status: 200 })
 }
 
-// Socket.io transport options
-export const config = {
-  api: {
-    bodyParser: false,
-    externalResolver: true,
-  },
-}
+// Socket.io configuration for App Router
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
