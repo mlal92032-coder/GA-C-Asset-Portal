@@ -270,8 +270,8 @@ export default function FurniturePage() {
       return;
     }
 
-    // If SUPER_ADMIN, delete directly
-    if (!confirm('Are you sure you want to delete this asset?')) return;
+    // If NOT SUPER_ADMIN, need confirmation (but we've already handled USER delete requests above)
+    // So if we're here, we must be SUPER_ADMIN - delete directly without confirmation
 
     try {
       const res = await fetch(`/api/furniture/${id}`, { method: 'DELETE' });
@@ -327,12 +327,14 @@ export default function FurniturePage() {
   };
 
   const handleDeleteAttachment = async (attachmentId: string, assetId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    // SUPER_ADMIN can delete directly without confirmation
+    if (!canDeleteItem && !confirm('Are you sure you want to delete this file?')) return;
+
     try {
       const res = await fetch(`/api/attachments/${attachmentId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        success('File deleted successfully');
+        success(`File deleted successfully${canDeleteItem ? ' (Direct Delete)' : ''}`);
         fetchAttachments(assetId);
       } else {
         error(json.error || 'Failed to delete file');

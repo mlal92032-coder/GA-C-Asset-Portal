@@ -10,4 +10,6 @@ console.log('[PRISMA] Initializing with DB:', dbUrl);
 const adapter = new PrismaBetterSqlite3({ url: dbUrl });
 export const prisma = new PrismaClient({ adapter });
 
+export default prisma;
+
 console.log('[PRISMA] Client exported successfully');

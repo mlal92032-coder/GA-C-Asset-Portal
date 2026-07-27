@@ -97,28 +97,46 @@ const handleSave = async (userData: any) => {
   };
 
   const handleDelete = async (user: User) => {
-    if (!confirm(`Delete request for ${user.fullName}?\nThis will be sent for approval.`)) return;
-
-    try {
-      const res = await fetch('/api/user-delete-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          userName: user.fullName,
-          userEmail: user.email,
-          reason: 'User deletion requested',
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        success('Delete request submitted for approval');
-      } else {
-        error(json.error || 'Failed to submit delete request');
+    // SUPER_ADMIN can delete directly without confirmation
+    if (isSuperAdmin) {
+      // Direct delete for SUPER_ADMIN - no confirmation needed
+      try {
+        const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          success(`User "${user.fullName}" deleted successfully (Direct Delete) ⚡`);
+          fetchUsers();
+        } else {
+          error(json.error || 'Failed to delete user');
+        }
+      } catch {
+        error('An error occurred');
       }
-    } catch {
-      error('An error occurred');
+    } else {
+      // Non-admin: create delete request (needs approval)
+      if (!confirm(`Delete request for ${user.fullName}?\nThis will be sent for approval.`)) return;
+
+      try {
+        const res = await fetch('/api/user-delete-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            userName: user.fullName,
+            userEmail: user.email,
+            reason: 'User deletion requested',
+          }),
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          success('Delete request submitted for approval');
+        } else {
+          error(json.error || 'Failed to submit delete request');
+        }
+      } catch {
+        error('An error occurred');
+      }
     }
   };
 

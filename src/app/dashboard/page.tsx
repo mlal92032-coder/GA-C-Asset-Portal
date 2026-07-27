@@ -603,7 +603,7 @@ export default function DashboardPage() {
           <div className="px-6 py-5 border-b-2 border-slate-200 bg-white flex items-center justify-between">
             <div>
               <h3 className="font-bold text-lg text-slate-900">Employee Assigned Assets</h3>
-              <p className="text-sm text-slate-500 font-medium">{dashboardData.employeeAssets.length} assets assigned</p>
+              <p className="text-sm text-slate-500 font-medium">{dashboardData.employeeAssets?.length || 0} assets assigned</p>
             </div>
             <div className="h-10 w-10 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg flex items-center justify-center border-2 border-purple-200">
               <Users className="w-5 h-5 text-purple-600" />

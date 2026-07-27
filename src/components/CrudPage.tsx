@@ -113,14 +113,17 @@ export default function CrudPage({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    // SUPER_ADMIN can delete directly without confirmation
+    const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
+
+    if (!isSuperAdmin && !confirm('Are you sure you want to delete this item?')) return;
 
     try {
       const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
       const json = await res.json();
 
       if (json.success) {
-        showToast('Item deleted successfully', 'success');
+        showToast(`Item deleted successfully${isSuperAdmin ? ' (Direct Delete)' : ''}`, 'success');
         fetchItems();
       } else {
         showToast(json.error, 'error');

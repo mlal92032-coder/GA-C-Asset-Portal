@@ -499,12 +499,13 @@ export default function ElectronicsPage() {
   };
 
   const handleDeleteAttachment = async (attachmentId: string, assetId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    // SUPER_ADMIN can delete directly without confirmation
+    if (!canDeleteItem && !confirm('Are you sure you want to delete this file?')) return;
     try {
       const res = await fetch(`/api/attachments/${attachmentId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        success('File deleted successfully');
+        success(`File deleted successfully${canDeleteItem ? ' (Direct Delete)' : ''}`);
         fetchAttachments(assetId);
       } else {
         error(json.error || 'Failed to delete file');
