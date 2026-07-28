@@ -16,6 +16,15 @@ export async function PUT(request: NextRequest) {
     if (authResult instanceof NextResponse) return authResult;
     const currentUser = authResult.user;
 
+    // Get user with tenantId
+    const user = await prisma.user.findFirst({
+      where: { id: currentUser.id },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
     const body = await request.json();
 
     let validatedData: z.infer<typeof deleteRequestPutSchema>;
@@ -92,6 +101,7 @@ export async function PUT(request: NextRequest) {
           message: `Your deletion request for "${deleteRequest.assetName}" has been approved and the asset has been deleted.`,
           type: 'SUCCESS',
           link: `/admin/requests`,
+          tenantId: user.tenantId,
         },
       });
     } else {
@@ -103,6 +113,7 @@ export async function PUT(request: NextRequest) {
           message: `Your deletion request for "${deleteRequest.assetName}" has been rejected. ${validatedData.reviewNotes || ''}`,
           type: 'ERROR',
           link: `/admin/requests`,
+          tenantId: user.tenantId,
         },
       });
     }

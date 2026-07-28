@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
           message: `${currentUser.fullName} requested deletion of ${validatedData.assetName}`,
           type: 'WARNING',
           link: `/admin/requests`,
+          tenantId: superAdmin.tenantId,
         },
       });
     }
