@@ -3,6 +3,7 @@
  * Posts messages to Slack channels for real-time notifications and collaboration
  */
 
+import crypto from 'crypto';
 import { WebClient, LogLevel } from '@slack/web-api';
 import { logger } from '@/lib/logger';
 
@@ -422,7 +423,6 @@ class SlackService {
     }
 
     // Verify signature
-    const crypto = require('crypto');
     const baseString = `v0:${timestamp}:${body}`;
     const mySignature = `v0=${crypto
       .createHmac('sha256', this.signingSecret)

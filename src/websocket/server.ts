@@ -47,9 +47,9 @@ export function initializeWebSocketServer(httpServer: HTTPServer): Server {
       return next(new Error('Unauthorized: Missing user info'))
     }
 
-    ;(socket as AuthenticatedSocket).userId = userId
-    ;(socket as AuthenticatedSocket).companyId = companyId
-    ;(socket as AuthenticatedSocket).userEmail = userEmail
+    (socket as AuthenticatedSocket).userId = userId;
+    (socket as AuthenticatedSocket).companyId = companyId;
+    (socket as AuthenticatedSocket).userEmail = userEmail;
 
     next()
   })

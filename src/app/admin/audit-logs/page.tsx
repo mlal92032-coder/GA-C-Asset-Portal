@@ -11,7 +11,6 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Download,
   FileText,
   Loader2,
 } from 'lucide-react';
@@ -180,33 +179,6 @@ export default function AuditLogsPage() {
       minute: '2-digit',
       second: '2-digit',
     });
-  };
-
-  const exportToCSV = () => {
-    const headers = ['Timestamp', 'User', 'Email', 'Role', 'Action', 'Entity', 'Entity ID', 'Details'];
-    const rows = logs.map((log) => [
-      formatDate(log.createdAt),
-      log.user.fullName,
-      log.user.email,
-      log.user.role,
-      log.action,
-      log.entity,
-      log.entityId || '',
-      log.details || '',
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   if (loading && logs.length === 0) {

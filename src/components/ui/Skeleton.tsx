@@ -12,15 +12,13 @@
 
 import { cn } from '@/lib/utils';
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
-
 /**
  * Generic skeleton loading placeholder
  *
  * @example
  * <Skeleton className="w-full h-12 rounded-lg" />
  */
-export function Skeleton({ className, ...props }: SkeletonProps) {
+export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(

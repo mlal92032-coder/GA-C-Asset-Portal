@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     let assets: Array<Record<string, string | number>> = [];
 
     switch (assetType) {
-      case 'FURNITURE':
+      case 'FURNITURE': {
         const furniture = await prisma.furnitureAsset.findMany({
           include: {
             company: { select: { companyName: true } },
@@ -41,8 +41,9 @@ export async function GET(request: NextRequest) {
           remarks: f.remarks || '',
         }));
         break;
+      }
 
-      case 'ELECTRONIC':
+      case 'ELECTRONIC': {
         const electronics = await prisma.electronicAsset.findMany({
           include: {
             company: { select: { companyName: true } },
@@ -69,8 +70,9 @@ export async function GET(request: NextRequest) {
           remarks: e.remarks || '',
         }));
         break;
+      }
 
-      case 'VEHICLE':
+      case 'VEHICLE': {
         const vehicles = await prisma.vehicleAsset.findMany({
           include: {
             company: { select: { companyName: true } },
@@ -98,6 +100,7 @@ export async function GET(request: NextRequest) {
           remarks: v.remarks || '',
         }));
         break;
+      }
     }
 
     // Convert to CSV

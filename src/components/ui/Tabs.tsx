@@ -127,9 +127,7 @@ Tabs.displayName = 'Tabs';
 // TabsList Component
 // ============================================================================
 
-interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
+export const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     const { variant } = useTabsContext();
 
