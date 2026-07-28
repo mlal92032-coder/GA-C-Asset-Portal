@@ -10,6 +10,15 @@ export async function PUT(
     const authResult = await requireAdmin();
     if (authResult instanceof NextResponse) return authResult;
 
+    // Get full user with tenantId
+    const fullUser = await prisma.user.findFirst({
+      where: { id: authResult.user.id },
+    });
+
+    if (!fullUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
     const { id } = await params;
     const { action, reviewNotes } = await req.json();
 
@@ -57,6 +66,7 @@ export async function PUT(
               condition: assetData.condition || 'GOOD',
               status: assetData.status || 'IN_STORE',
               remarks: assetData.remarks || null,
+              tenantId: fullUser.tenantId,
               usefulLifeYears: assetData.usefulLifeYears ? parseInt(assetData.usefulLifeYears) : null,
               salvageValue: assetData.salvageValue ? parseFloat(assetData.salvageValue) : null,
               depreciationMethod: assetData.depreciationMethod || null,
@@ -81,6 +91,7 @@ export async function PUT(
               condition: assetData.condition || 'GOOD',
               status: assetData.status || 'IN_STORE',
               remarks: assetData.remarks || null,
+              tenantId: fullUser.tenantId,
               usefulLifeYears: assetData.usefulLifeYears ? parseInt(assetData.usefulLifeYears) : null,
               salvageValue: assetData.salvageValue ? parseFloat(assetData.salvageValue) : null,
               depreciationMethod: assetData.depreciationMethod || null,
@@ -108,6 +119,7 @@ export async function PUT(
               condition: assetData.condition || 'GOOD',
               status: assetData.status || 'IN_STORE',
               remarks: assetData.remarks || null,
+              tenantId: fullUser.tenantId,
               usefulLifeYears: assetData.usefulLifeYears ? parseInt(assetData.usefulLifeYears) : null,
               salvageValue: assetData.salvageValue ? parseFloat(assetData.salvageValue) : null,
               depreciationMethod: assetData.depreciationMethod || null,
@@ -131,6 +143,7 @@ export async function PUT(
             message: `Your request to add "${assetData.assetName}" has been approved and the asset has been created.`,
             type: 'SUCCESS',
             link: `/admin/requests`,
+            tenantId: fullUser.tenantId,
           },
         });
       } catch (error) {
