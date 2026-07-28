@@ -25,6 +25,15 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
+    // Get user with tenantId
+    const user = await prisma.user.findFirst({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
     const body = await req.json();
     const validatedData = BulkUpdateSchema.parse(body);
 
@@ -78,6 +87,7 @@ export async function PATCH(req: NextRequest) {
       action: 'UPDATE',
       entity: assetType,
       entityId: assetId,
+      tenantId: user.tenantId,
       details: JSON.stringify({
         status: newStatus,
         condition: newCondition,

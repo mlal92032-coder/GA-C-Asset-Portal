@@ -160,6 +160,7 @@ export async function PUT(
           message: `Your request to add "${assetData.assetName}" has been rejected. ${reviewNotes || ''}`,
           type: 'ERROR',
           link: `/admin/requests`,
+          tenantId: fullUser.tenantId,
         },
       });
     }

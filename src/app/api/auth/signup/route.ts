@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     console.log('[SIGNUP] Creating account for:', validatedData.email);
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { email: validatedData.email },
     });
 
@@ -30,8 +30,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // No tenant ID needed for this database schema
-
     // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 12);
 
@@ -40,6 +38,17 @@ export async function POST(req: NextRequest) {
     const role = userCount === 0 ? 'SUPER_ADMIN' : 'USER';
 
     console.log('[SIGNUP] Creating user with role:', role);
+
+    // Create or get default tenant for new user
+    let defaultTenant = await prisma.tenant.findFirst({
+      where: { name: 'Default' },
+    });
+
+    if (!defaultTenant) {
+      defaultTenant = await prisma.tenant.create({
+        data: { name: 'Default' },
+      });
+    }
 
     const user = await prisma.user.create({
       data: {
@@ -50,6 +59,7 @@ export async function POST(req: NextRequest) {
         department: validatedData.department || null,
         role: role as any,
         status: 'ACTIVE',
+        tenantId: defaultTenant.id,
       },
     });
 
