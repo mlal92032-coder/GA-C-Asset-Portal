@@ -46,7 +46,11 @@ export async function POST(req: NextRequest) {
 
     if (!defaultTenant) {
       defaultTenant = await prisma.tenant.create({
-        data: { name: 'Default' },
+        data: {
+          name: 'Default',
+          slug: 'default',
+          billingEmail: validatedData.email,
+        },
       });
     }
 

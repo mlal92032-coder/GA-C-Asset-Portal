@@ -7,6 +7,15 @@ export async function POST(request: NextRequest) {
     const authResult = await requireAdmin();
     if (authResult instanceof NextResponse) return authResult;
 
+    // Get user with tenantId
+    const user = await prisma.user.findFirst({
+      where: { id: authResult.user.id },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { assetType, assets } = body;
 
@@ -43,6 +52,7 @@ export async function POST(request: NextRequest) {
                 usefulLifeYears: asset.usefulLifeYears ? parseInt(asset.usefulLifeYears) : null,
                 salvageValue: asset.salvageValue ? parseFloat(asset.salvageValue) : null,
                 remarks: asset.remarks || null,
+                tenantId: user.tenantId,
               },
             });
             break;
@@ -66,6 +76,7 @@ export async function POST(request: NextRequest) {
                 usefulLifeYears: asset.usefulLifeYears ? parseInt(asset.usefulLifeYears) : null,
                 salvageValue: asset.salvageValue ? parseFloat(asset.salvageValue) : null,
                 remarks: asset.remarks || null,
+                tenantId: user.tenantId,
               },
             });
             break;
@@ -90,6 +101,7 @@ export async function POST(request: NextRequest) {
                 usefulLifeYears: asset.usefulLifeYears ? parseInt(asset.usefulLifeYears) : null,
                 salvageValue: asset.salvageValue ? parseFloat(asset.salvageValue) : null,
                 remarks: asset.remarks || null,
+                tenantId: user.tenantId,
               },
             });
             break;
