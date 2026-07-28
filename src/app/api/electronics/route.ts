@@ -103,6 +103,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get user with tenantId
+    const user = await prisma.user.findFirst({
+      where: { id: currentUser.id },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
     // VIEW_USER cannot create
     if (currentUser.role === 'VIEW_USER') {
       return NextResponse.json(
@@ -159,6 +168,7 @@ export async function POST(req: NextRequest) {
           warrantyEndDate: validatedData.warrantyEndDate ? new Date(validatedData.warrantyEndDate) : null,
           lastMaintenanceDate: validatedData.lastMaintenanceDate ? new Date(validatedData.lastMaintenanceDate) : null,
           remarks: validatedData.remarks || null,
+          tenantId: user.tenantId,
         },
         include: {
           company: { select: { id: true, companyName: true } },
