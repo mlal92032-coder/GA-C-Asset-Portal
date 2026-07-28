@@ -59,6 +59,10 @@ export async function PUT(
       });
 
       // Create notification
+      const requester = await prisma.user.findUnique({
+        where: { id: request.requestedById },
+        select: { tenantId: true },
+      });
       await prisma.notification.create({
         data: {
           userId: request.requestedById,
@@ -66,6 +70,7 @@ export async function PUT(
           message: `Your request to add ${request.fullName} has been approved`,
           type: 'SUCCESS',
           link: `/admin/requests`,
+          tenantId: requester?.tenantId || authResult.user.tenantId,
         },
       });
 
@@ -94,6 +99,10 @@ export async function PUT(
       });
 
       // Create notification
+      const rejectedRequester = await prisma.user.findUnique({
+        where: { id: request.requestedById },
+        select: { tenantId: true },
+      });
       await prisma.notification.create({
         data: {
           userId: request.requestedById,
@@ -101,6 +110,7 @@ export async function PUT(
           message: `Your request to add ${request.fullName} has been rejected`,
           type: 'ERROR',
           link: `/admin/user-requests`,
+          tenantId: rejectedRequester?.tenantId || authResult.user.tenantId,
         },
       });
 

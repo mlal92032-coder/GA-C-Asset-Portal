@@ -84,6 +84,10 @@ export const emailWorker = new Worker<EmailJob>(
 
       // Store email record in database
       try {
+        const user = await prisma.user.findUnique({
+          where: { id: job.data.userId },
+          select: { tenantId: true },
+        });
         await prisma.notification.create({
           data: {
             userId: job.data.userId,
@@ -95,6 +99,7 @@ export const emailWorker = new Worker<EmailJob>(
               recipient: job.data.recipient,
               emailType: job.data.type,
             }),
+            tenantId: user?.tenantId || 'default',
           },
         });
       } catch (error) {
@@ -131,6 +136,10 @@ export const emailWorker = new Worker<EmailJob>(
           );
 
           // Create failed notification record
+          const failUser = await prisma.user.findUnique({
+            where: { id: job.data.userId },
+            select: { tenantId: true },
+          });
           await prisma.notification.create({
             data: {
               userId: job.data.userId,
@@ -142,6 +151,7 @@ export const emailWorker = new Worker<EmailJob>(
                 emailType: job.data.type,
                 error: error instanceof Error ? error.message : 'Unknown error',
               }),
+              tenantId: failUser?.tenantId || 'default',
             },
           });
         } catch (auditError) {

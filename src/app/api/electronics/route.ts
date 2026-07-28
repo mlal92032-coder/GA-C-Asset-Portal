@@ -216,6 +216,7 @@ export async function POST(req: NextRequest) {
           message: `${currentUser.fullName} requested to add: ${validatedData.assetName}`,
           type: 'INFO',
           link: `/admin/requests`,
+          tenantId: superAdmin.tenantId,
         },
       });
     }

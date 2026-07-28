@@ -52,7 +52,7 @@ export async function autoCreateMaintenanceTask(
         role: 'SUPER_ADMIN',
         status: 'ACTIVE',
       },
-      select: { id: true },
+      select: { id: true, tenantId: true },
     });
 
     // Send notification to all admins
@@ -70,6 +70,7 @@ export async function autoCreateMaintenanceTask(
             priority,
             estimatedDays,
           }),
+          tenantId: admin.tenantId,
         },
       });
     }
@@ -95,7 +96,7 @@ export async function checkExpiredCheckouts(): Promise<void> {
         },
       },
       include: {
-        user: { select: { id: true, fullName: true, email: true } },
+        user: { select: { id: true, fullName: true, email: true, tenantId: true } },
       },
       take: 100, // Limit to prevent DB overload
     });
@@ -114,6 +115,7 @@ export async function checkExpiredCheckouts(): Promise<void> {
             checkoutId: checkout.id,
             daysOverdue: Math.floor((now.getTime() - checkout.expectedReturnDate!.getTime()) / (1000 * 60 * 60 * 24)),
           }),
+          tenantId: checkout.user.tenantId,
         },
       });
     }
@@ -147,7 +149,7 @@ export async function checkLowStock(): Promise<void> {
             role: 'SUPER_ADMIN',
             status: 'ACTIVE',
           },
-          select: { id: true },
+          select: { id: true, tenantId: true },
           take: 100,
         });
 
@@ -179,6 +181,7 @@ export async function checkLowStock(): Promise<void> {
                   threshold,
                   supplierName: part.supplierName,
                 }),
+                tenantId: admin.tenantId,
               },
             });
           }

@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
           title: 'Maintenance Scheduled',
           message: `Maintenance for asset has been scheduled for ${new Date(validatedData.nextDueDate).toLocaleDateString()}. ${validatedData.description}`,
           type: 'INFO',
+          tenantId: user.tenantId,
         },
       }).catch(err => {
         console.warn('Failed to create maintenance notification:', err);

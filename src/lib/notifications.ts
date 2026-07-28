@@ -12,6 +12,7 @@ export async function createNotification({
   type = 'INFO',
   link,
   metadata,
+  tenantId,
 }: {
   userId: string;
   title: string;
@@ -19,6 +20,7 @@ export async function createNotification({
   type?: 'WARNING' | 'INFO' | 'SUCCESS' | 'ERROR';
   link?: string;
   metadata?: Record<string, any>;
+  tenantId: string;
 }) {
   const notification = await prisma.notification.create({
     data: {
@@ -28,6 +30,7 @@ export async function createNotification({
       type,
       link,
       metadata: metadata ? JSON.stringify(metadata) : null,
+      tenantId,
     },
   });
 

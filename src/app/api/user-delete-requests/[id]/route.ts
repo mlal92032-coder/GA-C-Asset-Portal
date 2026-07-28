@@ -49,6 +49,10 @@ export async function PUT(
       });
 
       // Create notification
+      const approveRequester = await prisma.user.findUnique({
+        where: { id: deleteRequest.requestedById },
+        select: { tenantId: true },
+      });
       await prisma.notification.create({
         data: {
           userId: deleteRequest.requestedById,
@@ -56,6 +60,7 @@ export async function PUT(
           message: `User ${deleteRequest.userName} has been deleted`,
           type: 'SUCCESS',
           link: `/admin/requests`,
+          tenantId: approveRequester?.tenantId || authResult.user.tenantId,
         },
       });
 
@@ -83,6 +88,10 @@ export async function PUT(
       });
 
       // Create notification
+      const rejectRequester = await prisma.user.findUnique({
+        where: { id: deleteRequest.requestedById },
+        select: { tenantId: true },
+      });
       await prisma.notification.create({
         data: {
           userId: deleteRequest.requestedById,
@@ -90,6 +99,7 @@ export async function PUT(
           message: `Delete request for ${deleteRequest.userName} has been rejected`,
           type: 'ERROR',
           link: `/admin/requests`,
+          tenantId: rejectRequester?.tenantId || authResult.user.tenantId,
         },
       });
 
