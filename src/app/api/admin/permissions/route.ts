@@ -8,7 +8,7 @@ import prisma from '@/lib/prisma'
  * GET /api/admin/permissions
  * Get all available permissions and user's current permissions
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {

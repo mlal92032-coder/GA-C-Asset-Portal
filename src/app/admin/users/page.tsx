@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import ModernUserModal from '@/components/ModernUserModal';
 import { Button, IconButton } from '@/components/ui';
-import { Plus, Search, Edit, Trash2, Users as UsersIcon, Shield } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users as UsersIcon } from 'lucide-react';
 
 interface User {
   id: string;
@@ -33,7 +33,6 @@ export default function UsersPage() {
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const canManageUsers = isSuperAdmin; // Only SUPER_ADMIN can manage users
-  const isViewOnly = session?.user?.role === 'VIEW_USER';
 
   const fetchUsers = async () => {
     try {

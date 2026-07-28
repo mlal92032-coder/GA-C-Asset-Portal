@@ -10,18 +10,11 @@ const CreateRoleSchema = z.object({
   permissions: z.array(z.string()),
 })
 
-const UpdateRoleSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  description: z.string().optional(),
-  permissions: z.array(z.string()).optional(),
-  isActive: z.boolean().optional(),
-})
-
 /**
  * GET /api/admin/roles
  * List all custom roles
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {

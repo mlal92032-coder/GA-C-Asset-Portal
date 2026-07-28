@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   Circle,
 } from 'lucide-react'
-import { getPermissionGroups, PERMISSIONS } from '@/lib/advanced-permissions'
+import { getPermissionGroups } from '@/lib/advanced-permissions'
 
 const CreateRoleSchema = z.object({
   name: z.string().min(1, 'Role name is required').max(100),
@@ -46,7 +46,6 @@ export default function RolesPage() {
   const [roles, setRoles] = useState<CustomRole[]>([])
   const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -55,7 +54,6 @@ export default function RolesPage() {
     handleSubmit,
     formState: { errors },
     reset,
-    watch,
   } = useForm<CreateRoleData>({
     resolver: zodResolver(CreateRoleSchema),
     defaultValues: {

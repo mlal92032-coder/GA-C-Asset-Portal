@@ -21,7 +21,7 @@ export async function GET() {
         },
       });
       maintenanceStats = stats as unknown[];
-    } catch (e) {
+    } catch {
       // Maintenance table may not be ready, continue with empty stats
     }
 
@@ -34,7 +34,7 @@ export async function GET() {
         },
         _count: true,
       });
-    } catch (e) {
+    } catch {
       // Review table may not be ready, continue with empty stats
     }
 
@@ -71,7 +71,7 @@ export async function GET() {
           status: 'SCHEDULED',
         },
       });
-    } catch (e) {
+    } catch {
       // Maintenance count may fail, continue with 0
     }
 

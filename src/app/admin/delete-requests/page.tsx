@@ -82,8 +82,6 @@ export default function DeleteRequestsPage() {
     }
   };
 
-  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
-
   return (
     <DashboardLayout>
       <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 overflow-x-hidden">

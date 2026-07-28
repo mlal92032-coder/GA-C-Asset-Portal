@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requirePermission, requireAdmin } from '@/lib/api-auth';
-
-interface AssetAddRequest {
-  id: string;
-  assetType: 'FURNITURE' | 'ELECTRONIC' | 'VEHICLE';
-  assetData: Record<string, any>;
-  requestedById: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reviewedById?: string;
-  reviewNotes?: string;
-  createdAt: Date;
-}
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function GET() {
   try {

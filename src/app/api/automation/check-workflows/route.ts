@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { checkExpiredCheckouts, checkLowStock } from '@/lib/maintenance-automation';
 
 /**
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { action } = body;
 
     const startTime = Date.now();
-    let results: any = {};
+    const results: any = {};
 
     if (!action || action === 'all') {
       await Promise.all([

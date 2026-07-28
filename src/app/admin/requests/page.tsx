@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
-import { Trash2, Plus, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Trash2, Plus, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 interface DeleteRequest {
   id: string;
