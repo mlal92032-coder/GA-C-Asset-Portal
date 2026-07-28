@@ -124,6 +124,7 @@ export async function PATCH(
         entity: 'CUSTOM_ROLE',
         entityId: params.id,
         details: JSON.stringify(validatedData),
+        tenantId: user.tenantId,
       },
     })
 
@@ -200,6 +201,7 @@ export async function DELETE(
         action: 'DELETE',
         entity: 'CUSTOM_ROLE',
         entityId: params.id,
+        tenantId: user.tenantId,
       },
     })
 

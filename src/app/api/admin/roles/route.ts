@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: session.user.email || '' },
     })
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: session.user.email || '' },
     })
 
@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
         permissions: JSON.stringify(validatedData.permissions),
         createdById: user.id,
         isActive: true,
+        tenantId: user.tenantId,
       },
       include: {
         createdBy: { select: { id: true, fullName: true, email: true } },
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
         action: 'CREATE',
         entity: 'CUSTOM_ROLE',
         entityId: role.id,
+        tenantId: user.tenantId,
         details: JSON.stringify({
           roleName: validatedData.name,
           permissions: validatedData.permissions,

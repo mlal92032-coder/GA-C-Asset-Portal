@@ -29,7 +29,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { email: session.user.email || '' },
     })
 
@@ -92,6 +92,7 @@ export async function PATCH(
         action: 'UPDATE',
         entity: 'USER_ROLE',
         entityId: user.id,
+        tenantId: admin.tenantId,
         details: JSON.stringify({
           userId: user.id,
           userEmail: user.email,
