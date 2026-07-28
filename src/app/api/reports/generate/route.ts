@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user for audit logging
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: session.user.email || '' },
     })
 

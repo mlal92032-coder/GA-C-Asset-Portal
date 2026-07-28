@@ -52,6 +52,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tenantId: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     const preferences = await prisma.notificationPreference.findUnique({
       where: { userId: session.user.id },
     });
@@ -68,6 +80,7 @@ export async function GET(request: NextRequest) {
           soundEnabled: true,
           soundVolume: 50,
           desktopNotificationsEnabled: true,
+          tenantId: user.tenantId,
         },
       });
 
@@ -118,6 +131,18 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tenantId: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
 
     // Validate input
@@ -132,7 +157,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updateData: NotificationPreferenceUpdate = result.data;
+    let updateData: any = result.data;
+
+    // Convert alertTypes object to JSON string if present
+    if (updateData.alertTypes && typeof updateData.alertTypes === 'object') {
+      updateData = {
+        ...updateData,
+        alertTypes: JSON.stringify(updateData.alertTypes),
+      };
+    }
 
     // Ensure user has preferences record
     let preferences = await prisma.notificationPreference.findUnique({
@@ -144,6 +177,7 @@ export async function PATCH(request: NextRequest) {
         data: {
           userId: session.user.id,
           ...updateData,
+          tenantId: user.tenantId,
         },
       });
     } else {
@@ -158,9 +192,10 @@ export async function PATCH(request: NextRequest) {
       data: {
         userId: session.user.id,
         action: 'UPDATE',
-        module: 'NOTIFICATIONS',
-        changes: JSON.stringify(updateData),
-        timestamp: new Date(),
+        entity: 'NOTIFICATION_PREFERENCES',
+        entityId: session.user.id,
+        details: JSON.stringify(updateData),
+        tenantId: user.tenantId,
       },
     });
 

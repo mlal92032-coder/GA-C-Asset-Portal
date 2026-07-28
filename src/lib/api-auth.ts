@@ -20,6 +20,7 @@ export type UserSession = {
   designation: string | null;
   phone: string | null;
   permissions: string | null;
+  tenantId: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -45,6 +46,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
         designation: true,
         phone: true,
         permissions: true,
+        tenantId: true,
         createdAt: true,
         updatedAt: true,
       },

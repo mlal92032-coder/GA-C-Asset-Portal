@@ -45,12 +45,18 @@ export async function POST(req: NextRequest) {
   try {
     const authResult = await requirePermission('manufacturers', 'create');
     if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const body = await req.json();
     const validatedData = manufacturerSchema.parse(body);
 
     const manufacturer = await prisma.manufacturer.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        tenant: {
+          connect: { id: user.tenantId },
+        },
+      },
     });
 
     await createAuditLog({

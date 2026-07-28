@@ -107,6 +107,7 @@ export async function PUT(
         entity: 'MAINTENANCE',
         entityId: id,
         details: JSON.stringify(validatedData),
+        tenantId: user.tenantId,
       },
     });
 
@@ -148,6 +149,7 @@ export async function DELETE(
         entity: 'MAINTENANCE',
         entityId: id,
         details: JSON.stringify({ deleted: true }),
+        tenantId: user.tenantId,
       },
     });
 

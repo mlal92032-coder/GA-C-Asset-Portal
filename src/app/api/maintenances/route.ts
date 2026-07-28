@@ -154,6 +154,7 @@ export async function POST(request: NextRequest) {
         entity: 'MAINTENANCE',
         entityId: maintenance.id,
         details: JSON.stringify(validatedData),
+        tenantId: user.tenantId,
       },
     });
 

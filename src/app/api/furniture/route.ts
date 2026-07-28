@@ -150,6 +150,7 @@ export async function POST(req: NextRequest) {
           usefulLifeYears: validatedData.usefulLifeYears ? (typeof validatedData.usefulLifeYears === 'string' ? parseInt(validatedData.usefulLifeYears) : validatedData.usefulLifeYears) : null,
           salvageValue: validatedData.salvageValue ? (typeof validatedData.salvageValue === 'string' ? parseFloat(validatedData.salvageValue) : validatedData.salvageValue) : null,
           depreciationMethod: validatedData.depreciationMethod || null,
+          tenantId: currentUser.tenantId,
         },
         include: {
           company: { select: { id: true, companyName: true } },
