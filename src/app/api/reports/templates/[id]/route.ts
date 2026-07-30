@@ -164,6 +164,7 @@ export async function DELETE(
         entity: 'REPORT_TEMPLATE',
         entityId: params.id,
         details: JSON.stringify({ templateName: template.reportName }),
+        tenantId: user.tenantId,
       },
     })
 
