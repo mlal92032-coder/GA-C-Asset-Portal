@@ -8,13 +8,15 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import * as crypto from 'crypto';
 
+interface SlackAction {
+  type: string;
+  value?: string;
+  action_id?: string;
+}
+
 interface SlackInteraction {
   type: string;
-  actions?: Array<{
-    type: string;
-    value?: string;
-    action_id?: string;
-  }>;
+  actions?: SlackAction[];
   user?: {
     id: string;
     name: string;
@@ -53,7 +55,7 @@ function verifySlackRequest(
  * Handle button click actions
  */
 async function handleButtonAction(
-  action: SlackInteraction['actions']?.[0],
+  action: SlackAction | undefined,
   userId: string,
   responseUrl: string | undefined
 ): Promise<{ text: string; success: boolean }> {
