@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if slug already exists
-    const existing = await prisma.settingCategory.findUnique({
+    const existing = await prisma.settingCategory.findFirst({
       where: { slug },
     });
 
