@@ -53,7 +53,7 @@ function verifySlackRequest(
  * Handle button click actions
  */
 async function handleButtonAction(
-  action: SlackInteraction['actions'][0] | undefined,
+  action: SlackInteraction['actions']?.[0],
   userId: string,
   responseUrl: string | undefined
 ): Promise<{ text: string; success: boolean }> {
@@ -88,9 +88,10 @@ async function handleButtonAction(
         data: {
           userId,
           action: 'APPROVE',
-          module: 'REQUESTS',
-          changes: JSON.stringify({ requestId }),
-          timestamp: new Date(),
+          entity: 'REQUEST',
+          entityId: requestId,
+          details: JSON.stringify({ requestId }),
+          tenantId: 'slack-system',
         },
       });
 
@@ -124,9 +125,10 @@ async function handleButtonAction(
         data: {
           userId,
           action: 'REJECT',
-          module: 'REQUESTS',
-          changes: JSON.stringify({ requestId }),
-          timestamp: new Date(),
+          entity: 'REQUEST',
+          entityId: requestId,
+          details: JSON.stringify({ requestId }),
+          tenantId: 'slack-system',
         },
       });
 
