@@ -101,15 +101,17 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         action: 'EXPORT',
         entity: 'REPORT',
+        entityId: 'report-export',
         details: JSON.stringify({
           reportType: validatedData.reportType,
           filters: validatedData.filters,
         }),
+        tenantId: user.tenantId,
       },
     })
 
     // Return PDF as downloadable file
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
