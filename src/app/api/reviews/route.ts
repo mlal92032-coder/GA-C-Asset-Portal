@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
         userId: currentUser.id,
         rating: validatedData.rating,
         comment: validatedData.comment || null,
+        tenantId: currentUser.tenantId,
       },
       include: {
         user: {

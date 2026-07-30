@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         entity: 'REPORT_TEMPLATE',
         entityId: template.id,
         details: JSON.stringify(validatedData),
+        tenantId: user.tenantId,
       },
     })
 
