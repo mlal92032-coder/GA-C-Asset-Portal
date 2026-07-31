@@ -78,9 +78,9 @@ function DonutChart({
   colors: string[];
 }) {
   const total = data.reduce((sum, item) => sum + item.value, 0) || 0;
-  const radius = 60;
+  const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const size = 240;
+  const size = 160;
   const center = size / 2;
 
   let offset = 0;
@@ -88,28 +88,28 @@ function DonutChart({
   if (total === 0) {
     return (
       <motion.div
-        className="card p-8 bg-white border-2 border-slate-200 shadow-lg"
+        className="card p-2 bg-white border-2 border-slate-200 shadow-lg"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h3 className="font-bold text-2xl text-slate-800 mb-2">{title}</h3>
-        <div className="flex items-center justify-center h-40 text-slate-400">No data</div>
+        <h3 className="font-bold text-lg text-slate-800 mb-1">{title}</h3>
+        <div className="flex items-center justify-center h-24 text-slate-400 text-xs">No data</div>
       </motion.div>
     );
   }
 
   return (
     <motion.div
-      className="card p-8 bg-white border-2 border-slate-200 shadow-lg hover:shadow-xl transition-all"
+      className="card p-2 bg-white border-2 border-slate-200 shadow-lg hover:shadow-xl transition-all"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
     >
-      <h3 className="font-bold text-2xl text-slate-900 mb-2">{title}</h3>
+      <h3 className="font-bold text-lg text-slate-900 mb-1">{title}</h3>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-center">
         {/* Legend - Left Side */}
-        <div className="space-y-2">
+        <div className="space-y-0.5">
           {data.map((item, idx) => {
             const color = item.fill || colors[idx] || '#64748b';
             const isSelected = selectedSegment === item.name;
@@ -496,8 +496,8 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
-        {/* Offices and Departments Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4 px-0">
+        {/* Offices and Departments Section - Hidden to save space */}
+        <div className="hidden grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4 px-0">
           {/* Offices */}
           <motion.div className="card border-2 border-slate-200 shadow-lg p-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center justify-between mb-2 pb-2 border-b-2 border-slate-200">
@@ -555,8 +555,8 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
-        {/* Recent Assets Table */}
-        <motion.div className="card border-2 border-slate-200 shadow-lg mt-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Recent Assets Table - Hidden to save space */}
+        <motion.div className="hidden card border-2 border-slate-200 shadow-lg mt-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="px-6 py-5 border-b-2 border-slate-200 bg-white flex items-center justify-between">
             <div>
               <h3 className="font-bold text-lg text-slate-900">Recently Added Assets</h3>
@@ -598,8 +598,8 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Employee Assets Section */}
-        <motion.div className="card border-2 border-slate-200 shadow-lg mt-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Employee Assets Section - Hidden to save space */}
+        <motion.div className="hidden card border-2 border-slate-200 shadow-lg mt-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="px-6 py-5 border-b-2 border-slate-200 bg-white flex items-center justify-between">
             <div>
               <h3 className="font-bold text-lg text-slate-900">Employee Assigned Assets</h3>
