@@ -75,8 +75,7 @@ async function handleButtonAction(
         where: { id: requestId },
         data: {
           status: 'APPROVED',
-          approvedBy: userId,
-          approvedAt: new Date(),
+          reviewedById: userId,
         },
       });
 
@@ -113,7 +112,8 @@ async function handleButtonAction(
         where: { id: requestId },
         data: {
           status: 'REJECTED',
-          rejectionReason: 'Rejected via Slack',
+          reviewedById: userId,
+          reviewNotes: 'Rejected via Slack',
         },
       });
 

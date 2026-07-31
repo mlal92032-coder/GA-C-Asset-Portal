@@ -75,6 +75,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await prisma.auditLog.create({
       data: {
         userId: user.id,
+        tenantId: user.tenantId,
         action: 'UPDATE',
         entity: 'SPARE_PART',
         entityId: id,
@@ -118,6 +119,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.auditLog.create({
       data: {
         userId: user.id,
+        tenantId: user.tenantId,
         action: 'DELETE',
         entity: 'SPARE_PART',
         entityId: id,

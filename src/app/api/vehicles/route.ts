@@ -119,8 +119,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check registration number uniqueness
-    const existing = await prisma.vehicleAsset.findUnique({
-      where: { registrationNumber: validatedData.registrationNumber || undefined },
+    const existing = await prisma.vehicleAsset.findFirst({
+      where: {
+        registrationNumber: validatedData.registrationNumber,
+      },
     });
     if (existing) {
       return NextResponse.json(
@@ -144,6 +146,7 @@ export async function POST(req: NextRequest) {
 
     const asset = await prisma.vehicleAsset.create({
       data: {
+        tenantId: authResult.user.tenantId || '',
         assetTag: validatedData.assetTag,
         assetName: validatedData.assetName,
         registrationNumber: validatedData.registrationNumber,

@@ -7,6 +7,37 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Eye, EyeOff, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
+const slides = [
+  {
+    id: 1,
+    title: 'Asset Management',
+    description: 'Track and manage all your assets efficiently',
+    icon: '📊',
+    logo: '/logo1.png'
+  },
+  {
+    id: 2,
+    title: 'Real-time Updates',
+    description: 'Live tracking with instant notifications',
+    icon: '⚡',
+    logo: '/logo2.png'
+  },
+  {
+    id: 3,
+    title: 'Secure & Reliable',
+    description: 'Enterprise-grade security for your data',
+    icon: '🔒',
+    logo: '/logo1.png'
+  },
+  {
+    id: 4,
+    title: 'Analytics Dashboard',
+    description: 'Powerful insights and detailed reports',
+    icon: '📈',
+    logo: '/logo2.png'
+  }
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -21,32 +52,12 @@ export default function LoginPage() {
     if (savedEmail) setEmail(savedEmail);
   }, []);
 
-  const slides = [
-    {
-      id: 1,
-      title: 'Learn & Grow',
-      description: 'Empower your institution with intelligent asset management',
-      icon: 'student'
-    },
-    {
-      id: 2,
-      title: 'Secure Systems',
-      description: 'Enterprise-grade security protecting your valuable resources',
-      icon: 'shield'
-    },
-    {
-      id: 3,
-      title: 'Smart Technology',
-      description: 'Advanced tools designed for modern educational institutions',
-      icon: 'tech'
-    },
-    {
-      id: 4,
-      title: 'Team Collaboration',
-      description: 'Work together efficiently across your entire organization',
-      icon: 'team'
-    }
-  ];
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleNextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -60,347 +71,263 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
-      const result = await signIn('credentials', { email, password, redirect: false });
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
       if (result?.error) {
-        setError(result.error);
+        setError(result.error || 'Login failed');
       } else if (result?.ok) {
         localStorage.setItem('rememberedEmail', email);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay to ensure session is set
         router.push('/dashboard');
       }
-    } catch { setError('An unexpected error occurred.'); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const currentSlideData = slides[currentSlide];
 
   return (
     <div className="min-h-screen w-full flex overflow-hidden">
-      {/* Left Side - Carousel Section */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="hidden lg:flex w-1/2 relative items-center justify-center p-8 bg-gradient-to-br from-blue-600 to-blue-800 flex-col"
-      >
+      {/* Left Side - Blue Background with Carousel */}
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 flex-col items-center justify-center p-8 relative">
+        {/* Animated Background Orbs */}
+        <div className="absolute inset-0 overflow-hidden opacity-20">
+          <motion.div
+            animate={{
+              x: [0, 100, 0],
+              y: [0, 50, 0],
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+            className="absolute -top-40 -left-40 w-96 h-96 bg-white rounded-full mix-blend-multiply filter blur-3xl"
+          />
+          <motion.div
+            animate={{
+              x: [0, -100, 0],
+              y: [0, 100, 0],
+            }}
+            transition={{ duration: 12, repeat: Infinity, delay: 2 }}
+            className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl"
+          />
+        </div>
+
         {/* Carousel Content */}
-        <div className="w-full max-w-md relative">
+        <div className="w-full max-w-md relative z-10">
           {/* Carousel Card */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, scale: 0.85, rotateY: 60 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              exit={{ opacity: 0, scale: 0.85, rotateY: -60 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="relative w-full"
-              style={{ perspective: 2500, transformStyle: "preserve-3d" }}
+              initial={{ opacity: 0, rotateY: 90, scale: 0.8 }}
+              animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+              exit={{ opacity: 0, rotateY: -90, scale: 0.8 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+              className="relative"
             >
-              <div
-                className="bg-white rounded-3xl shadow-2xl border border-white/30 overflow-hidden relative"
-                style={{
-                  boxShadow: '0 30px 60px rgba(0, 0, 0, 0.2), 0 0 100px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255,255,255,0.8)',
-                  background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240, 249, 255, 0.98) 100%)'
-                }}
+              <motion.div
+                className="bg-white/20 backdrop-blur-xl rounded-3xl p-12 border border-white/40 shadow-2xl relative overflow-hidden min-h-96 flex flex-col items-center justify-center"
+                whileHover={{ scale: 1.05 }}
               >
-                {/* Animated Background Gradient */}
+                {/* Animated background pattern */}
                 <motion.div
                   animate={{
-                    background: [
-                      'linear-gradient(0deg, rgba(59,130,246,0.05) 0%, transparent 100%)',
-                      'linear-gradient(180deg, rgba(99,102,241,0.05) 0%, transparent 100%)',
-                      'linear-gradient(0deg, rgba(59,130,246,0.05) 0%, transparent 100%)'
-                    ]
+                    rotate: [0, 360],
                   }}
-                  transition={{ duration: 6, repeat: Infinity }}
-                  className="absolute inset-0 pointer-events-none"
+                  transition={{ duration: 20, repeat: Infinity, linear: true }}
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle at 20% 50%, transparent 20%, white 100%)',
+                  }}
                 />
 
-                {/* Slide Visualization */}
+
+                {/* Content */}
                 <motion.div
-                  className="w-full h-96 flex items-center justify-center relative bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-cyan-50/80 p-8"
-                  initial={{ rotateX: 25, opacity: 0 }}
-                  animate={{ rotateX: 0, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.7 }}
-                  style={{ perspective: 1500, transformStyle: 'preserve-3d' }}
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="text-8xl mb-6 relative z-10"
                 >
-                  <div className="text-center">
-                    <motion.div
-                      animate={{
-                        y: [0, -20, 0],
-                        rotate: [0, 8, -8, 0],
-                        scale: [1, 1.1, 1]
-                      }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                      className="text-8xl mb-2 drop-shadow-lg"
-                    >
-                      {slides[currentSlide].icon === 'student' && '📚'}
-                      {slides[currentSlide].icon === 'shield' && '🛡️'}
-                      {slides[currentSlide].icon === 'tech' && '💻'}
-                      {slides[currentSlide].icon === 'team' && '🤝'}
-                    </motion.div>
-                  </div>
+                  {currentSlideData.icon}
                 </motion.div>
 
-                {/* Slide Text */}
-                <motion.div
-                  className="text-center px-8 py-8 relative z-10"
-                  initial={{ opacity: 0, y: 15 }}
+                <motion.h2
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.6 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="text-4xl font-bold mb-4 text-center relative z-10 text-white"
                 >
-                  <motion.h2
-                    className="text-4xl font-black text-transparent bg-clip-text mb-2"
-                    style={{
-                      backgroundImage: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #6366F1 100%)',
-                      letterSpacing: '-0.5px'
-                    }}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.45, duration: 0.5 }}
-                  >
-                    {slides[currentSlide].title}
-                  </motion.h2>
-                  <motion.p
-                    className="text-gray-600 text-base font-semibold leading-relaxed tracking-wide"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                  >
-                    {slides[currentSlide].description}
-                  </motion.p>
-                </motion.div>
-              </div>
+                  {currentSlideData.title}
+                </motion.h2>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="text-lg text-white/90 text-center relative z-10"
+                >
+                  {currentSlideData.description}
+                </motion.p>
+
+                {/* Glow effect */}
+                <motion.div
+                  animate={{
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute inset-0 rounded-3xl"
+                  style={{
+                    boxShadow: '0 0 50px rgba(255, 255, 255, 0.2) inset',
+                  }}
+                />
+              </motion.div>
             </motion.div>
           </AnimatePresence>
 
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-center gap-4 mt-8">
-            {/* Left Arrow Button */}
+          {/* Navigation Controls */}
+          <div className="flex items-center justify-center gap-4 mt-12">
+            {/* Previous Button */}
             <motion.button
-              whileHover={{ scale: 1.12, boxShadow: '0 10px 30px rgba(255,255,255,0.4)' }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
               onClick={handlePrevSlide}
-              className="w-12 h-12 rounded-full bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-md border border-white/70 text-white
-                         flex items-center justify-center hover:from-white/50 hover:to-white/30 transition-all duration-300 shadow-xl"
+              className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/30 transition-all shadow-lg"
             >
-              <ChevronLeft className="w-6 h-6 font-bold" />
+              <ChevronLeft className="w-6 h-6" />
             </motion.button>
 
             {/* Slide Indicators */}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {slides.map((_, index) => (
                 <motion.button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
                   animate={{
-                    scale: currentSlide === index ? 1.4 : 1,
-                    backgroundColor: currentSlide === index ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)'
+                    scale: currentSlide === index ? 1.2 : 1,
+                    opacity: currentSlide === index ? 1 : 0.5,
                   }}
-                  transition={{ duration: 0.3 }}
-                  className="w-3 h-3 rounded-full shadow-lg"
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    currentSlide === index ? 'bg-white' : 'bg-white/40'
+                  }`}
                 />
               ))}
             </div>
 
-            {/* Right Arrow Button */}
+            {/* Next Button */}
             <motion.button
-              whileHover={{ scale: 1.12, boxShadow: '0 10px 30px rgba(255,255,255,0.4)' }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
               onClick={handleNextSlide}
-              className="w-12 h-12 rounded-full bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-md border border-white/70 text-white
-                         flex items-center justify-center hover:from-white/50 hover:to-white/30 transition-all duration-300 shadow-xl"
+              className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white/30 transition-all shadow-lg"
             >
-              <ChevronRight className="w-6 h-6 font-bold" />
+              <ChevronRight className="w-6 h-6" />
             </motion.button>
           </div>
-        </div>
-      </motion.div>
 
-      {/* Right Side - Welcome & Login Form */}
+          {/* Slide counter */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center mt-8 text-white/60"
+          >
+            {currentSlide + 1} / {slides.length}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Right Side - White Background with Login Form */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="w-full lg:w-1/2 bg-white flex flex-col items-center justify-center p-8 sm:p-16 relative overflow-hidden"
+        className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 bg-white relative"
       >
-
-        <div className="w-full max-w-md relative z-10">
-          {/* Logo Section */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.0, delay: 0.1, ease: "easeOut" }}
-            style={{ perspective: 3000, transformStyle: 'preserve-3d' }}
-            className="mb-12 flex gap-14 items-center justify-center relative w-full"
-          >
-            {/* Professional Background Glow */}
-            <motion.div
-              animate={{
-                opacity: [0.12, 0.2, 0.12],
-              }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute inset-0 blur-3xl bg-gradient-to-r from-blue-500/25 via-indigo-500/15 to-blue-500/25 rounded-full -z-10"
-              style={{ width: '380px', height: '150px', left: '50%', transform: 'translateX(-50%)' }}
-            />
-
-            {/* SEF Logo Container */}
-            <motion.div
-              initial={{ opacity: 0, x: -40, rotateY: -60 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              transition={{ duration: 1.0, delay: 0.2, ease: "easeOut" }}
-              whileHover={{ y: -12, boxShadow: '0 25px 60px rgba(59, 130, 246, 0.25)' }}
-              style={{ perspective: 1600, transformStyle: 'preserve-3d' }}
-              className="flex flex-col items-center"
-            >
-              <motion.div
-                animate={{
-                  rotateY: [0, 6, 0],
-                  rotateX: [0, 3, 0],
-                }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1400, transformStyle: 'preserve-3d' }}
-                className="w-36 h-36 bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-3xl p-5 flex items-center justify-center shadow-xl relative overflow-hidden group cursor-pointer"
-              >
-                {/* Professional Double Border */}
-                <div className="absolute inset-0 rounded-3xl border border-slate-200/80" />
-                <div className="absolute inset-1 rounded-3xl border border-slate-100/50 pointer-events-none" />
-
-                {/* Sophisticated Depth Layer */}
-                <motion.div
-                  animate={{
-                    opacity: [0.06, 0.12, 0.06],
-                  }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute inset-0 bg-gradient-to-br from-blue-600/8 via-transparent to-transparent rounded-3xl pointer-events-none"
-                />
-
-                <Image
-                  src="/sef-logo.png"
-                  alt="SEF Logo"
-                  width={112}
-                  height={112}
-                  className="object-contain relative z-10 group-hover:scale-115 transition-transform duration-400"
-                />
-
-                {/* Refined Light Edge */}
-                <div className="absolute inset-0 rounded-3xl border border-white/60 pointer-events-none" />
-              </motion.div>
-            </motion.div>
-
-            {/* Enterprise Divider */}
-            <motion.div
-              initial={{ scaleY: 0, opacity: 0 }}
-              animate={{ scaleY: 1, opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.7, ease: "easeOut" }}
-              className="flex flex-col items-center h-32"
-            >
-              <motion.div
-                animate={{
-                  opacity: [0.4, 0.65, 0.4],
-                }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="w-0.5 h-28 bg-gradient-to-b from-slate-200 via-slate-400 to-slate-200 rounded-full"
-              />
-            </motion.div>
-
-            {/* Sindh Government Logo Container */}
-            <motion.div
-              initial={{ opacity: 0, x: 40, rotateY: 60 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              transition={{ duration: 1.0, delay: 0.25, ease: "easeOut" }}
-              whileHover={{ y: -12, boxShadow: '0 25px 60px rgba(59, 130, 246, 0.25)' }}
-              style={{ perspective: 1600, transformStyle: 'preserve-3d' }}
-              className="flex flex-col items-center"
-            >
-              <motion.div
-                animate={{
-                  rotateY: [0, -6, 0],
-                  rotateX: [0, -3, 0],
-                }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                style={{ perspective: 1400, transformStyle: 'preserve-3d' }}
-                className="w-36 h-36 bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-3xl p-5 flex items-center justify-center shadow-xl relative overflow-hidden group cursor-pointer"
-              >
-                {/* Professional Double Border */}
-                <div className="absolute inset-0 rounded-3xl border border-slate-200/80" />
-                <div className="absolute inset-1 rounded-3xl border border-slate-100/50 pointer-events-none" />
-
-                {/* Sophisticated Depth Layer */}
-                <motion.div
-                  animate={{
-                    opacity: [0.06, 0.12, 0.06],
-                  }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
-                  className="absolute inset-0 bg-gradient-to-br from-green-600/8 via-transparent to-transparent rounded-3xl pointer-events-none"
-                />
-
-                <Image
-                  src="/sindh-logo.png"
-                  alt="Sindh Government Logo"
-                  width={112}
-                  height={112}
-                  className="object-contain relative z-10 group-hover:scale-115 transition-transform duration-400"
-                />
-
-                {/* Refined Light Edge */}
-                <div className="absolute inset-0 rounded-3xl border border-white/60 pointer-events-none" />
-              </motion.div>
-            </motion.div>
-          </motion.div>
-
-          {/* Welcome Header */}
+        <div className="w-full max-w-md">
+          {/* Header with Logos and Organization Info */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
             className="mb-10 text-center"
           >
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight whitespace-nowrap">
-              Sindh Education Foundation
-            </h1>
-            <div className="mb-2">
-              <p className="text-lg font-semibold text-gray-600 mb-2">Government of Sindh</p>
-              <p className="text-2xl font-bold text-blue-700">GA&C Asset Portal</p>
+            {/* Logos */}
+            <div className="flex items-center justify-center gap-8 mb-10">
+              <div className="w-24 h-24 relative">
+                <Image
+                  src="/logo1.png"
+                  alt="Logo 1"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="w-24 h-24 relative">
+                <Image
+                  src="/logo2.png"
+                  alt="Logo 2"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Organization Info */}
+            <p className="text-base font-black text-gray-900 mb-2">Sindh Education Foundation</p>
+            <p className="text-sm font-bold text-gray-800 mb-3">Government of Sindh</p>
+
+            <div className="relative mb-4">
+              <p className="text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-3">
+                GA&C Asset Portal Professional
+              </p>
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
             </div>
           </motion.div>
 
-          {/* Error */}
+          {/* Error Message */}
           <AnimatePresence>
             {error && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mb-2"
+                className="mb-6"
               >
-                <div className="flex items-center gap-1.5.5 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-lg text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
+                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-center gap-3 backdrop-blur-sm">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.35, duration: 0.5 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
             >
-              <label className="block text-sm font-semibold text-gray-700 mb-2.5">Email Address</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="admin@company.com"
                 required
                 disabled={loading}
-                autoComplete="off"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500
-                           focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200
-                           disabled:bg-gray-100 disabled:cursor-not-allowed"
+                autoComplete="email"
+                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-400
+                           focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all
+                           disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-400"
               />
             </motion.div>
 
@@ -408,9 +335,11 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.45, duration: 0.5 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
             >
-              <label className="block text-sm font-semibold text-gray-700 mb-2.5">Password</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -419,16 +348,16 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   disabled={loading}
-                  autoComplete="new-password"
-                  className="w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500
-                             focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200
-                             disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 bg-gray-50 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-400
+                             focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all
+                             disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-400"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 transition-colors"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -438,9 +367,9 @@ export default function LoginPage() {
 
             {/* Sign In Button */}
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55, duration: 0.5 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
               className="pt-4"
             >
               <motion.button
@@ -448,10 +377,9 @@ export default function LoginPage() {
                 whileTap={{ scale: loading ? 1 : 0.98 }}
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-6 bg-blue-600 text-white font-bold text-base rounded-lg
-                           transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed
-                           hover:bg-blue-700 shadow-lg hover:shadow-xl
-                           flex items-center justify-center gap-1.5"
+                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg
+                           hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all
+                           shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -459,11 +387,42 @@ export default function LoginPage() {
                     <span>Signing in...</span>
                   </>
                 ) : (
-                  <span>Sign In</span>
+                  <>
+                    <span>Sign In</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </>
                 )}
               </motion.button>
             </motion.div>
           </form>
+
+          {/* Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="mt-8 pt-8 border-t border-gray-200 text-center text-xs text-gray-600"
+          >
+            <p>
+              Need help?{' '}
+              <a href="mailto:support@assetmanagement.com" className="text-blue-600 hover:text-blue-700 font-semibold">
+                support@assetmanagement.com
+              </a>
+            </p>
+          </motion.div>
+
+          {/* Security badge */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-600"
+          >
+            <span>🔒</span>
+            <span>Secure SSL Connection</span>
+          </motion.div>
         </div>
       </motion.div>
     </div>

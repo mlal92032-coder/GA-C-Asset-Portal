@@ -224,9 +224,8 @@ async function handleMaintenanceCommand(args: string[], responseUrl: string): Pr
     try {
       const maintenances = await prisma.maintenance.findMany({
         where: { status: { not: 'COMPLETED' } },
-        orderBy: { dueDate: 'asc' },
+        orderBy: { nextDueDate: 'asc' },
         take: 10,
-        include: { assignedTo: true },
       });
 
       if (maintenances.length === 0) {
@@ -236,7 +235,7 @@ async function handleMaintenanceCommand(args: string[], responseUrl: string): Pr
       const message = maintenances
         .map(
           (m) =>
-            `• ${m.description} - Due: ${m.dueDate?.toLocaleDateString()} - Assigned to: ${m.assignedTo?.fullName || 'Unassigned'}`
+            `• ${m.description} - Due: ${m.nextDueDate?.toLocaleDateString()} - Status: ${m.status}`
         )
         .join('\n');
 

@@ -46,10 +46,10 @@ export const Toast: React.FC<ToastProps & { onClose: () => void }> = ({
   onClose,
 }) => {
   useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(onClose, duration);
-      return () => clearTimeout(timer);
-    }
+    if (duration <= 0) return;
+
+    const timer = setTimeout(onClose, duration);
+    return () => clearTimeout(timer);
   }, [duration, onClose]);
 
   const Icon = iconMap[type];

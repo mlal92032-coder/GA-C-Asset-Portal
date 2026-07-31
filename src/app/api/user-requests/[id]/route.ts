@@ -29,6 +29,7 @@ export async function PUT(
       // Create the user
       const newUser = await prisma.user.create({
         data: {
+          tenantId: request.tenantId || authResult.user.tenantId,
           fullName: request.fullName,
           email: request.email,
           password: await hashPassword('DefaultPassword@123'), // Temporary password

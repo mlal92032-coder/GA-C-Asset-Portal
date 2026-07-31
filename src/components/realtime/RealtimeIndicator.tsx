@@ -161,10 +161,10 @@ export function RealtimeToast({
   autoClose = 5000,
 }: RealtimeToastProps) {
   useEffect(() => {
-    if (autoClose && onClose) {
-      const timer = setTimeout(onClose, autoClose)
-      return () => clearTimeout(timer)
-    }
+    if (!autoClose || !onClose) return
+
+    const timer = setTimeout(onClose, autoClose)
+    return () => clearTimeout(timer)
   }, [autoClose, onClose])
 
   const typeColors = {

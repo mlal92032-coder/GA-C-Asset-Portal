@@ -2,6 +2,13 @@ import { Queue, Worker, QueueScheduler } from 'bullmq'
 import { getRedisClient } from '@/lib/redis'
 import { logger } from '@/lib/logger'
 
+// ============= FEATURE FLAGS =============
+const JOBS_ENABLED = process.env.ENABLE_BACKGROUND_JOBS === 'true'
+const EMAIL_QUEUE_ENABLED = process.env.ENABLE_EMAIL_QUEUE === 'true' && JOBS_ENABLED
+
+logger.info(`Background Jobs: ${JOBS_ENABLED ? '✅ ENABLED' : '❌ DISABLED (Vercel mode)'}`)
+logger.info(`Email Queue: ${EMAIL_QUEUE_ENABLED ? '✅ ENABLED' : '❌ DISABLED (Fallback mode)'}`)
+
 // Queue instances
 let emailQueue: Queue | null = null
 let smsQueue: Queue | null = null
@@ -135,6 +142,7 @@ export function getBulkOperationQueue(): Queue {
 
 /**
  * Add email job to queue
+ * Falls back to synchronous sending if jobs are disabled (Vercel)
  */
 export async function queueEmail(
   to: string,
@@ -143,6 +151,12 @@ export async function queueEmail(
   data: Record<string, any>,
   options?: { delay?: number; priority?: number },
 ) {
+  // If background jobs disabled, log only (for Vercel)
+  if (!JOBS_ENABLED) {
+    logger.info(`[SYNC EMAIL] ${subject} to ${to}`, { template, data })
+    return { id: `sync_${Date.now()}`, queued: false }
+  }
+
   const queue = getEmailQueue()
   const job = await queue.add(
     'send-email',

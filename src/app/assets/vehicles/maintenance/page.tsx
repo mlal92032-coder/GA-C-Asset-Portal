@@ -574,7 +574,7 @@ function VehicleMaintenanceContent() {
               </div>
               <div class="header-item">
                 <strong>Type:</strong>
-                ${currentVehicle?.assetType || 'N/A'}
+                ${currentVehicle?.vehicleType || 'N/A'}
               </div>
             </div>
           </div>
@@ -883,7 +883,7 @@ function VehicleMaintenanceContent() {
                   </div>
                   <div className="bg-white rounded-lg p-3 border-2 border-blue-200 shadow-sm">
                     <p className="text-xs text-slate-500 font-semibold mb-1">ASSET TYPE</p>
-                    <p className="text-base font-bold text-slate-900">{vehicles.find(v => v.id === selectedVehicle)?.assetType || 'N/A'}</p>
+                    <p className="text-base font-bold text-slate-900">{vehicles.find(v => v.id === selectedVehicle)?.vehicleType || 'N/A'}</p>
                   </div>
                 </>
               )}

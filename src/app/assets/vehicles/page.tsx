@@ -240,7 +240,7 @@ export default function VehiclesPage() {
     setCheckoutAsset({
       id: asset.id,
       name: asset.assetName,
-      location: asset.location?.locationName || asset.location?.room
+      location: asset.location?.locationName || asset.location?.room || '-'
     });
     setShowCheckout(true);
   };

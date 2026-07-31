@@ -111,7 +111,7 @@ export async function PUT(
     // If email is being changed, check uniqueness
     if (validatedData.email && validatedData.email !== existingUser.email) {
       const emailExists = await prisma.user.findUnique({
-        where: { email: validatedData.email },
+        where: { tenantId_email: { tenantId: existingUser.tenantId, email: validatedData.email } },
       });
       if (emailExists) {
         return NextResponse.json(

@@ -1436,17 +1436,19 @@ function QRCodeSection({ qrCategory, setQrCategory, onDownload, downloading }: a
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) {
-      fetchAllAssets();
-      // Auto-refresh QR codes every 30 seconds to get latest data
-      const interval = setInterval(() => {
-        fetchAllAssets();
-      }, 30000);
-      return () => clearInterval(interval);
-    } else {
+    if (!session) {
       setError('Loading authentication...');
       setQrLoading(false);
+      return;
     }
+
+    fetchAllAssets();
+    // Auto-refresh QR codes every 30 seconds to get latest data
+    const interval = setInterval(() => {
+      fetchAllAssets();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [session]);
 
   const fetchAllAssets = async () => {
