@@ -81,12 +81,12 @@ export const Toast: React.FC<ToastProps & { onClose: () => void }> = ({
   );
 };
 
-export const ToastContainer: React.FC<{ toasts: ToastProps[] }> = ({ toasts }) => (
+export const ToastContainer: React.FC<{ toasts: ToastProps[]; onClose: (id: string) => void }> = ({ toasts, onClose }) => (
   <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
     <AnimatePresence>
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">
-          {/* Toasts are rendered through context */}
+          <Toast {...toast} onClose={() => onClose(toast.id)} />
         </div>
       ))}
     </AnimatePresence>

@@ -369,10 +369,10 @@ export default function DashboardPage() {
         onMenuClick={() => {}}
         onManageClick={() => {}}
       />
-      <div className="w-full max-w-full px-1.5 sm:px-2 lg:px-3 py-1 overflow-x-hidden">
+      <div className="w-full max-w-full px-1 sm:px-1.5 lg:px-2 py-1 overflow-x-hidden">
         {/* Stat Cards with Stagger Animation - Responsive */}
         <motion.div
-          className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 mb-2"
+          className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 mb-1"
           variants={staggerContainer}
           initial="hidden"
           animate="show"
@@ -382,18 +382,18 @@ export default function DashboardPage() {
               <motion.div className="stat-card bg-white border-2 border-slate-200 cursor-pointer shadow-lg relative overflow-hidden group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -3, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-600 to-blue-400" />
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-8 -mt-8 transition-opacity" />
-                <div className="relative z-10 p-5">
-                  <div className="flex items-start justify-between mb-2">
+                <div className="relative z-10 p-3">
+                  <div className="flex items-start justify-between mb-1">
                     <div className="stat-card-icon bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
-                      <Package className="w-6 h-6 text-blue-600 font-bold" />
+                      <Package className="w-5 h-5 text-blue-600 font-bold" />
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total</p>
-                      <p className="text-sm font-bold text-slate-700">Assets</p>
+                      <p className="text-xs font-bold text-slate-700">Assets</p>
                     </div>
                   </div>
-                  <p className="stat-card-value text-3xl font-bold text-blue-600 mb-1">{dashboardData.totalAssets}</p>
-                  <div className="h-1 w-12 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full" />
+                  <p className="stat-card-value text-2xl font-bold text-blue-600 mb-0.5">{dashboardData.totalAssets}</p>
+                  <div className="h-0.5 w-10 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full" />
                 </div>
               </motion.div>
             </Link>
@@ -404,18 +404,18 @@ export default function DashboardPage() {
               <motion.div className="stat-card bg-white border-2 border-slate-200 cursor-pointer shadow-lg relative overflow-hidden group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -3, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-600 to-purple-400" />
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -mr-8 -mt-8 transition-opacity" />
-                <div className="relative z-10 p-5">
-                  <div className="flex items-start justify-between mb-2">
+                <div className="relative z-10 p-3">
+                  <div className="flex items-start justify-between mb-1">
                     <div className="stat-card-icon bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200">
-                      <Armchair className="w-6 h-6 text-purple-600 font-bold" />
+                      <Armchair className="w-5 h-5 text-purple-600 font-bold" />
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</p>
-                      <p className="text-sm font-bold text-slate-700">Furniture</p>
+                      <p className="text-xs font-bold text-slate-700">Furniture</p>
                     </div>
                   </div>
-                  <p className="stat-card-value text-3xl font-bold text-purple-600 mb-1">{typeCount.FURNITURE}</p>
-                  <div className="h-1 w-12 bg-gradient-to-r from-purple-600 to-purple-400 rounded-full" />
+                  <p className="stat-card-value text-2xl font-bold text-purple-600 mb-0.5">{typeCount.FURNITURE}</p>
+                  <div className="h-0.5 w-10 bg-gradient-to-r from-purple-600 to-purple-400 rounded-full" />
                 </div>
               </motion.div>
             </Link>
@@ -481,7 +481,7 @@ export default function DashboardPage() {
         )}
 
         {/* Donut Charts */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-4">
           <motion.div className="relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-2xl blur-xl" />
             <DonutChart data={typeData} onSegmentClick={(name) => setSelectedType(selectedType === name ? null : name)} selectedSegment={selectedType} title="Asset Types" colors={['#8b5cf6', '#10b981', '#f97316']} />
@@ -497,10 +497,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Offices and Departments Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10 px-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4 px-0">
           {/* Offices */}
-          <motion.div className="card border-2 border-slate-200 shadow-lg p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex items-center justify-between mb-2 pb-4 border-b-2 border-slate-200">
+          <motion.div className="card border-2 border-slate-200 shadow-lg p-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="flex items-center justify-between mb-2 pb-2 border-b-2 border-slate-200">
               <div>
                 <h3 className="font-bold text-lg text-slate-900">Offices</h3>
                 <p className="text-xs text-slate-500 font-medium">Organization Locations</p>
