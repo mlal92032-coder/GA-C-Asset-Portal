@@ -71,13 +71,17 @@ async function handleButtonAction(
 
     try {
       // Try to find and approve the request (could be asset request, maintenance, etc.)
-      await prisma.assetAddRequest.updateMany({
+      const result = await prisma.assetAddRequest.updateMany({
         where: { id: requestId },
         data: {
           status: 'APPROVED',
           reviewedById: userId,
         },
       });
+
+      if (result.count === 0) {
+        throw new Error('Request not found');
+      }
 
       logger.info('Request approved via Slack', {
         requestId,
