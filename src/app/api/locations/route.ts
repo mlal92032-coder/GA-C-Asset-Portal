@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 
 const locationSchema = z.object({
   locationName: z.string().min(1, 'Location name is required'),
-  building: z.string().optional().nullable(),
-  floor: z.string().optional().nullable(),
-  room: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
+  building: z.string().optional().or(z.null()).transform(v => !v ? null : v),
+  floor: z.string().optional().or(z.null()).transform(v => !v ? null : v),
+  room: z.string().optional().or(z.null()).transform(v => !v ? null : v),
+  description: z.string().optional().or(z.null()).transform(v => !v ? null : v),
 });
 
 export async function GET(req: NextRequest) {
@@ -50,8 +52,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = locationSchema.parse(body);
 
+    const session = await getServerSession(authOptions);
+    const tenantId = session?.user?.tenantId;
+
     const location = await prisma.location.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        tenantId: tenantId || undefined,
+      },
     });
 
     await createAuditLog({

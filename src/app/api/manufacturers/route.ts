@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 
 const manufacturerSchema = z.object({
   manufacturerName: z.string().min(1, 'Manufacturer name is required'),
-  country: z.string().optional().nullable(),
-  supportEmail: z.string().email().optional().nullable(),
-  supportPhone: z.string().optional().nullable(),
+  country: z.string().optional().or(z.null()).transform(v => !v ? null : v),
+  supportEmail: z.string()
+    .optional()
+    .or(z.null())
+    .transform(v => !v ? null : v)
+    .refine(v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Invalid email format'),
+  supportPhone: z.string().optional().or(z.null()).transform(v => !v ? null : v),
 });
 
 export async function GET(req: NextRequest) {
@@ -45,17 +51,17 @@ export async function POST(req: NextRequest) {
   try {
     const authResult = await requirePermission('manufacturers', 'create');
     if (authResult instanceof NextResponse) return authResult;
-    const { user } = authResult;
 
     const body = await req.json();
     const validatedData = manufacturerSchema.parse(body);
 
+    const session = await getServerSession(authOptions);
+    const tenantId = session?.user?.tenantId;
+
     const manufacturer = await prisma.manufacturer.create({
       data: {
         ...validatedData,
-        tenant: {
-          connect: { id: user.tenantId },
-        },
+        tenantId: tenantId || undefined,
       },
     });
 

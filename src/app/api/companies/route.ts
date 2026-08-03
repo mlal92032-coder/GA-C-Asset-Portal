@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requirePermission, createAuditLog } from '@/lib/api-auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 
 const companySchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
-  address: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  address: z.string().optional().or(z.null()).transform(v => !v ? null : v),
+  phone: z.string().optional().or(z.null()).transform(v => !v ? null : v),
+  email: z.string()
+    .optional()
+    .or(z.null())
+    .transform(v => !v ? null : v)
+    .refine(v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Invalid email format'),
 });
 
 export async function GET(req: NextRequest) {
@@ -51,8 +57,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = companySchema.parse(body);
 
+    // Get tenant from session
+    const session = await getServerSession(authOptions);
+    const tenantId = session?.user?.tenantId;
+
     const company = await prisma.company.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        tenantId: tenantId || undefined,
+      },
     });
 
     // Create audit log
@@ -66,14 +79,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: company, message: 'Company created successfully' }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.issues);
       return NextResponse.json(
-        { success: false, error: error.issues[0].message },
+        { success: false, error: error.issues[0].message, issues: error.issues },
         { status: 400 }
       );
     }
     console.error('Error creating company:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create company' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to create company' },
       { status: 500 }
     );
   }
