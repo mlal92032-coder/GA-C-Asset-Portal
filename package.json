@@ -1,6 +1,6 @@
 {
   "name": "asset-management-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Enterprise Employee Asset Management System",
   "scripts": {
     "dev": "next dev",
