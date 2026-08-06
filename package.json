@@ -15,6 +15,9 @@
     "ws": "node src/websocket/server.ts",
     "jobs": "node src/jobs/worker.ts"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
     "@prisma/client": "^5.3.0",
