@@ -43,73 +43,88 @@ export function BulkActionBar({
 
             <div className="flex gap-2 flex-wrap">
               {onEdit && (
-                <motion.button
-                  onClick={onEdit}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Edit button clicked');
+                    onEdit();
+                  }}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   title="Edit selected items"
                 >
                   <Edit2 size={16} />
                   <span className="hidden md:inline">Edit</span>
-                </motion.button>
+                </button>
               )}
 
               {onDuplicate && (
-                <motion.button
-                  onClick={onDuplicate}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Duplicate button clicked');
+                    onDuplicate();
+                  }}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   title="Duplicate selected items"
                 >
                   <Copy size={16} />
                   <span className="hidden md:inline">Duplicate</span>
-                </motion.button>
+                </button>
               )}
 
               {onPrint && (
-                <motion.button
-                  onClick={onPrint}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Print button clicked');
+                    onPrint();
+                  }}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   title="Print labels for selected items"
                 >
                   <Printer size={16} />
                   <span className="hidden md:inline">Print</span>
-                </motion.button>
+                </button>
               )}
 
               {onExport && (
-                <motion.button
-                  onClick={onExport}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Export button clicked');
+                    onExport();
+                  }}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   title="Export selected items"
                 >
                   <Download size={16} />
                   <span className="hidden md:inline">Export</span>
-                </motion.button>
+                </button>
               )}
 
               {onDelete && (
-                <motion.button
-                  onClick={onDelete}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Delete button clicked');
+                    onDelete();
+                  }}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   title="Delete selected items"
                 >
                   <Trash2 size={16} />
                   <span className="hidden md:inline">Delete</span>
-                </motion.button>
+                </button>
               )}
 
               <motion.button

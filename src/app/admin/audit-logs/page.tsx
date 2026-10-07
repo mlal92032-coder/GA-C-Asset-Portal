@@ -97,7 +97,9 @@ export default function AuditLogsPage() {
       if (endDate) params.set('endDate', endDate);
       if (search) params.set('search', search);
 
-      const res = await fetch(`/api/audit-logs?${params}`);
+      const res = await fetch(`/api/audit-logs?${params}`, {
+        credentials: 'include',
+      });
       const json: AuditLogResponse = await res.json();
 
       if (json.success) {
@@ -113,7 +115,9 @@ export default function AuditLogsPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/users', {
+        credentials: 'include',
+      });
       const json = await res.json();
       if (json.success) setUsers(json.data);
     } catch {

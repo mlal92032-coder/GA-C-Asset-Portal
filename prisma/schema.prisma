@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -147,10 +147,10 @@ model User {
   department    String?
   designation   String?
   phone         String?
-  role          Role      @default(VIEW_USER)
+  role          String    @default("VIEW_USER")
   customRoleId  String?   @map("custom_role_id")
   customRole    CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
-  status        Status    @default(ACTIVE)
+  status        String    @default("ACTIVE")
   permissions   String?   @map("permissions") // JSON array of allowed modules
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -185,13 +185,6 @@ model User {
   @@map("users")
 }
 
-enum Role {
-  SUPER_ADMIN
-  USER
-  VIEW_USER
-  CUSTOM
-}
-
 model CustomRole {
   id            String    @id @default(cuid())
   tenantId      String    @map("tenant_id")
@@ -212,42 +205,6 @@ model CustomRole {
   @@index([tenantId])
   @@index([createdById])
   @@map("custom_roles")
-}
-
-enum Status {
-  ACTIVE
-  INACTIVE
-}
-
-enum DeleteRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum UserDeleteRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum UserCreationRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum Condition {
-  GOOD
-  REPAIR
-  DAMAGED
-}
-
-enum AssetStatus {
-  IN_USE
-  IN_STORE
-  DISPOSED
-  AUCTION
 }
 
 model Company {
@@ -332,8 +289,8 @@ model FurnitureAsset {
   manufacturerId String?    @map("manufacturer_id")
   locationId    String?     @map("location_id")
   assignedUserId String?    @map("assigned_user_id")
-  condition     Condition   @default(GOOD)
-  status        AssetStatus @default(IN_STORE)
+  condition     String   @default("GOOD")
+  status        String @default("IN_STORE")
   remarks       String?
   usefulLifeYears Int?     @map("useful_life_years")
   salvageValue  Float?     @map("salvage_value")
@@ -380,8 +337,8 @@ model ElectronicAsset {
   manufacturerId      String?     @map("manufacturer_id")
   locationId          String?     @map("location_id")
   assignedUserId      String?     @map("assigned_user_id")
-  condition           Condition   @default(GOOD)
-  status              AssetStatus @default(IN_STORE)
+  condition           String   @default("GOOD")
+  status              String @default("IN_STORE")
   lastMaintenanceDate DateTime?   @map("last_maintenance_date")
   remarks             String?
   usefulLifeYears     Int?       @map("useful_life_years")
@@ -434,8 +391,8 @@ model VehicleAsset {
   manufacturerId      String?     @map("manufacturer_id")
   locationId          String?     @map("location_id")
   assignedUserId      String?     @map("assigned_user_id")
-  condition           Condition   @default(GOOD)
-  status              AssetStatus @default(IN_STORE)
+  condition           String   @default("GOOD")
+  status              String @default("IN_STORE")
   lastServiceDate     DateTime?   @map("last_service_date")
   insuranceExpiryDate DateTime?   @map("insurance_expiry_date")
   remarks             String?
@@ -595,7 +552,7 @@ model Maintenance {
   cost            Float?
   performedBy     String?  @map("performed_by")
   nextDueDate     DateTime? @map("next_due_date")
-  status          MaintenanceStatus @default(SCHEDULED)
+  status          String @default("SCHEDULED")
   odometerReading Int?     @map("odometer_reading") // For vehicles
   workType        String?  @map("work_type") // Oil Change, Repair, Service, Inspection, etc.
   vendorName      String?  @map("vendor_name")
@@ -640,13 +597,6 @@ model SparePart {
   @@map("spare_parts")
 }
 
-enum MaintenanceStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
 model DeleteRequest {
   id              String   @id @default(cuid())
   tenantId        String?  @map("tenant_id")
@@ -657,7 +607,7 @@ model DeleteRequest {
   assetName       String   @map("asset_name")
   requestedById   String   @map("requested_by_id")
   reason          String?
-  status          DeleteRequestStatus @default(PENDING)
+  status          String @default("PENDING")
   reviewedById    String?  @map("reviewed_by_id")
   reviewNotes     String?  @map("review_notes")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -681,13 +631,13 @@ model UserCreationRequest {
 
   fullName        String   @map("full_name")
   email           String
-  role            Role     @default(VIEW_USER)
+  role            String     @default("VIEW_USER")
   department      String?
   designation     String?
   phone           String?
   requestedById   String   @map("requested_by_id")
   reason          String?
-  status          UserCreationRequestStatus @default(PENDING)
+  status          String @default("PENDING")
   reviewedById    String?  @map("reviewed_by_id")
   reviewNotes     String?  @map("review_notes")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -713,7 +663,7 @@ model UserDeleteRequest {
   userEmail       String   @map("user_email")
   requestedById   String   @map("requested_by_id")
   reason          String?
-  status          UserDeleteRequestStatus @default(PENDING)
+  status          String @default("PENDING")
   reviewedById    String?  @map("reviewed_by_id")
   reviewNotes     String?  @map("review_notes")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -768,7 +718,7 @@ model SettingCategory {
   bgColor       String   // background gradient class
   order         Int      @default(0)
   isSystem      Boolean  @default(false) // Cannot be deleted if true
-  requiredRole  Role     @default(SUPER_ADMIN) // Minimum role to access
+  requiredRole  String     @default("SUPER_ADMIN") // Minimum role to access
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -933,7 +883,7 @@ model NotificationPreference {
 
 model RolePermission {
   id              String   @id @default(cuid())
-  role            Role
+  role            String
   module          String   // dashboard, furniture, electronics, vehicles, users, reports, settings, audit_logs
   action          String   // view, create, edit, delete, export, import, approve, reject, checkout, checkin
   isAllowed       Boolean  @default(true)

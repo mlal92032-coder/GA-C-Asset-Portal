@@ -403,9 +403,10 @@ const handleFilterChange = (key: string, value: string) => {
       const res = await fetch('/api/assets/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           assetIds: selectedAssets,
-          assetType: 'VEHICLE',
+          assetType: 'VEHICLES',
           reason,
         }),
       });
@@ -428,6 +429,7 @@ const handleFilterChange = (key: string, value: string) => {
 
     try {
       const res = await fetch('/api/assets/bulk-export', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -461,6 +463,7 @@ const handleFilterChange = (key: string, value: string) => {
     setBulkUpdating(true);
     try {
       const res = await fetch('/api/assets/bulk-update', {
+        credentials: 'include',
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -490,6 +493,7 @@ const handleFilterChange = (key: string, value: string) => {
 
     try {
       const res = await fetch('/api/assets/bulk-print', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

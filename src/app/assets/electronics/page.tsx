@@ -70,6 +70,49 @@ export default function ElectronicsPage() {
   const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false);
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
+  // Debug: log selection changes
+  useEffect(() => {
+    console.log('Selected assets updated:', { count: selectedAssets.length, ids: selectedAssets });
+  }, [selectedAssets]);
+
+  // TEST FUNCTION - Call from console: window.testDelete()
+  useEffect(() => {
+    (window as any).testDelete = async () => {
+      console.log('TEST DELETE FUNCTION CALLED');
+      const testIds = assets.slice(0, 2).map(a => a.id);
+      console.log('Test IDs:', testIds);
+
+      if (testIds.length === 0) {
+        console.log('No assets available');
+        return;
+      }
+
+      const reason = 'TEST DELETE';
+      const payload = { assetIds: testIds, assetType: 'ELECTRONICS', reason };
+
+      console.log('Calling API with:', payload);
+      const res = await fetch('/api/assets/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      console.log('Response:', json);
+
+      if (json.success) {
+        console.log('✅ Delete successful!');
+        alert(`✅ ${json.deleted} assets deleted!`);
+        fetchAll();
+      } else {
+        console.log('❌ Delete failed:', json.error);
+        alert(`❌ Error: ${json.error}`);
+      }
+    };
+    console.log('Test function available: window.testDelete()');
+  }, [assets]);
+
   const [formData, setFormData] = useState<ElectronicFormData>({
     assetName: '',
     assetTag: '',
@@ -338,33 +381,47 @@ export default function ElectronicsPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedAssets.length === 0) return;
+    console.log('handleBulkDelete called, selectedAssets:', selectedAssets);
+    if (selectedAssets.length === 0) {
+      console.log('No assets selected');
+      return;
+    }
 
     const reason = prompt(
       `Delete ${selectedAssets.length} asset(s)? This cannot be undone.\n\nReason for deletion:`
     );
+    console.log('Delete reason entered:', reason);
     if (!reason) return;
 
     try {
+      const payload = {
+        assetIds: selectedAssets,
+        assetType: 'ELECTRONICS',
+        reason,
+      };
+      console.log('Calling bulk-delete API with:', payload);
+
       const res = await fetch('/api/assets/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assetIds: selectedAssets,
-          assetType: 'ELECTRONICS',
-          reason,
-        }),
+        credentials: 'include',
+        body: JSON.stringify(payload),
       });
 
       const json = await res.json();
+      console.log('API Response:', json);
+
       if (json.success) {
+        console.log('Delete successful');
         success(`${json.deleted || 0} asset(s) deleted successfully`);
         setSelectedAssets([]);
         fetchAll();
       } else {
+        console.log('Delete failed:', json.error);
         error(json.error || 'Failed to delete assets');
       }
-    } catch {
+    } catch (err) {
+      console.error('Error during delete:', err);
       error('An error occurred');
     }
   };
@@ -374,6 +431,7 @@ export default function ElectronicsPage() {
 
     try {
       const res = await fetch('/api/assets/bulk-export', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -407,6 +465,7 @@ export default function ElectronicsPage() {
     setBulkUpdating(true);
     try {
       const res = await fetch('/api/assets/bulk-update', {
+        credentials: 'include',
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -436,6 +495,7 @@ export default function ElectronicsPage() {
 
     try {
       const res = await fetch('/api/assets/bulk-print', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

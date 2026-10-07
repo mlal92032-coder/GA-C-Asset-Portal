@@ -678,7 +678,7 @@ thead th {
   border-bottom: 2px solid #e2e8f0;
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 10;
   white-space: nowrap;
 }
 tbody tr {
@@ -700,12 +700,11 @@ tbody tr:last-child td {
 }
 
 /* ===== Modals - Enhanced ===== */
-/* Modal overlay: z-index 50 (dark backdrop, below modal content) */
-/* Per Z_INDEX_GUIDE.md: z-50 for backdrops, z-51 for content */
+/* Modal overlay: z-index 9998 (above all sticky headers) */
 .modal-overlay {
   position: fixed !important;
   inset: 0;
-  z-index: 50 !important;
+  z-index: 9998 !important;
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(8px);
   display: flex;
@@ -715,8 +714,7 @@ tbody tr:last-child td {
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Modal content: z-index 51 (above overlay) */
-/* Per Z_INDEX_GUIDE.md: z-51 sits directly above z-50 backdrop */
+/* Modal content: z-index 9999 (above overlay) */
 .modal {
   background: #ffffff;
   border-radius: 1.25rem;
@@ -726,7 +724,7 @@ tbody tr:last-child td {
   flex-direction: column;
   border: 1.5px solid #f1f5f9;
   position: relative;
-  z-index: 51 !important;
+  z-index: 9999 !important;
   margin: auto;
   backdrop-filter: blur(20px);
   animation: scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -739,7 +737,7 @@ tbody tr:last-child td {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 1.25rem 1.25rem 0 0;
   position: relative;
-  z-index: 1;
+  z-index: 10000;
 }
 
 .modal-body {
@@ -747,8 +745,23 @@ tbody tr:last-child td {
   overflow-y: auto;
   padding: 2rem;
   position: relative;
-  z-index: 1;
+  z-index: 9999;
   background: #ffffff;
+}
+
+/* Force all sticky headers to stay behind modals */
+.modal-overlay ~ * thead th,
+.modal-overlay ~ * thead,
+body.modal-open thead th,
+body.modal-open thead {
+  z-index: 1 !important;
+  position: sticky !important;
+}
+
+/* Ensure modal is always above everything */
+.modal-overlay,
+.modal {
+  pointer-events: auto !important;
 }
 
 .modal-footer {
@@ -972,4 +985,54 @@ tbody tr:last-child td {
 
 .animate-slide {
   animation: slide 20s linear infinite;
+}
+/* ===== CRITICAL: Force sticky headers behind modal ===== */
+/* When modal-open class is added to body, reduce sticky header z-index */
+body.modal-open thead,
+body.modal-open thead th,
+body.modal-open th[class*="sticky"] {
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+/* Ensure modal overlay blocks all interactions with page below */
+.modal-overlay {
+  touch-action: none;
+  user-select: none;
+}
+
+/* Prevent content from showing through modal, but keep BulkActionBar visible */
+body.modal-open > *:not(.modal-overlay):not([class*="bottom"]) {
+  pointer-events: none !important;
+}
+
+/* Keep BulkActionBar and other action bars clickable */
+body.modal-open .fixed {
+  pointer-events: auto !important;
+  z-index: 9997 !important;
+}
+
+body.modal-open .modal-overlay {
+  pointer-events: auto !important;
+}
+
+body.modal-open .modal {
+  pointer-events: auto !important;
+}
+
+/* ===== BulkActionBar - Always Visible ===== */
+.fixed {
+  position: fixed !important;
+}
+
+/* Ensure BulkActionBar (bottom-4 left-4) stays visible above everything except modal overlay */
+[class*="bottom-4"][class*="left-4"],
+[class*="bottom-4"][class*="left-1/2"] {
+  z-index: 9997 !important;
+  pointer-events: auto !important;
+}
+
+body.modal-open [class*="bottom-4"] {
+  z-index: 9997 !important;
+  pointer-events: auto !important;
 }

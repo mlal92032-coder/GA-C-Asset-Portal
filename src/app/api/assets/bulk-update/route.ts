@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'USER') {
+  if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN' && session.user.role !== 'USER') {
     return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
   }
 

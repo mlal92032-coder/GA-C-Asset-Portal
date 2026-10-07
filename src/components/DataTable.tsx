@@ -90,6 +90,7 @@ export default function DataTable<T extends { id?: string | number }>({
     const newSelection = selectedIds.includes(idStr)
       ? selectedIds.filter((sid) => sid !== idStr)
       : [...selectedIds, idStr];
+    console.log('Selection changed:', { id: idStr, newSelection, total: newSelection.length });
     onSelectionChange?.(newSelection);
   };
 
@@ -135,7 +136,7 @@ export default function DataTable<T extends { id?: string | number }>({
       {/* Table */}
       <div className="w-full overflow-x-auto">
         <table className="w-full text-xs whitespace-nowrap">
-          <thead className="sticky top-0 z-20 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
+          <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
             <tr>
               {selectable && (
                 <th className="px-2 py-2 text-left font-bold text-slate-700 w-12">

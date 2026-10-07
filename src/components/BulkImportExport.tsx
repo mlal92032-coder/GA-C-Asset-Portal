@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, Upload, AlertCircle, CheckCircle, X, FileText, Loader2 } from 'lucide-react';
 
 interface BulkImportExportProps {
@@ -16,6 +17,23 @@ export default function BulkImportExport({ assetType, onImportSuccess }: BulkImp
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<{ success: number; failed: number; errors: any[] } | null>(null);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Manage body class to hide sticky headers when modal is open
+  useEffect(() => {
+    if (showModal && typeof document !== 'undefined') {
+      document.body.classList.add('modal-open');
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+      };
+    }
+  }, [showModal]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -151,7 +169,7 @@ export default function BulkImportExport({ assetType, onImportSuccess }: BulkImp
       </div>
 
       {/* Modal */}
-      {showModal && (
+      {showModal && mounted && createPortal(
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal w-full max-w-2xl relative mx-auto" onClick={(e) => e.stopPropagation()}>
             {/* Loading overlay */}
@@ -368,7 +386,8 @@ export default function BulkImportExport({ assetType, onImportSuccess }: BulkImp
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
