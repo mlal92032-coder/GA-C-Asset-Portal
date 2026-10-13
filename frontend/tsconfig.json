@@ -1,0 +1,94 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*",
+        "./*"
+      ],
+      "@/components/*": [
+        "./components/*",
+        "./src/components/*"
+      ],
+      "@/pages/*": [
+        "./app/*",
+        "./src/app/*"
+      ],
+      "@/app/*": [
+        "./app/*",
+        "./src/app/*"
+      ],
+      "@/utils/*": [
+        "./utils/*",
+        "./src/utils/*"
+      ],
+      "@/services/*": [
+        "./services/*",
+        "./src/services/*"
+      ],
+      "@/lib/*": [
+        "./lib/*",
+        "./src/lib/*"
+      ],
+      "@/types/*": [
+        "./types/*",
+        "./src/types/*"
+      ],
+      "@/hooks/*": [
+        "./hooks/*",
+        "./src/hooks/*"
+      ],
+      "@/context/*": [
+        "./context/*",
+        "./src/context/*"
+      ],
+      "@/contexts/*": [
+        "./contexts/*",
+        "./src/contexts/*"
+      ]
+    },
+    "allowJs": true,
+    "incremental": true,
+    "moduleResolution": "bundler",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "strictNullChecks": true
+  },
+  "include": [
+    "app",
+    "components",
+    "hooks",
+    "types",
+    "context",
+    "contexts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

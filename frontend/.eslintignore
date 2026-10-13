@@ -1,0 +1,10 @@
+node_modules/
+.next/
+build/
+dist/
+*.config.js
+*.config.mjs
+.env*
+src/__tests__/
+src/app/settings/page.tsx
+src/app/assets/vehicles/maintenance/page.tsx

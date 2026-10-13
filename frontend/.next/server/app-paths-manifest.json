@@ -1,0 +1,17 @@
+{
+  "/login/page": "app/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/employees/route": "app/api/employees/route.js",
+  "/api/furniture/route": "app/api/furniture/route.js",
+  "/employees/page": "app/employees/page.js",
+  "/assets/furniture/page": "app/assets/furniture/page.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/api/manufacturers/route": "app/api/manufacturers/route.js",
+  "/api/companies/route": "app/api/companies/route.js",
+  "/api/locations/route": "app/api/locations/route.js",
+  "/api/assets/checked-out/route": "app/api/assets/checked-out/route.js",
+  "/api/bulk-import/route": "app/api/bulk-import/route.js",
+  "/assets/vehicles/page": "app/assets/vehicles/page.js",
+  "/api/vehicles/route": "app/api/vehicles/route.js",
+  "/api/assets/bulk-delete/route": "app/api/assets/bulk-delete/route.js"
+}
